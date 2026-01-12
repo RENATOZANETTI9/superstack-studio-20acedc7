@@ -155,15 +155,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { users: [], error: 'Apenas usuários master podem ver todos os usuários' };
     }
 
-    const { data, error } = await supabase
+    // Fetch profiles
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*, user_roles(role)');
+      .select('*');
 
-    if (error) {
-      return { users: [], error: error.message };
+    if (profilesError) {
+      return { users: [], error: profilesError.message };
     }
 
-    return { users: data || [], error: null };
+    // Fetch roles for all users
+    const { data: roles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('user_id, role');
+
+    if (rolesError) {
+      return { users: [], error: rolesError.message };
+    }
+
+    // Combine profiles with their roles
+    const usersWithRoles = (profiles || []).map(profile => {
+      const userRole = roles?.find(r => r.user_id === profile.user_id);
+      return {
+        ...profile,
+        user_roles: userRole ? [{ role: userRole.role }] : null
+      };
+    });
+
+    return { users: usersWithRoles, error: null };
   };
 
   return (
