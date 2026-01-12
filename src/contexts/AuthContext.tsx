@@ -1,21 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  level: 1 | 2 | 3;
-  clinic?: string;
-}
+type AppRole = 'master' | 'user';
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
+  role: AppRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  isMaster: boolean;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  logout: () => Promise<void>;
+  createUser: (email: string, password: string) => Promise<{ error: string | null }>;
+  deleteUser: (userId: string) => Promise<{ error: string | null }>;
+  getAllUsers: () => Promise<{ users: any[]; error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,72 +34,152 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for stored session
-    const storedUser = localStorage.getItem('helpude_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  const fetchUserRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+    
+    if (data && !error) {
+      setRole(data.role as AppRole);
+    } else {
+      setRole('user');
     }
-    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Defer Supabase calls with setTimeout to prevent deadlock
+          setTimeout(() => {
+            fetchUserRole(session.user.id);
+          }, 0);
+        } else {
+          setRole(null);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserRole(session.user.id);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name: 'Dr. João Silva',
-        email: email,
-        level: 2,
-        clinic: 'Clínica Saúde Total',
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('helpude_user', JSON.stringify(mockUser));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('helpude_user');
+    setSession(null);
+    setRole(null);
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name: name,
-        email: email,
-        level: 1,
-        clinic: '',
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('helpude_user', JSON.stringify(mockUser));
-    } finally {
-      setIsLoading(false);
+  const createUser = async (email: string, password: string): Promise<{ error: string | null }> => {
+    if (role !== 'master') {
+      return { error: 'Apenas usuários master podem criar novos usuários' };
     }
+
+    // Use the edge function to create user with admin privileges
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: { email, password }
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    if (data?.error) {
+      return { error: data.error };
+    }
+
+    return { error: null };
+  };
+
+  const deleteUser = async (userId: string): Promise<{ error: string | null }> => {
+    if (role !== 'master') {
+      return { error: 'Apenas usuários master podem excluir usuários' };
+    }
+
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+      body: { userId }
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    if (data?.error) {
+      return { error: data.error };
+    }
+
+    return { error: null };
+  };
+
+  const getAllUsers = async (): Promise<{ users: any[]; error: string | null }> => {
+    if (role !== 'master') {
+      return { users: [], error: 'Apenas usuários master podem ver todos os usuários' };
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*, user_roles(role)');
+
+    if (error) {
+      return { users: [], error: error.message };
+    }
+
+    return { users: data || [], error: null };
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        session,
+        role,
         isAuthenticated: !!user,
         isLoading,
+        isMaster: role === 'master',
         login,
         logout,
-        register,
+        createUser,
+        deleteUser,
+        getAllUsers,
       }}
     >
       {children}
