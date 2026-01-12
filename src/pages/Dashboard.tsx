@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, LogOut, UserPlus, Trash2, Shield, User } from 'lucide-react';
+import { Users, LogOut, UserPlus, Trash2, Shield, User, BarChart3, FileSearch, MessageSquare, TrendingUp, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -305,13 +305,145 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Regular User Content */}
+          {/* Dashboard Cards - Available to all users */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Card 1 - Consultas */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-card rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center">
+                  <FileSearch className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">1.234</p>
+                  <p className="text-sm text-muted-foreground">Consultas Hoje</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-500">
+                <TrendingUp className="w-4 h-4" />
+                <span>+12% vs ontem</span>
+              </div>
+            </motion.div>
+
+            {/* Card 2 - Leads */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-card rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal to-teal/50 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">856</p>
+                  <p className="text-sm text-muted-foreground">Leads Ativos</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-500">
+                <TrendingUp className="w-4 h-4" />
+                <span>+8% esta semana</span>
+              </div>
+            </motion.div>
+
+            {/* Card 3 - Mensagens */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-card rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-500/50 flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">2.451</p>
+                  <p className="text-sm text-muted-foreground">Mensagens Enviadas</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-500">
+                <TrendingUp className="w-4 h-4" />
+                <span>+24% vs mês anterior</span>
+              </div>
+            </motion.div>
+
+            {/* Card 4 - Conversões */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-card rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-500/50 flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">32%</p>
+                  <p className="text-sm text-muted-foreground">Taxa de Conversão</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-500">
+                <TrendingUp className="w-4 h-4" />
+                <span>+5% este mês</span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="glass-card rounded-2xl p-6 mb-8">
+            <h3 className="text-xl font-semibold text-foreground mb-6">Ações Rápidas</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button 
+                variant="outline" 
+                className="h-auto py-6 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary"
+              >
+                <FileSearch className="w-6 h-6 text-primary" />
+                <span>Nova Consulta</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-auto py-6 flex flex-col gap-2 hover:bg-teal/10 hover:border-teal"
+              >
+                <Users className="w-6 h-6 text-teal" />
+                <span>Pipeline</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-auto py-6 flex flex-col gap-2 hover:bg-orange-500/10 hover:border-orange-500"
+              >
+                <MessageSquare className="w-6 h-6 text-orange-500" />
+                <span>Mensagens</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-auto py-6 flex flex-col gap-2 hover:bg-muted hover:border-muted-foreground"
+              >
+                <Settings className="w-6 h-6 text-muted-foreground" />
+                <span>Configurações</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
           <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-xl font-semibold text-foreground mb-4">Área do Usuário</h3>
-            <p className="text-muted-foreground">
-              Você está logado e tem acesso ao sistema HelpUde. 
-              {!isMaster && ' Entre em contato com o administrador para solicitar permissões adicionais.'}
-            </p>
+            <h3 className="text-xl font-semibold text-foreground mb-6">Atividade Recente</h3>
+            <div className="space-y-4">
+              {[
+                { action: 'Consulta realizada', detail: 'CPF ***.***.789-00', time: 'Há 5 minutos', color: 'bg-primary' },
+                { action: 'Lead convertido', detail: 'João Silva', time: 'Há 15 minutos', color: 'bg-green-500' },
+                { action: 'Mensagem enviada', detail: 'Lote de 50 mensagens', time: 'Há 1 hora', color: 'bg-orange-500' },
+                { action: 'Nova consulta em lote', detail: '125 CPFs processados', time: 'Há 2 horas', color: 'bg-teal' },
+                { action: 'Lead atualizado', detail: 'Maria Santos movida para Engajamento', time: 'Há 3 horas', color: 'bg-purple-500' },
+              ].map((item, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 rounded-xl hover:bg-background/50 transition-colors">
+                  <div className={`w-2 h-2 rounded-full ${item.color}`} />
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{item.action}</p>
+                    <p className="text-sm text-muted-foreground">{item.detail}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{item.time}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </motion.div>
       </main>
