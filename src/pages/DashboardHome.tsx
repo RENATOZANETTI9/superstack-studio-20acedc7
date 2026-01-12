@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
+import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipeline';
 import ProductCard from '@/components/dashboard/ProductCard';
 import { toast } from 'sonner';
@@ -122,6 +123,12 @@ const DashboardHome = () => {
 
         {/* Stats */}
         <DashboardStats stats={stats} />
+
+        {/* Charts Section */}
+        <div>
+          <h2 className="mb-4 text-xl font-bold text-foreground">Análise de Desempenho</h2>
+          <DashboardCharts />
+        </div>
 
         {/* Products Section */}
         <div>
