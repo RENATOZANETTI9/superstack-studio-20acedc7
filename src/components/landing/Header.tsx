@@ -48,14 +48,14 @@ const Header = () => {
 
               {/* Desktop CTA */}
               <div className="hidden md:flex items-center gap-3">
-                <Link to="/login">
+                <Link to="/auth">
                   <Button variant="ghost" className="text-white hover:bg-white/10">
                     Entrar
                   </Button>
                 </Link>
-                <Link to="/dashboard">
+                <Link to="/auth">
                   <Button variant="hero" size="default">
-                    Começar Grátis
+                    Acessar Sistema
                   </Button>
                 </Link>
               </div>
@@ -89,14 +89,14 @@ const Header = () => {
                     </a>
                   ))}
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
-                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="ghost" className="w-full text-white hover:bg-white/10">
                         Entrar
                       </Button>
                     </Link>
-                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="hero" className="w-full">
-                        Começar Grátis
+                        Acessar Sistema
                       </Button>
                     </Link>
                   </div>
