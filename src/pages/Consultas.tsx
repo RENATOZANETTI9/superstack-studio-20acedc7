@@ -192,40 +192,14 @@ const Consultas = () => {
           </p>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        {/* Main Content - Form and Combos */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left Side - Consulta Form */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <ConsultaForm 
               onConsulta={handleConsulta}
               consultasRestantes={consultasRestantes}
             />
-          </div>
-
-          {/* Middle - Results */}
-          <div className="lg:col-span-2">
-            <div className="glass-card rounded-2xl p-6 h-full">
-              <h3 className="mb-4 text-xl font-bold text-foreground">
-                Resultados das Consultas
-              </h3>
-              {proposals.length > 0 ? (
-                <ProposalPipeline 
-                  proposals={proposals}
-                  onMarketingAction={handleMarketingAction}
-                />
-              ) : (
-                <div className="flex h-64 items-center justify-center text-center">
-                  <div>
-                    <p className="text-lg font-medium text-muted-foreground">
-                      Nenhuma consulta realizada ainda
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Faça sua primeira consulta para ver os resultados aqui
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Right Side - Combos */}
@@ -266,6 +240,30 @@ const Consultas = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Pipeline Section - Bottom */}
+        <div className="glass-card rounded-2xl p-6">
+          <h3 className="mb-4 text-xl font-bold text-foreground">
+            Pipeline de Propostas
+          </h3>
+          {proposals.length > 0 ? (
+            <ProposalPipeline 
+              proposals={proposals}
+              onMarketingAction={handleMarketingAction}
+            />
+          ) : (
+            <div className="flex h-48 items-center justify-center text-center">
+              <div>
+                <p className="text-lg font-medium text-muted-foreground">
+                  Nenhuma consulta realizada ainda
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Faça sua primeira consulta para ver os resultados aqui
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </DashboardLayout>
