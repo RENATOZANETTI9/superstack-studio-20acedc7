@@ -195,11 +195,14 @@ const Consultas = () => {
         {/* Main Content - Form, Results and Combos */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Left Side - Consulta Form */}
-          <div className="lg:col-span-1">
-            <ConsultaForm 
-              onConsulta={handleConsulta}
-              consultasRestantes={consultasRestantes}
-            />
+          <div className="lg:col-span-1 relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-sm" />
+            <div className="relative">
+              <ConsultaForm 
+                onConsulta={handleConsulta}
+                consultasRestantes={consultasRestantes}
+              />
+            </div>
           </div>
 
           {/* Middle - Results */}
