@@ -39,14 +39,14 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   const menuItems = [
     {
-      title: 'Dashboard',
-      icon: LayoutDashboard,
-      path: '/dashboard',
-    },
-    {
       title: 'Consultas',
       icon: FileSearch,
       path: '/dashboard/consultas',
+    },
+    {
+      title: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/dashboard',
     },
   ];
 
