@@ -25,21 +25,21 @@ const Consultas = () => {
   const products: Product[] = [
     {
       id: 'credito-clt',
-      title: 'Crédito CLT',
+      title: 'HelpCLT',
       description: '+43 milhões de público',
       icon: CreditCard,
       active: true,
     },
     {
       id: 'cdc-boleto',
-      title: 'CDC Boleto',
+      title: 'HelpBoleto',
       description: '+25 milhões de público',
       icon: FileText,
       active: false,
     },
     {
       id: 'cartao-recorrente',
-      title: 'Cartão Recorrente',
+      title: 'Help Cartão',
       description: '+18 milhões de público',
       icon: RefreshCw,
       active: false,
