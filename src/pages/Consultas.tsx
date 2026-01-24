@@ -232,8 +232,8 @@ const Consultas = () => {
                           proposal.status === 'erro' && 'bg-yellow-500/20 text-yellow-500'
                         )}>
                           {proposal.status === 'aprovada' && 'Aprovada'}
-                          {proposal.status === 'recusada' && 'Recusada'}
-                          {proposal.status === 'erro' && 'Erro'}
+                          {proposal.status === 'recusada' && 'Declinado'}
+                          {proposal.status === 'erro' && 'Em Análise'}
                         </span>
                         {proposal.value && (
                           <p className="text-sm font-semibold text-green-500 mt-1">

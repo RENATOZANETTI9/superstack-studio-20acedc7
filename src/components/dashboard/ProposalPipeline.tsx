@@ -207,14 +207,14 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         onAction={onMarketingAction}
       />
       <PipelineColumn
-        title="Recusadas"
+        title="Declinado"
         status="recusada"
         proposals={proposals}
         icon={<XCircle className="h-5 w-5 text-white" />}
         color="bg-destructive"
       />
       <PipelineColumn
-        title="Com Erro"
+        title="Em Análise"
         status="erro"
         proposals={proposals}
         icon={<AlertTriangle className="h-5 w-5 text-white" />}
