@@ -192,14 +192,71 @@ const Consultas = () => {
           </p>
         </div>
 
-        {/* Main Content - Form and Combos */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Main Content - Form, Results and Combos */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Left Side - Consulta Form */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <ConsultaForm 
               onConsulta={handleConsulta}
               consultasRestantes={consultasRestantes}
             />
+          </div>
+
+          {/* Middle - Results */}
+          <div className="lg:col-span-2">
+            <div className="glass-card rounded-2xl p-6 h-full">
+              <h3 className="mb-4 text-xl font-bold text-foreground">
+                Resultados das Consultas
+              </h3>
+              {proposals.length > 0 ? (
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {proposals.slice(0, 5).map((proposal) => (
+                    <div 
+                      key={proposal.id}
+                      className={cn(
+                        'flex items-center justify-between rounded-lg border p-3',
+                        proposal.status === 'aprovada' && 'border-green-500/30 bg-green-500/5',
+                        proposal.status === 'recusada' && 'border-red-500/30 bg-red-500/5',
+                        proposal.status === 'erro' && 'border-yellow-500/30 bg-yellow-500/5'
+                      )}
+                    >
+                      <div>
+                        <p className="font-medium text-foreground">{proposal.name}</p>
+                        <p className="text-sm text-muted-foreground">{proposal.cpf}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={cn(
+                          'inline-block rounded-full px-2 py-1 text-xs font-medium',
+                          proposal.status === 'aprovada' && 'bg-green-500/20 text-green-500',
+                          proposal.status === 'recusada' && 'bg-red-500/20 text-red-500',
+                          proposal.status === 'erro' && 'bg-yellow-500/20 text-yellow-500'
+                        )}>
+                          {proposal.status === 'aprovada' && 'Aprovada'}
+                          {proposal.status === 'recusada' && 'Recusada'}
+                          {proposal.status === 'erro' && 'Erro'}
+                        </span>
+                        {proposal.value && (
+                          <p className="text-sm font-semibold text-green-500 mt-1">
+                            R$ {proposal.value.toLocaleString('pt-BR')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-64 items-center justify-center text-center">
+                  <div>
+                    <p className="text-lg font-medium text-muted-foreground">
+                      Nenhuma consulta realizada ainda
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Faça sua primeira consulta para ver os resultados aqui
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Side - Combos */}
@@ -256,10 +313,10 @@ const Consultas = () => {
             <div className="flex h-48 items-center justify-center text-center">
               <div>
                 <p className="text-lg font-medium text-muted-foreground">
-                  Nenhuma consulta realizada ainda
+                  Nenhuma proposta no pipeline
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Faça sua primeira consulta para ver os resultados aqui
+                  As propostas aparecerão aqui após as consultas
                 </p>
               </div>
             </div>
