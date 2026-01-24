@@ -25,7 +25,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      navigate('/dashboard');
+      navigate('/dashboard/consultas');
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -64,7 +64,7 @@ const Auth = () => {
       }
     } else {
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      navigate('/dashboard/consultas');
     }
     
     setIsSubmitting(false);

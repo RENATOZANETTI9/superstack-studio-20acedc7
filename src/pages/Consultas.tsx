@@ -1,94 +1,38 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import ProductCard from '@/components/dashboard/ProductCard';
-import ComboCard from '@/components/dashboard/ComboCard';
 import ConsultaForm from '@/components/dashboard/ConsultaForm';
 import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipeline';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import ComboCardMini from '@/components/dashboard/ComboCardMini';
 import { toast } from 'sonner';
 
-type ViewState = 'products' | 'combos' | 'consulta';
-
 const Consultas = () => {
-  const [view, setView] = useState<ViewState>('products');
   const [selectedCombo, setSelectedCombo] = useState<number>(1);
   const [consultasRestantes, setConsultasRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
-
-  const products = [
-    {
-      title: 'Crédito CLT',
-      description: 'Análise de crédito para trabalhadores com carteira assinada. Consulta completa com score e limite sugerido.',
-      audience: '+43 milhões',
-      active: true,
-    },
-    {
-      title: 'CDC Boleto',
-      description: 'Crédito direto ao consumidor com pagamento via boleto bancário.',
-      audience: '+25 milhões',
-      active: false,
-    },
-    {
-      title: 'Cartão Recorrente',
-      description: 'Análise para cartões de crédito com fatura recorrente.',
-      audience: '+18 milhões',
-      active: false,
-    },
-  ];
 
   const combos = [
     {
       title: 'Combo Básico',
       consultasLimit: '50 consultas/mês',
-      features: [
-        'Consultas individuais',
-        'Consultas em lote (CSV)',
-        'Pipeline de propostas',
-        'Gatilhos de marketing básicos',
-      ],
       active: true,
       locked: false,
     },
     {
       title: 'Combo Profissional',
       consultasLimit: '1.000 consultas/mês',
-      features: [
-        'Tudo do Combo Básico',
-        'Prioridade no processamento',
-        'Relatórios avançados',
-        'API de integração',
-      ],
-      requirements: [
-        'Aprovação cadastral',
-        'Contrato social',
-        'Documentação da empresa',
-      ],
       active: true,
       locked: true,
     },
     {
       title: 'Combo Enterprise',
       consultasLimit: 'Ilimitado',
-      features: [
-        'Tudo do Combo Profissional',
-        'Suporte dedicado 24/7',
-        'Customização de regras',
-        'Webhooks em tempo real',
-      ],
-      requirements: [
-        'Toda documentação do Combo Profissional',
-        'Análise de histórico dos últimos 90 dias',
-        'Aprovação cadastral especial',
-      ],
       active: true,
       locked: true,
     },
   ];
 
   const handleConsulta = (cpfs: string[]) => {
-    // Simular resultados
     const newProposals: Proposal[] = cpfs.map((cpf, index) => {
       const statuses: Array<'aprovada' | 'recusada' | 'erro'> = ['aprovada', 'recusada', 'erro'];
       const randomStatus = statuses[Math.floor(Math.random() * 100) % 3];
@@ -134,140 +78,97 @@ const Consultas = () => {
     );
   };
 
-  const renderContent = () => {
-    switch (view) {
-      case 'products':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Consultas</h1>
-              <p className="text-muted-foreground">
-                Selecione um produto para iniciar suas consultas de análise de crédito
-              </p>
-            </div>
+  return (
+    <DashboardLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Crédito CLT</h1>
+          <p className="text-muted-foreground">
+            Consulte o CPF do cliente e visualize os resultados
+          </p>
+        </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.title}
-                  {...product}
-                  onClick={() => setView('combos')}
+        {/* Main Content */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          {/* Left Side - Consulta Form */}
+          <div className="lg:col-span-1">
+            <ConsultaForm 
+              onConsulta={handleConsulta}
+              consultasRestantes={consultasRestantes}
+            />
+          </div>
+
+          {/* Middle - Results */}
+          <div className="lg:col-span-2">
+            <div className="glass-card rounded-2xl p-6 h-full">
+              <h3 className="mb-4 text-xl font-bold text-foreground">
+                Resultados das Consultas
+              </h3>
+              {proposals.length > 0 ? (
+                <ProposalPipeline 
+                  proposals={proposals}
+                  onMarketingAction={handleMarketingAction}
                 />
-              ))}
+              ) : (
+                <div className="flex h-64 items-center justify-center text-center">
+                  <div>
+                    <p className="text-lg font-medium text-muted-foreground">
+                      Nenhuma consulta realizada ainda
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Faça sua primeira consulta para ver os resultados aqui
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          </motion.div>
-        );
+          </div>
 
-      case 'combos':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setView('products')}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Crédito CLT</h1>
-                <p className="text-muted-foreground">
-                  Escolha o combo ideal para suas necessidades
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Right Side - Combos */}
+          <div className="lg:col-span-1">
+            <div className="glass-card rounded-2xl p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground mb-3">
+                Planos Disponíveis
+              </h3>
               {combos.map((combo, index) => (
-                <ComboCard
+                <ComboCardMini
                   key={combo.title}
-                  {...combo}
+                  title={combo.title}
+                  consultasLimit={combo.consultasLimit}
+                  active={combo.active}
+                  locked={combo.locked}
                   selected={selectedCombo === index + 1 && !combo.locked}
                   onSelect={() => {
                     if (!combo.locked) {
                       setSelectedCombo(index + 1);
-                      setView('consulta');
+                      if (index === 0) {
+                        setConsultasRestantes(50);
+                      }
+                    } else {
+                      toast.info('Este plano requer aprovação cadastral.');
                     }
                   }}
                 />
               ))}
-            </div>
-          </motion.div>
-        );
-
-      case 'consulta':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setView('combos')}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  Crédito CLT - {combos[selectedCombo - 1].title}
-                </h1>
-                <p className="text-muted-foreground">
-                  Realize consultas individuais ou em lote
+              
+              {/* Info about selected combo */}
+              <div className="mt-4 rounded-lg bg-primary/10 p-3">
+                <p className="text-xs text-primary font-medium">
+                  {combos[selectedCombo - 1].title} ativo
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {consultasRestantes} consultas restantes
                 </p>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-1">
-                <ConsultaForm 
-                  onConsulta={handleConsulta}
-                  consultasRestantes={consultasRestantes}
-                />
-              </div>
-              <div className="lg:col-span-2">
-                <div className="glass-card rounded-2xl p-6">
-                  <h3 className="mb-4 text-xl font-bold text-foreground">
-                    Resultados das Consultas
-                  </h3>
-                  {proposals.length > 0 ? (
-                    <ProposalPipeline 
-                      proposals={proposals}
-                      onMarketingAction={handleMarketingAction}
-                    />
-                  ) : (
-                    <div className="flex h-64 items-center justify-center text-center">
-                      <div>
-                        <p className="text-lg font-medium text-muted-foreground">
-                          Nenhuma consulta realizada ainda
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Faça sua primeira consulta para ver os resultados aqui
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        );
-    }
-  };
-
-  return (
-    <DashboardLayout>
-      {renderContent()}
+          </div>
+        </div>
+      </motion.div>
     </DashboardLayout>
   );
 };
