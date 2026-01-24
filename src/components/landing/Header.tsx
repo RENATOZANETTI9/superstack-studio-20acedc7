@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import logo from '@/assets/logo.png';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,11 +27,8 @@ const Header = () => {
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <Link to="/" className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-helpude-purple to-helpude-teal flex items-center justify-center">
-                  <span className="text-white font-display font-bold text-xl">H</span>
-                </div>
-                <span className="text-white font-display font-bold text-xl">HelpUde</span>
+              <Link to="/" className="flex items-center">
+                <img src={logo} alt="HelpUde" className="h-10" />
               </Link>
 
               {/* Desktop Navigation */}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Linkedin, Instagram, Youtube } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -10,11 +11,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div>
-            <Link to="/" className="flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-helpude-purple to-helpude-teal flex items-center justify-center">
-                <span className="text-white font-display font-bold text-xl">H</span>
-              </div>
-              <span className="text-white font-display font-bold text-xl">HelpUde</span>
+            <Link to="/" className="flex items-center mb-6">
+              <img src={logo} alt="HelpUde" className="h-10" />
             </Link>
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed mb-6">
               Transformando a forma como clínicas de saúde oferecem crédito aos seus pacientes.
