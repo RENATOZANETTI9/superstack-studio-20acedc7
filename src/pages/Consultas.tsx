@@ -5,11 +5,46 @@ import ConsultaForm from '@/components/dashboard/ConsultaForm';
 import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipeline';
 import ComboCardMini from '@/components/dashboard/ComboCardMini';
 import { toast } from 'sonner';
+import { CreditCard, FileText, RefreshCw, Check, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  active: boolean;
+}
 
 const Consultas = () => {
+  const [selectedProduct, setSelectedProduct] = useState<string>('credito-clt');
   const [selectedCombo, setSelectedCombo] = useState<number>(1);
   const [consultasRestantes, setConsultasRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+
+  const products: Product[] = [
+    {
+      id: 'credito-clt',
+      title: 'Crédito CLT',
+      description: '+43 milhões de público',
+      icon: CreditCard,
+      active: true,
+    },
+    {
+      id: 'cdc-boleto',
+      title: 'CDC Boleto',
+      description: '+25 milhões de público',
+      icon: FileText,
+      active: false,
+    },
+    {
+      id: 'cartao-recorrente',
+      title: 'Cartão Recorrente',
+      description: '+18 milhões de público',
+      icon: RefreshCw,
+      active: false,
+    },
+  ];
 
   const combos = [
     {
@@ -78,6 +113,8 @@ const Consultas = () => {
     );
   };
 
+  const selectedProductData = products.find(p => p.id === selectedProduct);
+
   return (
     <DashboardLayout>
       <motion.div
@@ -85,9 +122,71 @@ const Consultas = () => {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        {/* Header */}
+        {/* Products Header */}
+        <div className="glass-card rounded-2xl p-4">
+          <div className="flex flex-wrap gap-3">
+            {products.map((product) => {
+              const Icon = product.icon;
+              const isSelected = selectedProduct === product.id;
+              
+              return (
+                <button
+                  key={product.id}
+                  onClick={() => {
+                    if (product.active) {
+                      setSelectedProduct(product.id);
+                    } else {
+                      toast.info(`${product.title} estará disponível em breve!`);
+                    }
+                  }}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-300',
+                    isSelected && product.active
+                      ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+                      : 'border-border/50 bg-card/50 hover:border-primary/30',
+                    !product.active && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  <div className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-lg',
+                    isSelected && product.active ? 'bg-primary/20' : 'bg-muted'
+                  )}>
+                    <Icon className={cn(
+                      'h-5 w-5',
+                      isSelected && product.active ? 'text-primary' : 'text-muted-foreground'
+                    )} />
+                  </div>
+                  <div className="text-left">
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        'font-semibold',
+                        isSelected && product.active ? 'text-primary' : 'text-foreground'
+                      )}>
+                        {product.title}
+                      </span>
+                      {product.active ? (
+                        <span className="flex items-center gap-1 rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-500">
+                          <Check className="h-3 w-3" />
+                          Ativo
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          Em breve
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{product.description}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Crédito CLT</h1>
+          <h1 className="text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
           <p className="text-muted-foreground">
             Consulte o CPF do cliente e visualize os resultados
           </p>
