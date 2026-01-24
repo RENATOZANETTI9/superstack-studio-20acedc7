@@ -12,7 +12,7 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <Link to="/" className="flex items-center mb-6">
-              <img src={logo} alt="HelpUde" className="h-[60px]" />
+              <img src={logo} alt="HelpUde" className="h-[120px]" />
             </Link>
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed mb-6">
               Transformando a forma como clínicas de saúde oferecem crédito aos seus pacientes.
