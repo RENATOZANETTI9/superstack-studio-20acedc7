@@ -48,19 +48,19 @@ const Consultas = () => {
 
   const combos = [
     {
-      title: 'Combo Básico',
+      title: 'Nível Básico',
       consultasLimit: '50 consultas/mês',
       active: true,
       locked: false,
     },
     {
-      title: 'Combo Profissional',
+      title: 'Nível Profissional',
       consultasLimit: '1.000 consultas/mês',
       active: true,
       locked: true,
     },
     {
-      title: 'Combo Enterprise',
+      title: 'Nível Enterprise',
       consultasLimit: 'Ilimitado',
       active: true,
       locked: true,
