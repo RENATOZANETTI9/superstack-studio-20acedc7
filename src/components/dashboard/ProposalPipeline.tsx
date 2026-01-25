@@ -199,7 +199,14 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       <PipelineColumn
-        title="Aprovadas"
+        title="Em Análise"
+        status="erro"
+        proposals={proposals}
+        icon={<AlertTriangle className="h-5 w-5 text-white" />}
+        color="bg-warning"
+      />
+      <PipelineColumn
+        title="Aprovado"
         status="aprovada"
         proposals={proposals}
         icon={<CheckCircle className="h-5 w-5 text-white" />}
@@ -212,13 +219,6 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         proposals={proposals}
         icon={<XCircle className="h-5 w-5 text-white" />}
         color="bg-destructive"
-      />
-      <PipelineColumn
-        title="Em Análise"
-        status="erro"
-        proposals={proposals}
-        icon={<AlertTriangle className="h-5 w-5 text-white" />}
-        color="bg-warning"
       />
     </div>
   );
