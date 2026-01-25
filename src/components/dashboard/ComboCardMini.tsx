@@ -1,5 +1,6 @@
+import * as React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Lock, Zap, FileCheck, Headphones, Settings, Webhook } from 'lucide-react';
+import { Check, Lock, Zap, FileCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   HoverCard,
@@ -63,6 +64,63 @@ interface ComboCardMiniProps {
   onSelect?: () => void;
 }
 
+const MotionCard = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof motion.div> & {
+    locked?: boolean;
+    selected?: boolean;
+    onSelect?: () => void;
+    title: string;
+    consultasLimit: string;
+  }
+>(({ locked, selected, onSelect, title, consultasLimit, className, ...props }, ref) => (
+  <motion.div
+    ref={ref}
+    whileHover={!locked ? { scale: 1.02 } : {}}
+    whileTap={!locked ? { scale: 0.98 } : {}}
+    onClick={!locked ? onSelect : undefined}
+    className={cn(
+      'relative cursor-pointer rounded-xl border p-3 transition-all duration-300',
+      locked && 'cursor-not-allowed opacity-60',
+      selected && !locked
+        ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+        : 'border-border/50 bg-card/50 hover:border-primary/50',
+      className
+    )}
+    {...props}
+  >
+    {locked && (
+      <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-muted">
+        <Lock className="h-3 w-3 text-muted-foreground" />
+      </div>
+    )}
+
+    {selected && !locked && (
+      <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+        <Check className="h-3 w-3 text-primary-foreground" />
+      </div>
+    )}
+
+    <div className="flex items-center gap-2">
+      <div className={cn(
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+        selected && !locked ? 'bg-primary/20' : 'bg-muted'
+      )}>
+        <Zap className={cn(
+          'h-4 w-4',
+          selected && !locked ? 'text-primary' : 'text-muted-foreground'
+        )} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h4 className="truncate text-sm font-semibold text-foreground">{title}</h4>
+        <p className="truncate text-xs text-muted-foreground">{consultasLimit}</p>
+      </div>
+    </div>
+  </motion.div>
+));
+
+MotionCard.displayName = 'MotionCard';
+
 const ComboCardMini = ({
   title,
   consultasLimit,
@@ -76,53 +134,21 @@ const ComboCardMini = ({
   return (
     <HoverCard openDelay={200} closeDelay={100}>
       <HoverCardTrigger asChild>
-        <motion.div
-          whileHover={!locked ? { scale: 1.02 } : {}}
-          whileTap={!locked ? { scale: 0.98 } : {}}
-          onClick={!locked ? onSelect : undefined}
-          className={cn(
-            'relative cursor-pointer rounded-xl border p-3 transition-all duration-300',
-            locked && 'cursor-not-allowed opacity-60',
-            selected && !locked
-              ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-              : 'border-border/50 bg-card/50 hover:border-primary/50',
-          )}
-        >
-          {locked && (
-            <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-muted">
-              <Lock className="h-3 w-3 text-muted-foreground" />
-            </div>
-          )}
-
-          {selected && !locked && (
-            <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-              <Check className="h-3 w-3 text-primary-foreground" />
-            </div>
-          )}
-
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-              selected && !locked ? 'bg-primary/20' : 'bg-muted'
-            )}>
-              <Zap className={cn(
-                'h-4 w-4',
-                selected && !locked ? 'text-primary' : 'text-muted-foreground'
-              )} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h4 className="truncate text-sm font-semibold text-foreground">{title}</h4>
-              <p className="truncate text-xs text-muted-foreground">{consultasLimit}</p>
-            </div>
-          </div>
-        </motion.div>
+        <MotionCard
+          locked={locked}
+          selected={selected}
+          onSelect={onSelect}
+          title={title}
+          consultasLimit={consultasLimit}
+        />
       </HoverCardTrigger>
       
       {planDetails && (
         <HoverCardContent 
           side="left" 
-          align="start" 
-          className="w-72 p-4"
+          align="center"
+          collisionPadding={16}
+          className="w-72 p-4 z-[100]"
           sideOffset={8}
         >
           <div className="space-y-3">
