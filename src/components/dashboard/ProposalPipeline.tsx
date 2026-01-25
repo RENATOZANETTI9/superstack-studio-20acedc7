@@ -206,7 +206,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         color="bg-warning"
       />
       <PipelineColumn
-        title="Aprovado"
+        title="Aprovados"
         status="aprovada"
         proposals={proposals}
         icon={<CheckCircle className="h-5 w-5 text-white" />}
@@ -214,7 +214,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         onAction={onMarketingAction}
       />
       <PipelineColumn
-        title="Declinado"
+        title="Declinados"
         status="recusada"
         proposals={proposals}
         icon={<XCircle className="h-5 w-5 text-white" />}
