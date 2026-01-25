@@ -132,7 +132,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                 <>
                   <span className="flex-1 text-left">Usuários</span>
                   <ChevronDown className={cn(
-                    'h-4 w-4 transition-transform',
+                    'h-4 w-4 transition-transform duration-200',
                     usersOpen && 'rotate-180'
                   )} />
                 </>
@@ -140,29 +140,29 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
             </Button>
           </CollapsibleTrigger>
           {!collapsed && (
-            <CollapsibleContent className="space-y-1 pl-8 pt-1">
+            <CollapsibleContent className="space-y-1 pt-1">
               <Button
                 variant="ghost"
                 onClick={() => navigate('/dashboard/usuarios')}
                 className={cn(
-                  'w-full justify-start text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary'
+                  'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary font-medium'
                 )}
               >
-                <User className="mr-2 h-4 w-4" />
-                Usuários Comuns
+                <User className="h-4 w-4 shrink-0" />
+                <span>Usuários Comuns</span>
               </Button>
               {isMaster && (
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/dashboard/usuarios/master')}
                   className={cn(
-                    'w-full justify-start text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                    isActive('/dashboard/usuarios/master') && 'bg-sidebar-accent text-sidebar-primary'
+                    'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    isActive('/dashboard/usuarios/master') && 'bg-sidebar-accent text-sidebar-primary font-medium'
                   )}
                 >
-                  <Shield className="mr-2 h-4 w-4" />
-                  Gerenciar Usuários
+                  <Shield className="h-4 w-4 shrink-0" />
+                  <span>Gerenciar Usuários</span>
                 </Button>
               )}
             </CollapsibleContent>
