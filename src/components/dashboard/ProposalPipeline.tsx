@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CheckCircle, 
@@ -21,6 +22,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import ProposalDetailModal from './ProposalDetailModal';
 
 export interface Proposal {
   id: string;
@@ -44,6 +46,7 @@ interface PipelineColumnProps {
   color: string;
   tooltip?: string;
   onAction?: (proposalId: string, action: 'rcs' | 'email' | 'call') => void;
+  onViewDetails?: (proposal: Proposal) => void;
 }
 
 const PipelineColumn = ({ 
@@ -53,7 +56,8 @@ const PipelineColumn = ({
   icon, 
   color,
   tooltip,
-  onAction 
+  onAction,
+  onViewDetails
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
 
@@ -105,7 +109,12 @@ const PipelineColumn = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => onViewDetails?.(proposal)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -223,40 +232,59 @@ const PipelineColumn = ({
   );
 };
 
-interface ProposalPipelineProps {
+export interface ProposalPipelineProps {
   proposals: Proposal[];
   onMarketingAction?: (proposalId: string, action: 'rcs' | 'email' | 'call') => void;
 }
 
 const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProps) => {
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  const handleViewDetails = (proposal: Proposal) => {
+    setSelectedProposal(proposal);
+    setDetailModalOpen(true);
+  };
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      <PipelineColumn
-        title="Em Análise"
-        status="erro"
-        proposals={proposals}
-        icon={<AlertTriangle className="h-5 w-5 text-white" />}
-        color="bg-warning"
-        tooltip="A proposta está sendo analisada. O prazo de análise pode ser de até 24 horas."
+    <>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        <PipelineColumn
+          title="Em Análise"
+          status="erro"
+          proposals={proposals}
+          icon={<AlertTriangle className="h-5 w-5 text-white" />}
+          color="bg-warning"
+          tooltip="A proposta está sendo analisada. O prazo de análise pode ser de até 24 horas."
+          onViewDetails={handleViewDetails}
+        />
+        <PipelineColumn
+          title="Aprovados"
+          status="aprovada"
+          proposals={proposals}
+          icon={<CheckCircle className="h-5 w-5 text-white" />}
+          color="bg-success"
+          tooltip="Pacientes liberados para contratação do crédito. Já receberam RCS, Email Marketing e ligação via IA."
+          onAction={onMarketingAction}
+          onViewDetails={handleViewDetails}
+        />
+        <PipelineColumn
+          title="Declinados"
+          status="recusada"
+          proposals={proposals}
+          icon={<XCircle className="h-5 w-5 text-white" />}
+          color="bg-destructive"
+          tooltip="Proposta declinada. Fique tranquilo, a cada 30 dias realizamos novas consultas."
+          onViewDetails={handleViewDetails}
+        />
+      </div>
+
+      <ProposalDetailModal
+        proposal={selectedProposal}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
       />
-      <PipelineColumn
-        title="Aprovados"
-        status="aprovada"
-        proposals={proposals}
-        icon={<CheckCircle className="h-5 w-5 text-white" />}
-        color="bg-success"
-        tooltip="Pacientes liberados para contratação do crédito. Já receberam RCS, Email Marketing e ligação via IA."
-        onAction={onMarketingAction}
-      />
-      <PipelineColumn
-        title="Declinados"
-        status="recusada"
-        proposals={proposals}
-        icon={<XCircle className="h-5 w-5 text-white" />}
-        color="bg-destructive"
-        tooltip="Proposta declinada. Fique tranquilo, a cada 30 dias realizamos novas consultas."
-      />
-    </div>
+    </>
   );
 };
 
