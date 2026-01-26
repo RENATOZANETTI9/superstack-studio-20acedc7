@@ -193,9 +193,10 @@ const Consultas = () => {
         </div>
 
         {/* Main Content - Form, Info and Combos */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {/* Left Side - Consulta Form */}
-          <div className="lg:col-span-1 relative">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          {/* Left Side - Consulta Form (MAIOR DESTAQUE) */}
+          <div className="lg:col-span-2 relative">
+            <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 rounded-3xl blur-md animate-pulse" />
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-sm" />
             <div className="relative">
               <ConsultaForm 
@@ -206,57 +207,40 @@ const Consultas = () => {
             </div>
           </div>
 
-          {/* Middle - Consultation Info */}
+          {/* Middle - Consultation Info (COMPACTO) */}
           <div className="lg:col-span-2">
-            <div className="glass-card rounded-2xl p-6 h-full flex flex-col justify-center">
-              <div className="text-center space-y-6">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Clock className="h-8 w-8 text-primary" />
+            <div className="glass-card rounded-2xl p-4 h-full flex flex-col justify-center">
+              <div className="text-center space-y-3">
+                <div className="mx-auto w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-primary" />
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-bold text-foreground mb-2">
+                  <h3 className="text-base font-bold text-foreground mb-1">
                     Consulta em Andamento
                   </h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Após inserir o CPF do paciente, nossa análise será realizada automaticamente.
+                  <p className="text-xs text-muted-foreground">
+                    Após inserir o CPF, a análise será automática.
                   </p>
                 </div>
 
-                <div className="border-t border-border/50 pt-6">
-                  <p className="text-sm font-semibold text-foreground mb-4">
-                    Caso seja aprovado, serão enviados automaticamente:
+                <div className="border-t border-border/50 pt-3">
+                  <p className="text-xs font-semibold text-foreground mb-2">
+                    Se aprovado, enviamos automaticamente:
                   </p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex flex-col items-center p-4 rounded-xl bg-muted/30">
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-                        <MessageSquare className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-medium text-foreground text-sm">RCS</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Mensagem instantânea
-                      </span>
+                  <div className="flex justify-center gap-3">
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                      <MessageSquare className="h-4 w-4 text-primary mb-1" />
+                      <span className="text-xs font-medium text-foreground">RCS</span>
                     </div>
-
-                    <div className="flex flex-col items-center p-4 rounded-xl bg-muted/30">
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-                        <Mail className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-medium text-foreground text-sm">Email Marketing</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Campanha personalizada
-                      </span>
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                      <Mail className="h-4 w-4 text-primary mb-1" />
+                      <span className="text-xs font-medium text-foreground">Email</span>
                     </div>
-
-                    <div className="flex flex-col items-center p-4 rounded-xl bg-muted/30">
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-                        <Phone className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-medium text-foreground text-sm">Ligação via IA</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Falando sobre sua clínica
-                      </span>
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                      <Phone className="h-4 w-4 text-primary mb-1" />
+                      <span className="text-xs font-medium text-foreground">IA</span>
                     </div>
                   </div>
                 </div>
