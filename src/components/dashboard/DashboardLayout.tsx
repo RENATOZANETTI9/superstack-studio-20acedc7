@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AppSidebar from './AppSidebar';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,7 +12,15 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
+  const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Auto-collapse sidebar on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,11 +48,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       />
       <main
         className={cn(
-          'flex-1 transition-all duration-300',
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          'flex-1 transition-all duration-300 min-w-0',
+          isMobile ? 'ml-0' : (sidebarCollapsed ? 'ml-16' : 'ml-64')
         )}
       >
-        <div className="p-6">
+        <div className={cn(
+          'p-3 sm:p-4 md:p-6',
+          isMobile && 'pb-20'
+        )}>
           {children}
         </div>
       </main>

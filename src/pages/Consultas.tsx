@@ -8,6 +8,7 @@ import FloatingChatButton from '@/components/FloatingChatButton';
 import { toast } from 'sonner';
 import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Product {
   id: string;
@@ -23,6 +24,7 @@ const Consultas = () => {
   const [consultasRestantes, setConsultasRestantes] = useState(50);
   const [gatilhosRestantes, setGatilhosRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const isMobile = useIsMobile();
 
   const products: Product[] = [
     {
@@ -97,7 +99,6 @@ const Consultas = () => {
           const currentActions = p.marketingActions || { rcs: false, email: false, call: false };
           const newValue = !currentActions[action];
           
-          // Só decrementa o contador quando está ativando uma ação (enviando)
           if (newValue) {
             const actionNames = { rcs: 'RCS', email: 'Email', call: 'Ligação IA' };
             toast.success(`${actionNames[action]} enviado para ${p.name}!`);
@@ -124,11 +125,14 @@ const Consultas = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
+        className={cn("space-y-4 sm:space-y-6", isMobile && "mt-14")}
       >
-        {/* Products Header */}
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex flex-wrap gap-3">
+        {/* Products Header - Horizontal scroll on mobile */}
+        <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+          <div className={cn(
+            "flex gap-2 sm:gap-3",
+            isMobile && "overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
+          )}>
             {products.map((product) => {
               const Icon = product.icon;
               const isSelected = selectedProduct === product.id;
@@ -144,7 +148,7 @@ const Consultas = () => {
                     }
                   }}
                   className={cn(
-                    'flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-300',
+                    'flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl border px-3 py-2 sm:px-4 sm:py-3 transition-all duration-300 shrink-0',
                     isSelected && product.active
                       ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
                       : 'border-border/50 bg-card/50 hover:border-primary/30',
@@ -152,35 +156,35 @@ const Consultas = () => {
                   )}
                 >
                   <div className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-lg',
+                    'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg',
                     isSelected && product.active ? 'bg-primary/20' : 'bg-muted'
                   )}>
                     <Icon className={cn(
-                      'h-5 w-5',
+                      'h-4 w-4 sm:h-5 sm:w-5',
                       isSelected && product.active ? 'text-primary' : 'text-muted-foreground'
                     )} />
                   </div>
                   <div className="text-left">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       <span className={cn(
-                        'font-semibold',
+                        'font-semibold text-sm sm:text-base whitespace-nowrap',
                         isSelected && product.active ? 'text-primary' : 'text-foreground'
                       )}>
                         {product.title}
                       </span>
                       {product.active ? (
-                        <span className="flex items-center gap-1 rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-500">
-                          <Check className="h-3 w-3" />
-                          Ativo
+                        <span className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-green-500/20 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-green-500">
+                          <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span className="hidden sm:inline">Ativo</span>
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          Em breve
+                        <span className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-muted px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-muted-foreground">
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span className="hidden sm:inline">Em breve</span>
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">{product.description}</span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{product.description}</span>
                   </div>
                 </button>
               );
@@ -190,18 +194,25 @@ const Consultas = () => {
 
         {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Consulte o CPF do Paciente e visualize os resultados
           </p>
         </div>
 
-        {/* Main Content - Form, Info and Combos */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* Left Side - Consulta Form (MAIOR DESTAQUE) */}
-          <div className="lg:col-span-2 relative">
-            <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 rounded-3xl blur-md animate-pulse" />
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-sm" />
+        {/* Main Content - Stack on mobile, grid on desktop */}
+        <div className={cn(
+          "grid gap-4 sm:gap-6",
+          isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-5"
+        )}>
+          {/* Consulta Form - Full width on mobile */}
+          <div className={cn(isMobile ? "order-1" : "lg:col-span-2 relative")}>
+            {!isMobile && (
+              <>
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 rounded-3xl blur-md animate-pulse" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-sm" />
+              </>
+            )}
             <div className="relative">
               <ConsultaForm 
                 onConsulta={handleConsulta}
@@ -211,80 +222,89 @@ const Consultas = () => {
             </div>
           </div>
 
-          {/* Middle - Consultation Info (COMPACTO) */}
-          <div className="lg:col-span-2">
-            <div className="glass-card rounded-2xl p-4 h-full flex flex-col justify-center">
-              <div className="text-center space-y-3">
-                <div className="mx-auto w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-primary" />
-                </div>
-                
-                <div>
-                  <h3 className="text-base font-bold text-foreground mb-1">
-                    Consulta em Andamento
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Após inserir o CPF, a análise será automática.
-                  </p>
-                </div>
-
-                <div className="border-t border-border/50 pt-3">
-                  <p className="text-xs font-semibold text-foreground mb-2">
-                    Se aprovado, enviamos automaticamente:
-                  </p>
+          {/* Middle Info - Hidden on mobile, shown on desktop */}
+          {!isMobile && (
+            <div className="lg:col-span-2">
+              <div className="glass-card rounded-2xl p-4 h-full flex flex-col justify-center">
+                <div className="text-center space-y-3">
+                  <div className="mx-auto w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-primary" />
+                  </div>
                   
-                  <div className="flex justify-center gap-3">
-                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                      <MessageSquare className="h-4 w-4 text-primary mb-1" />
-                      <span className="text-xs font-medium text-foreground">RCS</span>
-                    </div>
-                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                      <Mail className="h-4 w-4 text-primary mb-1" />
-                      <span className="text-xs font-medium text-foreground">Email</span>
-                    </div>
-                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                      <Phone className="h-4 w-4 text-primary mb-1" />
-                      <span className="text-xs font-medium text-foreground">IA</span>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground mb-1">
+                      Consulta em Andamento
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Após inserir o CPF, a análise será automática.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-border/50 pt-3">
+                    <p className="text-xs font-semibold text-foreground mb-2">
+                      Se aprovado, enviamos automaticamente:
+                    </p>
+                    
+                    <div className="flex justify-center gap-3">
+                      <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                        <MessageSquare className="h-4 w-4 text-primary mb-1" />
+                        <span className="text-xs font-medium text-foreground">RCS</span>
+                      </div>
+                      <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                        <Mail className="h-4 w-4 text-primary mb-1" />
+                        <span className="text-xs font-medium text-foreground">Email</span>
+                      </div>
+                      <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                        <Phone className="h-4 w-4 text-primary mb-1" />
+                        <span className="text-xs font-medium text-foreground">IA</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Right Side - Combos */}
-          <div className="lg:col-span-1">
-            <div className="glass-card rounded-2xl p-4 space-y-3">
+          {/* Combos - Horizontal scroll on mobile */}
+          <div className={cn(isMobile ? "order-2" : "lg:col-span-1")}>
+            <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">
                 Planos Disponíveis
               </h3>
-              {combos.map((combo, index) => (
-                <ComboCardMini
-                  key={combo.title}
-                  title={combo.title}
-                  consultasLimit={combo.consultasLimit}
-                  active={combo.active}
-                  locked={combo.locked}
-                  selected={selectedCombo === index + 1 && !combo.locked}
-                  onSelect={() => {
-                    if (!combo.locked) {
-                      setSelectedCombo(index + 1);
-                      if (index === 0) {
-                        setConsultasRestantes(50);
-                      }
-                    } else {
-                      toast.info('Este plano requer aprovação cadastral.');
-                    }
-                  }}
-                />
-              ))}
+              <div className={cn(
+                isMobile 
+                  ? "flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide" 
+                  : "space-y-3"
+              )}>
+                {combos.map((combo, index) => (
+                  <div key={combo.title} className={cn(isMobile && "shrink-0 w-36")}>
+                    <ComboCardMini
+                      title={combo.title}
+                      consultasLimit={combo.consultasLimit}
+                      active={combo.active}
+                      locked={combo.locked}
+                      selected={selectedCombo === index + 1 && !combo.locked}
+                      onSelect={() => {
+                        if (!combo.locked) {
+                          setSelectedCombo(index + 1);
+                          if (index === 0) {
+                            setConsultasRestantes(50);
+                          }
+                        } else {
+                          toast.info('Este plano requer aprovação cadastral.');
+                        }
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
               
               {/* Info about selected combo */}
-              <div className="mt-4 rounded-lg bg-primary/10 p-3">
+              <div className="mt-3 sm:mt-4 rounded-lg bg-primary/10 p-2 sm:p-3">
                 <p className="text-xs text-primary font-medium">
                   {combos[selectedCombo - 1].title} ativo
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
                   {consultasRestantes} consultas restantes
                 </p>
               </div>
@@ -292,9 +312,9 @@ const Consultas = () => {
           </div>
         </div>
 
-        {/* Pipeline Section - Bottom */}
-        <div className="glass-card rounded-2xl p-6">
-          <h3 className="mb-4 text-xl font-bold text-foreground">
+        {/* Pipeline Section */}
+        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6">
+          <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-foreground">
             Pipeline de Propostas
           </h3>
           {proposals.length > 0 ? (
@@ -303,12 +323,12 @@ const Consultas = () => {
               onMarketingAction={handleMarketingAction}
             />
           ) : (
-            <div className="flex h-48 items-center justify-center text-center">
+            <div className="flex h-32 sm:h-48 items-center justify-center text-center">
               <div>
-                <p className="text-lg font-medium text-muted-foreground">
+                <p className="text-base sm:text-lg font-medium text-muted-foreground">
                   Nenhuma proposta no pipeline
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   As propostas aparecerão aqui após as consultas
                 </p>
               </div>
