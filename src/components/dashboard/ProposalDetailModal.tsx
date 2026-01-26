@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, Edit } from 'lucide-react';
+import { ExternalLink, Edit, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -35,9 +39,9 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
   banco: 'uy3',
   status: proposal.status === 'aprovada' ? 'ok' : proposal.status === 'erro' ? 'pendente' : 'erro',
   origem: 'SITE',
-  valorFinanciado: proposal.value || 3510.78,
-  valorLiquido: (proposal.value || 3510.78) * 0.82,
-  valorParcela: (proposal.value || 3510.78) / 7.5,
+  valorFinanciado: proposal.value || 1032.54,
+  valorLiquido: (proposal.value || 1032.54) * 0.82,
+  valorParcela: (proposal.value || 1032.54) / 7.6,
   prazo: 12,
   taxaMensal: 0.09,
   cetMensal: 0.09,
@@ -46,6 +50,10 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
 });
 
 const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailModalProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
+  const [newValue, setNewValue] = useState('');
+
   if (!proposal) return null;
 
   const bankStatus = getMockBankStatus(proposal);
@@ -65,8 +73,43 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
     }
   };
 
+  const handleStartEditing = () => {
+    setIsEditing(true);
+    setNewValue(calculationType === 'liquido' 
+      ? bankStatus.valorLiquido.toFixed(2) 
+      : bankStatus.valorParcela.toFixed(2)
+    );
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setNewValue('');
+  };
+
+  const handleReenviar = () => {
+    // Here you would implement the API call to update the proposal
+    console.log('Reenviar proposta com:', { calculationType, newValue });
+    setIsEditing(false);
+    setNewValue('');
+    onOpenChange(false);
+  };
+
+  const handleCalculationTypeChange = (value: 'liquido' | 'parcela') => {
+    setCalculationType(value);
+    setNewValue(value === 'liquido' 
+      ? bankStatus.valorLiquido.toFixed(2) 
+      : bankStatus.valorParcela.toFixed(2)
+    );
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(value) => {
+      if (!value) {
+        setIsEditing(false);
+        setNewValue('');
+      }
+      onOpenChange(value);
+    }}>
       <DialogContent className="glass-card border-border/50 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-foreground">
@@ -106,6 +149,57 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
               <p className="text-primary font-bold">{formatCurrency(bankStatus.valorParcela)}</p>
             </div>
           </div>
+
+          {/* Edit Section */}
+          <AnimatePresence>
+            {isEditing && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="glass-card rounded-xl p-4 space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-foreground mb-3 block">
+                      Escolha o tipo de cálculo:
+                    </Label>
+                    <RadioGroup
+                      value={calculationType}
+                      onValueChange={(value) => handleCalculationTypeChange(value as 'liquido' | 'parcela')}
+                      className="flex gap-6"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="liquido" id="liquido" />
+                        <Label htmlFor="liquido" className="text-sm text-foreground cursor-pointer">
+                          Valor Líquido
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="parcela" id="parcela" />
+                        <Label htmlFor="parcela" className="text-sm text-foreground cursor-pointer">
+                          Valor Parcela
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">
+                      {calculationType === 'liquido' ? 'Novo Valor Líquido:' : 'Novo Valor Parcela:'}
+                    </Label>
+                    <Input
+                      type="text"
+                      value={newValue}
+                      onChange={(e) => setNewValue(e.target.value)}
+                      placeholder="0,00"
+                      className="max-w-xs bg-background/50"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Row 3: Prazo, Taxas */}
           <div className="grid grid-cols-3 gap-6">
@@ -147,12 +241,24 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
             </div>
           </div>
 
-          {/* Alterar Valores Button */}
+          {/* Action Buttons */}
           <div className="pt-4 border-t border-border/50">
-            <Button variant="outline" className="gap-2">
-              <Edit className="h-4 w-4" />
-              Alterar Valores
-            </Button>
+            {!isEditing ? (
+              <Button variant="outline" className="gap-2" onClick={handleStartEditing}>
+                <Edit className="h-4 w-4" />
+                Alterar Valores
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancelar
+                </Button>
+                <Button className="gap-2 bg-primary hover:bg-primary/90" onClick={handleReenviar}>
+                  <Send className="h-4 w-4" />
+                  Reenviar Proposta
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
