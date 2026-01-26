@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, 
   XCircle, 
@@ -10,7 +10,8 @@ import {
   Eye,
   FileText,
   Send,
-  Info
+  Info,
+  ChevronRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -228,6 +229,8 @@ export interface ProposalPipelineProps {
 const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProps) => {
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
   const handleViewDetails = (proposal: Proposal) => {
@@ -235,43 +238,100 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
     setDetailModalOpen(true);
   };
 
+  // Hide scroll hint after user scrolls
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !isMobile) return;
+
+    const handleScroll = () => {
+      if (container.scrollLeft > 20) {
+        setShowScrollHint(false);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [isMobile]);
+
+  // Auto-hide hint after 5 seconds
+  useEffect(() => {
+    if (!isMobile) return;
+    const timer = setTimeout(() => setShowScrollHint(false), 5000);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
+
   return (
     <>
-      <div className={cn(
-        "flex gap-3 sm:gap-4 overflow-x-auto pb-3 sm:pb-4 -mx-2 px-2",
-        isMobile && "scrollbar-hide"
-      )}>
-        <PipelineColumn
-          title="Em Análise"
-          status="erro"
-          proposals={proposals}
-          icon={<AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
-          color="bg-warning"
-          tooltip="A proposta está sendo analisada. O prazo de análise pode ser de até 24 horas."
-          onViewDetails={handleViewDetails}
-          isMobile={isMobile}
-        />
-        <PipelineColumn
-          title="Aprovados"
-          status="aprovada"
-          proposals={proposals}
-          icon={<CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
-          color="bg-success"
-          tooltip="Pacientes liberados para contratação do crédito. Já receberam RCS, Email Marketing e ligação via IA."
-          onAction={onMarketingAction}
-          onViewDetails={handleViewDetails}
-          isMobile={isMobile}
-        />
-        <PipelineColumn
-          title="Declinados"
-          status="recusada"
-          proposals={proposals}
-          icon={<XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
-          color="bg-destructive"
-          tooltip="Proposta declinada. Fique tranquilo, a cada 30 dias realizamos novas consultas."
-          onViewDetails={handleViewDetails}
-          isMobile={isMobile}
-        />
+      <div className="relative">
+        {/* Scroll container */}
+        <div 
+          ref={scrollContainerRef}
+          className={cn(
+            "flex gap-3 sm:gap-4 overflow-x-auto pb-3 sm:pb-4 -mx-2 px-2",
+            isMobile && "scrollbar-hide"
+          )}
+        >
+          <PipelineColumn
+            title="Em Análise"
+            status="erro"
+            proposals={proposals}
+            icon={<AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
+            color="bg-warning"
+            tooltip="A proposta está sendo analisada. O prazo de análise pode ser de até 24 horas."
+            onViewDetails={handleViewDetails}
+            isMobile={isMobile}
+          />
+          <PipelineColumn
+            title="Aprovados"
+            status="aprovada"
+            proposals={proposals}
+            icon={<CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
+            color="bg-success"
+            tooltip="Pacientes liberados para contratação do crédito. Já receberam RCS, Email Marketing e ligação via IA."
+            onAction={onMarketingAction}
+            onViewDetails={handleViewDetails}
+            isMobile={isMobile}
+          />
+          <PipelineColumn
+            title="Declinados"
+            status="recusada"
+            proposals={proposals}
+            icon={<XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
+            color="bg-destructive"
+            tooltip="Proposta declinada. Fique tranquilo, a cada 30 dias realizamos novas consultas."
+            onViewDetails={handleViewDetails}
+            isMobile={isMobile}
+          />
+        </div>
+
+        {/* Scroll hint indicator for mobile */}
+        <AnimatePresence>
+          {isMobile && showScrollHint && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"
+            >
+              {/* Gradient fade */}
+              <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background to-transparent" />
+              
+              {/* Animated arrow indicator */}
+              <motion.div
+                animate={{ x: [0, 8, 0] }}
+                transition={{ 
+                  repeat: Infinity, 
+                  duration: 1.5,
+                  ease: "easeInOut"
+                }}
+                className="relative flex items-center gap-1 bg-primary/90 text-primary-foreground px-2 py-1.5 rounded-l-lg shadow-lg"
+              >
+                <span className="text-[10px] font-medium whitespace-nowrap">Arraste</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <ProposalDetailModal
