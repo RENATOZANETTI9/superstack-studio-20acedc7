@@ -12,9 +12,10 @@ const cpfSchema = z.string().regex(/^\d{11}$/, 'CPF deve conter 11 dígitos');
 interface ConsultaFormProps {
   onConsulta: (cpfs: string[]) => void;
   consultasRestantes: number;
+  gatilhosRestantes?: number;
 }
 
-const ConsultaForm = ({ onConsulta, consultasRestantes }: ConsultaFormProps) => {
+const ConsultaForm = ({ onConsulta, consultasRestantes, gatilhosRestantes = 50 }: ConsultaFormProps) => {
   const [cpf, setCpf] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,11 +54,21 @@ const ConsultaForm = ({ onConsulta, consultasRestantes }: ConsultaFormProps) => 
 
   return (
     <div className="glass-card rounded-2xl p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h3 className="text-xl font-bold text-foreground">Nova Consulta</h3>
-        <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2">
-          <span className="text-sm text-muted-foreground">Restantes:</span>
-          <span className="text-lg font-bold text-primary">{consultasRestantes}</span>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-foreground">Nova Consulta</h3>
+        </div>
+        
+        {/* Credits Section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between rounded-lg bg-primary/10 px-4 py-2">
+            <span className="text-sm text-muted-foreground">Consultas:</span>
+            <span className="text-lg font-bold text-primary">{consultasRestantes}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-secondary/10 px-4 py-2">
+            <span className="text-sm text-muted-foreground">Gatilhos Marketing:</span>
+            <span className="text-lg font-bold text-secondary">{gatilhosRestantes}</span>
+          </div>
         </div>
       </div>
 
@@ -67,7 +78,7 @@ const ConsultaForm = ({ onConsulta, consultasRestantes }: ConsultaFormProps) => 
         className="space-y-4"
       >
         <div className="space-y-2">
-          <Label htmlFor="cpf">CPF do Cliente</Label>
+          <Label htmlFor="cpf">CPF do Paciente</Label>
           <Input
             id="cpf"
             type="text"

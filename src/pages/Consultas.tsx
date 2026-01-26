@@ -26,7 +26,7 @@ const Consultas = () => {
     {
       id: 'credito-clt',
       title: 'Help CLT',
-      description: '+43 milhões de público',
+      description: '+43 milhões de público • Gatilhos de Marketing inclusos',
       icon: CreditCard,
       active: true,
     },
@@ -188,11 +188,11 @@ const Consultas = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
           <p className="text-muted-foreground">
-            Consulte o CPF do cliente e visualize os resultados
+            Consulte o CPF do Paciente e visualize os resultados
           </p>
         </div>
 
-        {/* Main Content - Form, Results and Combos */}
+        {/* Main Content - Form and Combos */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Left Side - Consulta Form */}
           <div className="lg:col-span-1 relative">
@@ -201,60 +201,30 @@ const Consultas = () => {
               <ConsultaForm 
                 onConsulta={handleConsulta}
                 consultasRestantes={consultasRestantes}
+                gatilhosRestantes={consultasRestantes}
               />
             </div>
           </div>
 
-          {/* Middle - Results */}
+          {/* Middle - Pipeline (expanded) */}
           <div className="lg:col-span-2">
             <div className="glass-card rounded-2xl p-6 h-full">
               <h3 className="mb-4 text-xl font-bold text-foreground">
-                Resultados das Consultas
+                Pipeline de Propostas
               </h3>
               {proposals.length > 0 ? (
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {proposals.slice(0, 5).map((proposal) => (
-                    <div 
-                      key={proposal.id}
-                      className={cn(
-                        'flex items-center justify-between rounded-lg border p-3',
-                        proposal.status === 'aprovada' && 'border-green-500/30 bg-green-500/5',
-                        proposal.status === 'recusada' && 'border-red-500/30 bg-red-500/5',
-                        proposal.status === 'erro' && 'border-yellow-500/30 bg-yellow-500/5'
-                      )}
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{proposal.name}</p>
-                        <p className="text-sm text-muted-foreground">{proposal.cpf}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={cn(
-                          'inline-block rounded-full px-2 py-1 text-xs font-medium',
-                          proposal.status === 'aprovada' && 'bg-green-500/20 text-green-500',
-                          proposal.status === 'recusada' && 'bg-red-500/20 text-red-500',
-                          proposal.status === 'erro' && 'bg-yellow-500/20 text-yellow-500'
-                        )}>
-                          {proposal.status === 'aprovada' && 'Aprovada'}
-                          {proposal.status === 'recusada' && 'Declinado'}
-                          {proposal.status === 'erro' && 'Em Análise'}
-                        </span>
-                        {proposal.value && (
-                          <p className="text-sm font-semibold text-green-500 mt-1">
-                            R$ {proposal.value.toLocaleString('pt-BR')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ProposalPipeline 
+                  proposals={proposals}
+                  onMarketingAction={handleMarketingAction}
+                />
               ) : (
                 <div className="flex h-64 items-center justify-center text-center">
                   <div>
                     <p className="text-lg font-medium text-muted-foreground">
-                      Nenhuma consulta realizada ainda
+                      Nenhuma proposta no pipeline
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Faça sua primeira consulta para ver os resultados aqui
+                      As propostas aparecerão aqui após as consultas
                     </p>
                   </div>
                 </div>
@@ -302,29 +272,6 @@ const Consultas = () => {
           </div>
         </div>
 
-        {/* Pipeline Section - Bottom */}
-        <div className="glass-card rounded-2xl p-6">
-          <h3 className="mb-4 text-xl font-bold text-foreground">
-            Pipeline de Propostas
-          </h3>
-          {proposals.length > 0 ? (
-            <ProposalPipeline 
-              proposals={proposals}
-              onMarketingAction={handleMarketingAction}
-            />
-          ) : (
-            <div className="flex h-48 items-center justify-center text-center">
-              <div>
-                <p className="text-lg font-medium text-muted-foreground">
-                  Nenhuma proposta no pipeline
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  As propostas aparecerão aqui após as consultas
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
       </motion.div>
     </DashboardLayout>
   );
