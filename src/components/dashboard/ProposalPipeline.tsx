@@ -324,10 +324,9 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
                   duration: 1.5,
                   ease: "easeInOut"
                 }}
-                className="relative flex items-center gap-1 bg-primary/90 text-primary-foreground px-2 py-1.5 rounded-l-lg shadow-lg"
+                className="relative flex items-center bg-primary/90 text-primary-foreground p-2 rounded-l-lg shadow-lg"
               >
-                <span className="text-[10px] font-medium whitespace-nowrap">Arraste</span>
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-4 w-4" />
               </motion.div>
             </motion.div>
           )}
