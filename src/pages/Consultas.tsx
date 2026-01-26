@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ConsultaForm from '@/components/dashboard/ConsultaForm';
 import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipeline';
 import ComboCardMini from '@/components/dashboard/ComboCardMini';
+import FloatingChatButton from '@/components/FloatingChatButton';
 import { toast } from 'sonner';
 import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -315,6 +316,8 @@ const Consultas = () => {
           )}
         </div>
 
+        {/* Floating Chat Button */}
+        <FloatingChatButton />
       </motion.div>
     </DashboardLayout>
   );
