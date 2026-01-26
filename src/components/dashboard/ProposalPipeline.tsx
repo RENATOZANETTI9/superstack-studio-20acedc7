@@ -7,7 +7,8 @@ import {
   Mail, 
   Phone,
   MoreVertical,
-  Send
+  Send,
+  Info
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 export interface Proposal {
@@ -40,6 +47,7 @@ interface PipelineColumnProps {
   proposals: Proposal[];
   icon: React.ReactNode;
   color: string;
+  tooltip?: string;
   onAction?: (proposalId: string, action: 'rcs' | 'email' | 'call') => void;
 }
 
@@ -49,6 +57,7 @@ const PipelineColumn = ({
   proposals, 
   icon, 
   color,
+  tooltip,
   onAction 
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
@@ -60,8 +69,22 @@ const PipelineColumn = ({
         <div className={cn('rounded-lg p-2', color)}>
           {icon}
         </div>
-        <div>
-          <h3 className="font-semibold text-foreground">{title}</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-1">
+            <h3 className="font-semibold text-foreground">{title}</h3>
+            {tooltip && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="text-xs">{tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
             {filteredProposals.length} proposta{filteredProposals.length !== 1 ? 's' : ''}
           </p>
@@ -204,6 +227,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         proposals={proposals}
         icon={<AlertTriangle className="h-5 w-5 text-white" />}
         color="bg-warning"
+        tooltip="A proposta está sendo analisada. O prazo de análise pode ser de até 24 horas."
       />
       <PipelineColumn
         title="Aprovados"
@@ -211,6 +235,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         proposals={proposals}
         icon={<CheckCircle className="h-5 w-5 text-white" />}
         color="bg-success"
+        tooltip="Pacientes liberados para contratação do crédito. Já receberam RCS, Email Marketing e ligação via IA."
         onAction={onMarketingAction}
       />
       <PipelineColumn
