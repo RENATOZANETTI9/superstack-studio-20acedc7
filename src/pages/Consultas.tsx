@@ -269,7 +269,7 @@ const Consultas = () => {
           <div className={cn(isMobile ? "order-2" : "lg:col-span-1")}>
             <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">
-                Planos Disponíveis
+                Níveis Disponíveis
               </h3>
               <div className={cn(
                 isMobile 
