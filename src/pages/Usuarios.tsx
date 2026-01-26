@@ -107,11 +107,6 @@ const Usuarios = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (isMaster) {
-      loadUsers();
-    }
-  }, [isMaster]);
 
   const loadUsers = async () => {
     setLoadingUsers(true);
@@ -205,21 +200,10 @@ const Usuarios = () => {
   const regularUsers = filteredUsers.filter(u => u.role !== 'admin');
   const masterUsers = filteredUsers.filter(u => u.role === 'admin');
 
-  if (!isMaster) {
-    return (
-      <DashboardLayout>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="text-center">
-            <Shield className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 className="mb-2 text-2xl font-bold text-foreground">Acesso Restrito</h2>
-            <p className="text-muted-foreground">
-              Apenas usuários Master podem gerenciar usuários.
-            </p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Carrega usuários para todos os usuários autenticados
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   return (
     <DashboardLayout>
