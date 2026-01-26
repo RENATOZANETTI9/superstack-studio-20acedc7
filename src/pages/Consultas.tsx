@@ -5,7 +5,7 @@ import ConsultaForm from '@/components/dashboard/ConsultaForm';
 import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipeline';
 import ComboCardMini from '@/components/dashboard/ComboCardMini';
 import { toast } from 'sonner';
-import { CreditCard, FileText, RefreshCw, Check, Clock } from 'lucide-react';
+import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Product {
@@ -192,7 +192,7 @@ const Consultas = () => {
           </p>
         </div>
 
-        {/* Main Content - Form and Combos */}
+        {/* Main Content - Form, Info and Combos */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Left Side - Consulta Form */}
           <div className="lg:col-span-1 relative">
@@ -206,29 +206,61 @@ const Consultas = () => {
             </div>
           </div>
 
-          {/* Middle - Pipeline (expanded) */}
+          {/* Middle - Consultation Info */}
           <div className="lg:col-span-2">
-            <div className="glass-card rounded-2xl p-6 h-full">
-              <h3 className="mb-4 text-xl font-bold text-foreground">
-                Pipeline de Propostas
-              </h3>
-              {proposals.length > 0 ? (
-                <ProposalPipeline 
-                  proposals={proposals}
-                  onMarketingAction={handleMarketingAction}
-                />
-              ) : (
-                <div className="flex h-64 items-center justify-center text-center">
-                  <div>
-                    <p className="text-lg font-medium text-muted-foreground">
-                      Nenhuma proposta no pipeline
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      As propostas aparecerão aqui após as consultas
-                    </p>
+            <div className="glass-card rounded-2xl p-6 h-full flex flex-col justify-center">
+              <div className="text-center space-y-6">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Clock className="h-8 w-8 text-primary" />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">
+                    Consulta em Andamento
+                  </h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Após inserir o CPF do paciente, nossa análise será realizada automaticamente.
+                  </p>
+                </div>
+
+                <div className="border-t border-border/50 pt-6">
+                  <p className="text-sm font-semibold text-foreground mb-4">
+                    Caso seja aprovado, serão enviados automaticamente:
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex flex-col items-center p-4 rounded-xl bg-muted/30">
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-medium text-foreground text-sm">RCS</span>
+                      <span className="text-xs text-muted-foreground text-center mt-1">
+                        Mensagem instantânea
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center p-4 rounded-xl bg-muted/30">
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
+                        <Mail className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-medium text-foreground text-sm">Email Marketing</span>
+                      <span className="text-xs text-muted-foreground text-center mt-1">
+                        Campanha personalizada
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center p-4 rounded-xl bg-muted/30">
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
+                        <Phone className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-medium text-foreground text-sm">Ligação via IA</span>
+                      <span className="text-xs text-muted-foreground text-center mt-1">
+                        Falando sobre sua clínica
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -270,6 +302,30 @@ const Consultas = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Pipeline Section - Bottom */}
+        <div className="glass-card rounded-2xl p-6">
+          <h3 className="mb-4 text-xl font-bold text-foreground">
+            Pipeline de Propostas
+          </h3>
+          {proposals.length > 0 ? (
+            <ProposalPipeline 
+              proposals={proposals}
+              onMarketingAction={handleMarketingAction}
+            />
+          ) : (
+            <div className="flex h-48 items-center justify-center text-center">
+              <div>
+                <p className="text-lg font-medium text-muted-foreground">
+                  Nenhuma proposta no pipeline
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  As propostas aparecerão aqui após as consultas
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
       </motion.div>
