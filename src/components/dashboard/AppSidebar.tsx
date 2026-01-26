@@ -9,7 +9,10 @@ import {
   Shield,
   User,
   Menu,
-  X
+  X,
+  Key,
+  GitBranch,
+  UserCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -126,11 +129,11 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                     variant="ghost"
                     className={cn(
                       'w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      (isActive('/dashboard/usuarios') || isActive('/dashboard/usuarios/master')) && 'bg-sidebar-accent text-sidebar-primary'
+                      (location.pathname.startsWith('/dashboard/usuarios')) && 'bg-sidebar-accent text-sidebar-primary'
                     )}
                   >
                     <Users className="h-6 w-6 shrink-0" />
-                    <span className="flex-1 text-left">Usuários</span>
+                    <span className="flex-1 text-left">Gestão de Usuários</span>
                     <ChevronDown className={cn(
                       'h-5 w-5 transition-transform duration-200',
                       usersOpen && 'rotate-180'
@@ -140,28 +143,37 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                 <CollapsibleContent className="space-y-1 pt-1">
                   <Button
                     variant="ghost"
-                    onClick={() => handleNavigate('/dashboard/usuarios')}
+                    onClick={() => handleNavigate('/dashboard/usuarios/permissoes')}
                     className={cn(
                       'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary font-medium'
+                      isActive('/dashboard/usuarios/permissoes') && 'bg-sidebar-accent text-sidebar-primary font-medium'
                     )}
                   >
-                    <User className="h-5 w-5 shrink-0" />
-                    <span>Usuários Comuns</span>
+                    <Key className="h-5 w-5 shrink-0" />
+                    <span>Permissões</span>
                   </Button>
-                  {isMaster && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleNavigate('/dashboard/usuarios/master')}
-                      className={cn(
-                        'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                        isActive('/dashboard/usuarios/master') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                      )}
-                    >
-                      <Shield className="h-5 w-5 shrink-0" />
-                      <span>Gerenciar Usuários</span>
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/dashboard/usuarios/hierarquias')}
+                    className={cn(
+                      'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                      isActive('/dashboard/usuarios/hierarquias') && 'bg-sidebar-accent text-sidebar-primary font-medium'
+                    )}
+                  >
+                    <GitBranch className="h-5 w-5 shrink-0" />
+                    <span>Hierarquias</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/dashboard/usuarios/lista')}
+                    className={cn(
+                      'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                      isActive('/dashboard/usuarios/lista') && 'bg-sidebar-accent text-sidebar-primary font-medium'
+                    )}
+                  >
+                    <UserCircle className="h-5 w-5 shrink-0" />
+                    <span>Usuários</span>
+                  </Button>
                 </CollapsibleContent>
               </Collapsible>
             </nav>
@@ -201,15 +213,15 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           ))}
           <Button
             variant="ghost"
-            onClick={() => handleNavigate('/dashboard/usuarios')}
+            onClick={() => handleNavigate('/dashboard/usuarios/lista')}
             className={cn(
               'flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
-              isActive('/dashboard/usuarios') && 'text-sidebar-primary'
+              location.pathname.startsWith('/dashboard/usuarios') && 'text-sidebar-primary'
             )}
           >
             <Users className={cn(
               'h-5 w-5',
-              isActive('/dashboard/usuarios') && 'text-primary'
+              location.pathname.startsWith('/dashboard/usuarios') && 'text-primary'
             )} />
             <span className="text-[10px]">Usuários</span>
           </Button>
@@ -292,14 +304,14 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
               variant="ghost"
               className={cn(
                 'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                (isActive('/dashboard/usuarios') || isActive('/dashboard/usuarios/master')) && 'bg-sidebar-accent text-sidebar-primary',
+                location.pathname.startsWith('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary',
                 collapsed && 'justify-center px-2'
               )}
             >
               <Users className="h-5 w-5 shrink-0" />
               {!collapsed && (
                 <>
-                  <span className="flex-1 text-left">Usuários</span>
+                  <span className="flex-1 text-left">Gestão de Usuários</span>
                   <ChevronDown className={cn(
                     'h-4 w-4 transition-transform duration-200',
                     usersOpen && 'rotate-180'
@@ -312,28 +324,37 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
             <CollapsibleContent className="space-y-1 pt-1">
               <Button
                 variant="ghost"
-                onClick={() => navigate('/dashboard/usuarios')}
+                onClick={() => navigate('/dashboard/usuarios/permissoes')}
                 className={cn(
                   'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary font-medium'
+                  isActive('/dashboard/usuarios/permissoes') && 'bg-sidebar-accent text-sidebar-primary font-medium'
                 )}
               >
-                <User className="h-4 w-4 shrink-0" />
-                <span>Usuários Comuns</span>
+                <Key className="h-4 w-4 shrink-0" />
+                <span>Permissões</span>
               </Button>
-              {isMaster && (
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/dashboard/usuarios/master')}
-                  className={cn(
-                    'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                    isActive('/dashboard/usuarios/master') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                  )}
-                >
-                  <Shield className="h-4 w-4 shrink-0" />
-                  <span>Gerenciar Usuários</span>
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/dashboard/usuarios/hierarquias')}
+                className={cn(
+                  'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/usuarios/hierarquias') && 'bg-sidebar-accent text-sidebar-primary font-medium'
+                )}
+              >
+                <GitBranch className="h-4 w-4 shrink-0" />
+                <span>Hierarquias</span>
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/dashboard/usuarios/lista')}
+                className={cn(
+                  'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/usuarios/lista') && 'bg-sidebar-accent text-sidebar-primary font-medium'
+                )}
+              >
+                <UserCircle className="h-4 w-4 shrink-0" />
+                <span>Usuários</span>
+              </Button>
             </CollapsibleContent>
           )}
         </Collapsible>
