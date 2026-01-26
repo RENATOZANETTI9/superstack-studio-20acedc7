@@ -244,6 +244,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         proposals={proposals}
         icon={<XCircle className="h-5 w-5 text-white" />}
         color="bg-destructive"
+        tooltip="Proposta declinada. Fique tranquilo, a cada 30 dias realizamos novas consultas."
       />
     </div>
   );
