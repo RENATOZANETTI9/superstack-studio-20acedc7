@@ -20,6 +20,7 @@ const Consultas = () => {
   const [selectedProduct, setSelectedProduct] = useState<string>('credito-clt');
   const [selectedCombo, setSelectedCombo] = useState<number>(1);
   const [consultasRestantes, setConsultasRestantes] = useState(50);
+  const [gatilhosRestantes, setGatilhosRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
 
   const products: Product[] = [
@@ -95,9 +96,11 @@ const Consultas = () => {
           const currentActions = p.marketingActions || { rcs: false, email: false, call: false };
           const newValue = !currentActions[action];
           
+          // Só decrementa o contador quando está ativando uma ação (enviando)
           if (newValue) {
             const actionNames = { rcs: 'RCS', email: 'Email', call: 'Ligação IA' };
             toast.success(`${actionNames[action]} enviado para ${p.name}!`);
+            setGatilhosRestantes(prev => Math.max(0, prev - 1));
           }
           
           return {
