@@ -81,7 +81,7 @@ const PipelineColumn = ({
               <div className="mb-2 flex items-start justify-between">
                 <div>
                   <p className="font-medium text-foreground">{proposal.name}</p>
-                  <p className="text-xs text-muted-foreground">CPF: {proposal.cpf}</p>
+                  <p className="text-xs text-muted-foreground">Paciente: {proposal.cpf}</p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
