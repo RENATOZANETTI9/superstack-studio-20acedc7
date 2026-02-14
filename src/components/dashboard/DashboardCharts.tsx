@@ -122,12 +122,10 @@ const DashboardCharts = ({ contractsByMonth, pipelineDistribution, marketingDist
                     data={pipelineDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={95}
+                    innerRadius={50}
+                    outerRadius={85}
                     paddingAngle={4}
                     dataKey="value"
-                    label={({ name, value }) => `${name} (${value})`}
-                    labelLine={false}
                   >
                     {pipelineDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -143,11 +141,11 @@ const DashboardCharts = ({ contractsByMonth, pipelineDistribution, marketingDist
             )}
           </div>
           {hasPipelineData && (
-            <div className="mt-2 flex flex-wrap justify-center gap-4">
+            <div className="mt-3 flex flex-wrap justify-center gap-3">
               {pipelineDistribution.map((item) => (
-                <div key={item.name} className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-xs text-muted-foreground">{item.name}</span>
+                <div key={item.name} className="flex items-center gap-1.5">
+                  <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                  <span className="text-xs text-muted-foreground">{item.name}: <span className="font-semibold text-foreground">{item.value}</span></span>
                 </div>
               ))}
             </div>
@@ -213,12 +211,10 @@ const DashboardCharts = ({ contractsByMonth, pipelineDistribution, marketingDist
                     data={marketingDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={95}
+                    innerRadius={50}
+                    outerRadius={85}
                     paddingAngle={4}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
                   >
                     {marketingDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -234,13 +230,17 @@ const DashboardCharts = ({ contractsByMonth, pipelineDistribution, marketingDist
             )}
           </div>
           {hasMarketingData && (
-            <div className="mt-2 flex flex-wrap justify-center gap-4">
-              {marketingDistribution.map((item) => (
-                <div key={item.name} className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-xs text-muted-foreground">{item.name}: {item.value}</span>
-                </div>
-              ))}
+            <div className="mt-3 flex flex-wrap justify-center gap-3">
+              {marketingDistribution.map((item) => {
+                const total = marketingDistribution.reduce((s, d) => s + d.value, 0);
+                const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                return (
+                  <div key={item.name} className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-muted-foreground">{item.name}: <span className="font-semibold text-foreground">{item.value}</span> ({pct}%)</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </motion.div>
