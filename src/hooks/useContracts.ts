@@ -52,7 +52,7 @@ export function useContracts() {
       link_generated_at: new Date().toISOString(),
       expired_at: undefined,
     } as any);
-    if (success) toast.success('Contrato regenerado com sucesso!');
+    if (success) toast.success('Crédito regenerado com sucesso!');
     return success;
   };
 

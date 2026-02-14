@@ -20,11 +20,11 @@ interface ColumnConfig {
 }
 
 const columns: ColumnConfig[] = [
-  { title: 'Aguardando Assinatura', status: 'AGUARDANDO_ASSINATURA', icon: <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-primary', tooltip: 'Contratos aguardando a assinatura do paciente. O link expira em 72h.' },
-  { title: 'Pendências Gerais', status: 'PENDENCIAS_GERAIS', icon: <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-warning', tooltip: 'Contratos com pendências após início do processo de assinatura.' },
-  { title: 'Contrato Pago', status: 'PAGO', icon: <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-success', tooltip: 'Contratos finalizados e pagos com sucesso.' },
-  { title: 'Contrato Expirado', status: 'EXPIRADO', icon: <TimerOff className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-muted-foreground', tooltip: 'Contratos expirados (72h sem assinatura). Podem ser regenerados.' },
-  { title: 'Contrato Cancelado', status: 'CANCELADO', icon: <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-destructive', tooltip: 'Contratos cancelados pelo banco ou fundo.' },
+  { title: 'Aguardando Assinatura', status: 'AGUARDANDO_ASSINATURA', icon: <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-primary', tooltip: 'Créditos aguardando a assinatura do paciente. O link expira em 72h.' },
+  { title: 'Pendências Gerais', status: 'PENDENCIAS_GERAIS', icon: <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-warning', tooltip: 'Créditos com pendências após início do processo de assinatura.' },
+  { title: 'Crédito Pago', status: 'PAGO', icon: <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-success', tooltip: 'Créditos finalizados e pagos com sucesso.' },
+  { title: 'Crédito Expirado', status: 'EXPIRADO', icon: <TimerOff className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-muted-foreground', tooltip: 'Créditos expirados (72h sem assinatura). Podem ser regenerados.' },
+  { title: 'Crédito Cancelado', status: 'CANCELADO', icon: <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />, color: 'bg-destructive', tooltip: 'Créditos cancelados pelo banco ou fundo.' },
 ];
 
 interface ContractPipelineProps {
@@ -81,7 +81,7 @@ const ContractPipeline = ({ contracts, onRegenerate, onRefresh }: ContractPipeli
                         <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" /></TooltipTrigger><TooltipContent side="top" className="max-w-xs"><p className="text-xs">{col.tooltip}</p></TooltipContent></Tooltip></TooltipProvider>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">{filtered.length} contrato{filtered.length !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-muted-foreground">{filtered.length} crédito{filtered.length !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <ScrollArea className="flex-1">
@@ -91,7 +91,7 @@ const ContractPipeline = ({ contracts, onRegenerate, onRefresh }: ContractPipeli
                     ))}
                     {filtered.length === 0 && (
                       <div className="flex h-24 sm:h-32 items-center justify-center text-center">
-                        <p className="text-xs sm:text-sm text-muted-foreground">Nenhum contrato</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Nenhum crédito</p>
                       </div>
                     )}
                   </div>
