@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ConsultaForm from '@/components/dashboard/ConsultaForm';
@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/dashboard/PullToRefreshIndicator';
 
 interface Product {
   id: string;
@@ -28,6 +30,16 @@ const Consultas = () => {
   const [gatilhosRestantes, setGatilhosRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const isMobile = useIsMobile();
+
+  const handlePullRefresh = useCallback(async () => {
+    // Reset proposals as a "refresh"
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }, []);
+
+  const { containerRef, isRefreshing, pullIndicator, touchHandlers } = usePullToRefresh({
+    onRefresh: handlePullRefresh,
+    enabled: isMobile,
+  });
 
   const products: Product[] = [
     {
@@ -152,10 +164,12 @@ const Consultas = () => {
 
   return (
     <DashboardLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={cn("space-y-4 sm:space-y-6", isMobile && "mt-14")}
+      <div ref={containerRef} {...touchHandlers}>
+        {isMobile && <PullToRefreshIndicator pullIndicator={pullIndicator} isRefreshing={isRefreshing} />}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn("space-y-4 sm:space-y-6 pb-20 sm:pb-6", isMobile && "mt-14")}
       >
         {/* Products Header - Horizontal scroll on mobile */}
         <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
@@ -369,6 +383,7 @@ const Consultas = () => {
         {/* Floating Chat Button */}
         <FloatingChatButton />
       </motion.div>
+      </div>
     </DashboardLayout>
   );
 };

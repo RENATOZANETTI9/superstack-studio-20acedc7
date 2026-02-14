@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import AppSidebar from './AppSidebar';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -40,6 +41,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return null;
   }
 
+  const location = useLocation();
+
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-background via-background to-primary/5">
       <AppSidebar 
@@ -56,7 +59,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           'p-3 sm:p-4 md:p-6',
           isMobile && 'pb-20'
         )}>
-          {children}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

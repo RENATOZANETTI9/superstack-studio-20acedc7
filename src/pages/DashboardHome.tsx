@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
@@ -8,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/dashboard/PullToRefreshIndicator';
 
 const periodLabels: Record<PeriodFilter, string> = {
   hoje: 'Hoje',
@@ -21,13 +24,24 @@ const DashboardHome = () => {
   const { stats, contractsByMonth, pipelineDistribution, marketingDistribution, loading, refresh, period, setPeriod } = useDashboardStats();
   const isMobile = useIsMobile();
 
+  const handleRefresh = useCallback(async () => {
+    await refresh();
+  }, [refresh]);
+
+  const { containerRef, isRefreshing, pullIndicator, touchHandlers } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    enabled: isMobile,
+  });
+
   return (
     <DashboardLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={cn("space-y-6 sm:space-y-8", isMobile && "mt-14")}
-      >
+      <div ref={containerRef} {...touchHandlers}>
+        {isMobile && <PullToRefreshIndicator pullIndicator={pullIndicator} isRefreshing={isRefreshing} />}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn("space-y-6 sm:space-y-8", isMobile && "mt-14")}
+        >
         {/* Header */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -83,9 +97,11 @@ const DashboardHome = () => {
         </div>
 
         <FloatingChatButton />
-      </motion.div>
+        </motion.div>
+      </div>
     </DashboardLayout>
   );
 };
 
 export default DashboardHome;
+
