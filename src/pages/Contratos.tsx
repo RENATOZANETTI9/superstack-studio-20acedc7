@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ContractPipeline from '@/components/contratos/ContractPipeline';
@@ -9,14 +9,56 @@ import { useContracts } from '@/hooks/useContracts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Building2, X } from 'lucide-react';
+import { Search, Building2, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Contratos = () => {
   const { contracts, loading, regenerateContract, fetchContracts } = useContracts();
   const isMobile = useIsMobile();
   const [search, setSearch] = useState('');
   const [bankFilter, setBankFilter] = useState('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const pullStartY = useRef(0);
+  const pullDistance = useRef(0);
+  const [pullIndicator, setPullIndicator] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handlePullRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchContracts();
+    toast.success('Dados atualizados!');
+    setIsRefreshing(false);
+    setPullIndicator(0);
+  }, [fetchContracts]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isMobile) return;
+    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
+    }
+  }, [isMobile]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || pullStartY.current === 0 || isRefreshing) return;
+    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop > 0) return;
+    const currentY = e.touches[0].clientY;
+    pullDistance.current = Math.max(0, currentY - pullStartY.current);
+    setPullIndicator(Math.min(pullDistance.current / 80, 1));
+  }, [isMobile, isRefreshing]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isMobile) return;
+    if (pullDistance.current > 80 && !isRefreshing) {
+      handlePullRefresh();
+    } else {
+      setPullIndicator(0);
+    }
+    pullStartY.current = 0;
+    pullDistance.current = 0;
+  }, [isMobile, isRefreshing, handlePullRefresh]);
 
   const banks = useMemo(() => {
     const unique = [...new Set(contracts.map(c => c.bank_name))].sort();
@@ -47,11 +89,26 @@ const Contratos = () => {
 
   return (
     <DashboardLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={cn('space-y-4 sm:space-y-6 pb-20 sm:pb-6', isMobile && 'mt-14')}
+      <div
+        ref={containerRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
+        {/* Pull-to-refresh indicator */}
+        {isMobile && (pullIndicator > 0 || isRefreshing) && (
+          <div className="flex items-center justify-center py-3" style={{ opacity: isRefreshing ? 1 : pullIndicator }}>
+            <Loader2 className={cn('h-5 w-5 text-primary', isRefreshing && 'animate-spin')} />
+            <span className="ml-2 text-xs text-muted-foreground">
+              {isRefreshing ? 'Atualizando...' : pullIndicator >= 1 ? 'Solte para atualizar' : 'Puxe para atualizar'}
+            </span>
+          </div>
+        )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn('space-y-4 sm:space-y-6 pb-20 sm:pb-6', isMobile && 'mt-14')}
+        >
         <div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Créditos Aprovados</h1>
           <p className="text-xs sm:text-base text-muted-foreground">
@@ -152,6 +209,7 @@ const Contratos = () => {
 
         <FloatingChatButton />
       </motion.div>
+      </div>
     </DashboardLayout>
   );
 };
