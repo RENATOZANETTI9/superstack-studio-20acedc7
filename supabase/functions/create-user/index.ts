@@ -13,11 +13,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -26,7 +23,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify the user making the request is a master
     const token = authHeader.replace('Bearer ', '');
     const { data: { user: requestingUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
@@ -37,7 +33,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if requesting user is master
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
@@ -51,7 +46,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get request body
     const { email, password } = await req.json();
 
     if (!email || !password) {
@@ -61,7 +55,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create the new user
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 255) {
+      return new Response(
+        JSON.stringify({ error: 'Formato de email inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate password length
+    if (password.length < 6 || password.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Senha deve ter entre 6 e 100 caracteres' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -70,12 +80,11 @@ Deno.serve(async (req) => {
 
     if (createError) {
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: 'Erro ao criar usuário' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Assign 'user' role to the new user
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({ user_id: newUser.user.id, role: 'user' });
@@ -89,7 +98,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Create user error');
     return new Response(
       JSON.stringify({ error: 'Erro interno do servidor' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
