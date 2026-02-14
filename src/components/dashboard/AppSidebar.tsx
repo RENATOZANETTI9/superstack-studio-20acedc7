@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileSearch, 
+  FileSignature,
   Users, 
   LogOut,
   ChevronDown,
@@ -56,6 +57,11 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
       title: 'Consultas',
       icon: FileSearch,
       path: '/dashboard/consultas',
+    },
+    {
+      title: 'Contratos',
+      icon: FileSignature,
+      path: '/dashboard/contratos',
     },
     {
       title: 'Dashboard',
