@@ -5,17 +5,49 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// This function sets up the master user - should only be called once during initial setup
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Require a setup token for security
+    const setupToken = req.headers.get('X-Setup-Token');
+    const expectedToken = Deno.env.get('SETUP_TOKEN');
+    if (!expectedToken || !setupToken || setupToken !== expectedToken) {
+      return new Response(
+        JSON.stringify({ error: 'Token de configuração inválido' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email, password } = await req.json();
+
+    // Validate inputs
+    if (!email || !password) {
+      return new Response(
+        JSON.stringify({ error: 'Email e senha são obrigatórios' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 255) {
+      return new Response(
+        JSON.stringify({ error: 'Email inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (password.length < 8 || password.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Senha deve ter entre 8 e 100 caracteres' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if master user already exists
@@ -31,18 +63,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create master user
+    // Create master user with provided credentials
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'helpude@gmail.com',
-      password: 'admin123',
+      email,
+      password,
       email_confirm: true,
     });
 
     if (createError) {
-      // If user already exists, find them and assign master role
       if (createError.message.includes('already been registered')) {
         const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
-        const existingMaster = users.find(u => u.email === 'helpude@gmail.com');
+        const existingMaster = users.find(u => u.email === email);
         
         if (existingMaster) {
           const { error: roleError } = await supabaseAdmin
@@ -51,7 +82,7 @@ Deno.serve(async (req) => {
 
           if (roleError) {
             return new Response(
-              JSON.stringify({ error: roleError.message }),
+              JSON.stringify({ error: 'Erro ao atribuir role' }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
@@ -64,19 +95,18 @@ Deno.serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: 'Erro ao criar usuário' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Assign 'master' role to the user
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({ user_id: newUser.user.id, role: 'master' });
 
     if (roleError) {
       return new Response(
-        JSON.stringify({ error: roleError.message }),
+        JSON.stringify({ error: 'Erro ao atribuir role' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -86,7 +116,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Setup master error');
     return new Response(
       JSON.stringify({ error: 'Erro interno do servidor' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

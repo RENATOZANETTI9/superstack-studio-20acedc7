@@ -13,11 +13,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -26,7 +23,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify the user making the request is a master
     const token = authHeader.replace('Bearer ', '');
     const { data: { user: requestingUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
@@ -37,7 +33,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if requesting user is master
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
@@ -51,7 +46,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get request body
     const { userId } = await req.json();
 
     if (!userId) {
@@ -61,7 +55,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prevent self-deletion
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      return new Response(
+        JSON.stringify({ error: 'ID do usuário inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (userId === requestingUser.id) {
       return new Response(
         JSON.stringify({ error: 'Você não pode excluir sua própria conta' }),
@@ -69,12 +71,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Delete the user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       return new Response(
-        JSON.stringify({ error: deleteError.message }),
+        JSON.stringify({ error: 'Erro ao excluir usuário' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Delete user error');
     return new Response(
       JSON.stringify({ error: 'Erro interno do servidor' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
