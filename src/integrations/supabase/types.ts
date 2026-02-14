@@ -14,6 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
+      contract_history: {
+        Row: {
+          contract_id: string
+          created_at: string
+          date: string
+          id: string
+          observation: string
+          status: string
+          type: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          observation?: string
+          status?: string
+          type?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          observation?: string
+          status?: string
+          type?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_history_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          amount_released: number
+          approved_at: string
+          bank_name: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          contract_status: string
+          cpf: string
+          created_at: string
+          expired_at: string | null
+          id: string
+          installment_value: number
+          lead_id: string | null
+          link_generated_at: string
+          paid_at: string | null
+          patient_name: string
+          pending_reason: string | null
+          proposal_number: string
+          proposal_status: string
+          signature_link: string
+          signature_started_at: string | null
+          signed_at: string | null
+          term_months: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_released?: number
+          approved_at?: string
+          bank_name: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          contract_status?: string
+          cpf: string
+          created_at?: string
+          expired_at?: string | null
+          id?: string
+          installment_value?: number
+          lead_id?: string | null
+          link_generated_at?: string
+          paid_at?: string | null
+          patient_name: string
+          pending_reason?: string | null
+          proposal_number: string
+          proposal_status?: string
+          signature_link?: string
+          signature_started_at?: string | null
+          signed_at?: string | null
+          term_months?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_released?: number
+          approved_at?: string
+          bank_name?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          contract_status?: string
+          cpf?: string
+          created_at?: string
+          expired_at?: string | null
+          id?: string
+          installment_value?: number
+          lead_id?: string | null
+          link_generated_at?: string
+          paid_at?: string | null
+          patient_name?: string
+          pending_reason?: string | null
+          proposal_number?: string
+          proposal_status?: string
+          signature_link?: string
+          signature_started_at?: string | null
+          signed_at?: string | null
+          term_months?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -37,6 +162,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      scheduled_returns: {
+        Row: {
+          completed: boolean
+          contract_id: string
+          created_at: string
+          date: string
+          id: string
+          time: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          contract_id: string
+          created_at?: string
+          date: string
+          id?: string
+          time: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          contract_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_returns_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
