@@ -115,7 +115,7 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-card border-border/50 max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="glass-card border-border/50 max-w-3xl max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
         <DialogHeader className="p-4 sm:p-6 pb-0">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">Detalhes do Crédito</DialogTitle>
