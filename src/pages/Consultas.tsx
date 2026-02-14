@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Product {
   id: string;
@@ -19,6 +21,7 @@ interface Product {
 }
 
 const Consultas = () => {
+  const { user } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<string>('credito-clt');
   const [selectedCombo, setSelectedCombo] = useState<number>(1);
   const [consultasRestantes, setConsultasRestantes] = useState(50);
@@ -71,7 +74,7 @@ const Consultas = () => {
     },
   ];
 
-  const handleConsulta = (cpfs: string[]) => {
+  const handleConsulta = async (cpfs: string[]) => {
     const newProposals: Proposal[] = cpfs.map((cpf, index) => {
       const statuses: Array<'aprovada' | 'recusada' | 'erro'> = ['aprovada', 'recusada', 'erro'];
       const randomStatus = statuses[Math.floor(Math.random() * 100) % 3];
@@ -87,6 +90,33 @@ const Consultas = () => {
         marketingActions: randomStatus === 'aprovada' ? { rcs: false, email: false, call: false } : undefined,
       };
     });
+
+    // Sincronização automática: criar contrato para aprovados
+    if (user) {
+      for (const proposal of newProposals) {
+        if (proposal.status === 'aprovada') {
+          const { error } = await supabase.from('contracts').insert({
+            user_id: user.id,
+            lead_id: proposal.id,
+            patient_name: proposal.name,
+            cpf: proposal.cpf.replace(/\D/g, ''),
+            proposal_number: `PROP-${Date.now()}`,
+            bank_name: 'Banco Help',
+            proposal_status: 'Aprovada',
+            amount_released: proposal.value || 0,
+            installment_value: Math.round((proposal.value || 0) / 12),
+            term_months: 12,
+            signature_link: `https://assinatura.exemplo.com/${proposal.id}`,
+            contract_status: 'AGUARDANDO_ASSINATURA',
+          });
+          if (error) {
+            console.error('Erro ao criar contrato:', error);
+          } else {
+            toast.success(`Contrato criado para ${proposal.name} em Aguardando Assinatura`);
+          }
+        }
+      }
+    }
 
     setProposals(prev => [...newProposals, ...prev]);
     setConsultasRestantes(prev => Math.max(0, prev - cpfs.length));
