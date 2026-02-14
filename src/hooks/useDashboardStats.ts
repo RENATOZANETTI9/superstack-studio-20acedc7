@@ -1,35 +1,31 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import type { ContractStatus } from '@/types/contracts';
+import { startOfDay, startOfWeek, startOfMonth, startOfYear, isAfter } from 'date-fns';
+
+export type PeriodFilter = 'hoje' | 'semana' | 'mes' | 'ano' | 'total';
 
 export interface DashboardStats {
-  // Consultas (Buscar Crédito)
   totalConsultas: number;
   aprovadas: number;
   recusadas: number;
   taxaConversao: number;
-
-  // Créditos Aprovados (Pipeline)
   aguardandoAssinatura: number;
   pendenciasGerais: number;
   creditosPagos: number;
   creditosExpirados: number;
   creditosCancelados: number;
-
-  // Valores
   valorTotalLiberado: number;
   valorTotalPago: number;
   ticketMedio: number;
-
-  // Marketing Triggers
   totalGatilhos: number;
   rcsEnviados: number;
   emailsEnviados: number;
   ligacoesIA: number;
   gatilhosRestantes: number;
-
-  // History interactions
+  gatilhosLimite: number;
   totalInteracoes: number;
   interacoesPorTipo: Record<string, number>;
 }
@@ -41,18 +37,26 @@ export interface ContractsByMonth {
   cancelados: number;
 }
 
-export interface MarketingByType {
-  name: string;
-  rcs: number;
-  email: number;
-  ligacoes: number;
+function getPeriodStart(period: PeriodFilter): Date | null {
+  const now = new Date();
+  switch (period) {
+    case 'hoje': return startOfDay(now);
+    case 'semana': return startOfWeek(now, { weekStartsOn: 1 });
+    case 'mes': return startOfMonth(now);
+    case 'ano': return startOfYear(now);
+    case 'total': return null;
+  }
 }
+
+const GATILHOS_LIMIT = 50;
 
 export function useDashboardStats() {
   const { user } = useAuth();
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
+  const [allContracts, setAllContracts] = useState<any[]>([]);
+  const [allHistory, setAllHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodFilter>('total');
+  const [alertShown, setAlertShown] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -63,12 +67,25 @@ export function useDashboardStats() {
       supabase.from('contract_history').select('*').order('date', { ascending: false }),
     ]);
 
-    if (contractsRes.data) setContracts(contractsRes.data);
-    if (historyRes.data) setHistory(historyRes.data);
+    if (contractsRes.data) setAllContracts(contractsRes.data);
+    if (historyRes.data) setAllHistory(historyRes.data);
     setLoading(false);
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Filter by period
+  const contracts = useMemo(() => {
+    const start = getPeriodStart(period);
+    if (!start) return allContracts;
+    return allContracts.filter(c => isAfter(new Date(c.created_at), start));
+  }, [allContracts, period]);
+
+  const history = useMemo(() => {
+    const start = getPeriodStart(period);
+    if (!start) return allHistory;
+    return allHistory.filter(h => isAfter(new Date(h.date || h.created_at), start));
+  }, [allHistory, period]);
 
   const stats = useMemo<DashboardStats>(() => {
     const totalConsultas = contracts.length;
@@ -88,14 +105,19 @@ export function useDashboardStats() {
     const valorTotalPago = pagoContracts.reduce((sum, c) => sum + Number(c.amount_released || 0), 0);
     const ticketMedio = totalConsultas > 0 ? Math.round(valorTotalLiberado / totalConsultas) : 0;
 
-    // Marketing - count history interactions by type
+    // Marketing - always use ALL history for gatilhos balance (not filtered)
+    const allRcs = allHistory.filter(h => h.type === 'RCS' || h.type === 'Mensagem').length;
+    const allEmails = allHistory.filter(h => h.type === 'E-mail').length;
+    const allLigacoes = allHistory.filter(h => h.type === 'Ligação').length;
+    const allTotal = allRcs + allEmails + allLigacoes;
+
+    // Filtered marketing for display
     const rcsEnviados = history.filter(h => h.type === 'RCS' || h.type === 'Mensagem').length;
     const emailsEnviados = history.filter(h => h.type === 'E-mail').length;
     const ligacoesIA = history.filter(h => h.type === 'Ligação').length;
     const totalGatilhos = rcsEnviados + emailsEnviados + ligacoesIA;
 
-    // Gatilhos restantes (simulado - 50 por mês por padrão)
-    const gatilhosRestantes = Math.max(0, 50 - totalGatilhos);
+    const gatilhosRestantes = Math.max(0, GATILHOS_LIMIT - allTotal);
 
     const interacoesPorTipo: Record<string, number> = {};
     history.forEach(h => {
@@ -103,27 +125,33 @@ export function useDashboardStats() {
     });
 
     return {
-      totalConsultas,
-      aprovadas,
-      recusadas,
-      taxaConversao,
-      aguardandoAssinatura,
-      pendenciasGerais,
-      creditosPagos,
-      creditosExpirados,
-      creditosCancelados,
-      valorTotalLiberado,
-      valorTotalPago,
-      ticketMedio,
-      totalGatilhos,
-      rcsEnviados,
-      emailsEnviados,
-      ligacoesIA,
-      gatilhosRestantes,
-      totalInteracoes: history.length,
-      interacoesPorTipo,
+      totalConsultas, aprovadas, recusadas, taxaConversao,
+      aguardandoAssinatura, pendenciasGerais, creditosPagos, creditosExpirados, creditosCancelados,
+      valorTotalLiberado, valorTotalPago, ticketMedio,
+      totalGatilhos, rcsEnviados, emailsEnviados, ligacoesIA,
+      gatilhosRestantes, gatilhosLimite: GATILHOS_LIMIT,
+      totalInteracoes: history.length, interacoesPorTipo,
     };
-  }, [contracts, history]);
+  }, [contracts, history, allHistory]);
+
+  // Alert when gatilhos reach 10% remaining
+  useEffect(() => {
+    if (alertShown || loading) return;
+    const threshold = GATILHOS_LIMIT * 0.1; // 10%
+    if (stats.gatilhosRestantes <= threshold && stats.gatilhosRestantes > 0) {
+      toast.warning(
+        `⚠️ Atenção: Apenas ${stats.gatilhosRestantes} gatilhos de marketing restantes! (${Math.round((stats.gatilhosRestantes / GATILHOS_LIMIT) * 100)}% do limite)`,
+        { duration: 8000 }
+      );
+      setAlertShown(true);
+    } else if (stats.gatilhosRestantes === 0 && stats.totalGatilhos > 0) {
+      toast.error(
+        '🚫 Seus gatilhos de marketing acabaram! Entre em contato para aumentar seu limite.',
+        { duration: 10000 }
+      );
+      setAlertShown(true);
+    }
+  }, [stats.gatilhosRestantes, stats.totalGatilhos, alertShown, loading]);
 
   const contractsByMonth = useMemo<ContractsByMonth[]>(() => {
     const months: Record<string, { aprovados: number; pagos: number; cancelados: number }> = {};
@@ -169,6 +197,8 @@ export function useDashboardStats() {
     pipelineDistribution,
     marketingDistribution,
     loading,
+    period,
+    setPeriod,
     refresh: fetchData,
   };
 }
