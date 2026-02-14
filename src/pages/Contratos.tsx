@@ -53,9 +53,9 @@ const Contratos = () => {
         className={cn('space-y-4 sm:space-y-6', isMobile && 'mt-14')}
       >
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Contratos</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Créditos Aprovados</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Acompanhe o status de assinatura e pagamento dos contratos
+            Acompanhe o status de assinatura e pagamento dos créditos aprovados
           </p>
         </div>
 
@@ -84,7 +84,7 @@ const Contratos = () => {
             isMobile && 'flex-col items-stretch'
           )}>
             <h3 className="text-lg sm:text-xl font-bold text-foreground shrink-0">
-              Pipeline de Contratos
+              Pipeline de Créditos
             </h3>
             <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
               <div className="relative">
@@ -125,7 +125,7 @@ const Contratos = () => {
 
           {hasFilters && (
             <p className="text-xs text-muted-foreground mb-3">
-              Mostrando {filteredContracts.length} de {contracts.length} contratos
+              Mostrando {filteredContracts.length} de {contracts.length} créditos
             </p>
           )}
 

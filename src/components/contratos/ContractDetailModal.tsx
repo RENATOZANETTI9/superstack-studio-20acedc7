@@ -118,7 +118,7 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
       <DialogContent className="glass-card border-border/50 max-w-3xl max-h-[90vh] p-0 overflow-hidden">
         <DialogHeader className="p-4 sm:p-6 pb-0">
           <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">Detalhes do Contrato</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">Detalhes do Crédito</DialogTitle>
             {getStatusBadge(contract.contract_status)}
           </div>
         </DialogHeader>
@@ -137,12 +137,12 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">Este contrato expirou por não ter sido assinado dentro do prazo de 72 horas.</p>
-                      <p className="text-xs text-muted-foreground mt-1">Clique em "Regenerar contrato" para gerar um novo link de assinatura.</p>
+                       <p className="text-sm font-medium text-foreground">Este crédito expirou por não ter sido assinado dentro do prazo de 72 horas.</p>
+                       <p className="text-xs text-muted-foreground mt-1">Clique em "Regenerar crédito" para gerar um novo link de assinatura.</p>
                     </div>
                   </div>
                   <Button onClick={() => onRegenerate(contract.id)} className="gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="sm">
-                    <RefreshCw className="h-4 w-4" /> Regenerar Contrato
+                    <RefreshCw className="h-4 w-4" /> Regenerar Crédito
                   </Button>
                 </div>
               )}
