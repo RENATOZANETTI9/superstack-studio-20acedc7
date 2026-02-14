@@ -199,7 +199,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
         )}
 
         {/* Mobile Bottom Tab Bar */}
-        <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-sidebar border-t border-sidebar-border flex items-center justify-center gap-2 px-4 safe-area-inset-bottom">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-sidebar border-t border-sidebar-border flex items-center justify-center gap-4 px-6 safe-area-inset-bottom">
           {menuItems.map((item) => (
             <Button
               key={item.path}
