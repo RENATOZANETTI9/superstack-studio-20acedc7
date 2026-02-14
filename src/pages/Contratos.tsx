@@ -25,9 +25,11 @@ const Contratos = () => {
 
   const filteredContracts = useMemo(() => {
     return contracts.filter(c => {
-      const matchesSearch = !search || 
-        c.patient_name.toLowerCase().includes(search.toLowerCase()) ||
-        c.cpf.includes(search.replace(/\D/g, ''));
+      const searchTerm = search.trim();
+      const cpfSearch = searchTerm.replace(/\D/g, '');
+      const matchesSearch = !searchTerm || 
+        c.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (cpfSearch.length > 0 && c.cpf.includes(cpfSearch));
       const matchesBank = bankFilter === 'all' || c.bank_name === bankFilter;
       return matchesSearch && matchesBank;
     });
