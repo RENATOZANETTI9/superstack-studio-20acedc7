@@ -54,12 +54,12 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   const menuItems = [
     {
-      title: 'Consultas',
+      title: 'Buscar Crédito',
       icon: FileSearch,
       path: '/dashboard/consultas',
     },
     {
-      title: 'Contratos',
+      title: 'Créditos Aprovados',
       icon: FileSignature,
       path: '/dashboard/contratos',
     },
