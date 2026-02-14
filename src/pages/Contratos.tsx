@@ -50,16 +50,21 @@ const Contratos = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn('space-y-4 sm:space-y-6', isMobile && 'mt-14')}
+        className={cn('space-y-4 sm:space-y-6 pb-20 sm:pb-6', isMobile && 'mt-14')}
       >
         <div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Créditos Aprovados</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Acompanhe o status de assinatura e pagamento dos créditos aprovados
+          <p className="text-xs sm:text-base text-muted-foreground">
+            Acompanhe o status dos créditos aprovados
           </p>
         </div>
 
-        <div className={cn('grid gap-3', isMobile ? 'grid-cols-2' : 'grid-cols-5')}>
+        {/* Stats - horizontal scroll on mobile */}
+        <div className={cn(
+          isMobile 
+            ? 'flex gap-2 overflow-x-auto scrollbar-hide -mx-2 px-2 pb-1' 
+            : 'grid grid-cols-5 gap-3'
+        )}>
           {[
             { label: 'Aguardando', value: stats.aguardando, color: 'text-primary' },
             { label: 'Pendências', value: stats.pendencias, color: 'text-warning' },
@@ -67,59 +72,60 @@ const Contratos = () => {
             { label: 'Expirados', value: stats.expirados, color: 'text-muted-foreground' },
             { label: 'Cancelados', value: stats.cancelados, color: 'text-destructive' },
           ].map((s) => (
-            <div key={s.label} className="glass-card rounded-xl p-3 sm:p-4 text-center">
+            <div key={s.label} className={cn(
+              'glass-card rounded-xl p-3 text-center',
+              isMobile ? 'min-w-[100px] shrink-0' : 'sm:p-4'
+            )}>
               {loading ? (
-                <Skeleton className="h-8 w-12 mx-auto mb-1" />
+                <Skeleton className="h-7 w-10 mx-auto mb-1" />
               ) : (
-                <p className={cn('text-2xl sm:text-3xl font-bold', s.color)}>{s.value}</p>
+                <p className={cn('text-xl sm:text-3xl font-bold', s.color)}>{s.value}</p>
               )}
-              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 whitespace-nowrap">{s.label}</p>
             </div>
           ))}
         </div>
 
-        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          <div className={cn(
-            'flex items-center justify-between mb-3 sm:mb-4 gap-3',
-            isMobile && 'flex-col items-stretch'
-          )}>
-            <h3 className="text-lg sm:text-xl font-bold text-foreground shrink-0">
-              Pipeline de Créditos
-            </h3>
+        <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-6">
+          {/* Header + Filters */}
+          <div className="space-y-3 mb-3 sm:mb-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-xl font-bold text-foreground">
+                Pipeline de Créditos
+              </h3>
+              {hasFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => { setSearch(''); setBankFilter('all'); }}
+                >
+                  <X className="h-3 w-3" /> Limpar
+                </Button>
+              )}
+            </div>
             <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
-              <div className="relative">
+              <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nome ou CPF..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 h-8 text-xs w-full sm:w-56 bg-background/50"
+                  className="pl-8 h-9 text-xs w-full bg-background/50"
                 />
               </div>
-              <div className="flex gap-2 items-center">
-                <Select value={bankFilter} onValueChange={setBankFilter}>
-                  <SelectTrigger className="h-8 text-xs w-full sm:w-40 bg-background/50">
-                    <Building2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Banco" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-xs">Todos os bancos</SelectItem>
-                    {banks.map(b => (
-                      <SelectItem key={b} value={b} className="text-xs">{b}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {hasFilters && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => { setSearch(''); setBankFilter('all'); }}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
+              <Select value={bankFilter} onValueChange={setBankFilter}>
+                <SelectTrigger className="h-9 text-xs w-full sm:w-44 bg-background/50">
+                  <Building2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs">Todos os bancos</SelectItem>
+                  {banks.map(b => (
+                    <SelectItem key={b} value={b} className="text-xs">{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -130,9 +136,9 @@ const Contratos = () => {
           )}
 
           {loading ? (
-            <div className="flex gap-4">
-              {[1,2,3,4,5].map(i => (
-                <Skeleton key={i} className="h-64 w-64 shrink-0 rounded-xl" />
+            <div className="flex gap-3 overflow-hidden">
+              {[1,2,3].map(i => (
+                <Skeleton key={i} className="h-48 w-64 shrink-0 rounded-xl" />
               ))}
             </div>
           ) : (
