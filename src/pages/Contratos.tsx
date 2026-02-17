@@ -8,8 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useContracts } from '@/hooks/useContracts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Building2, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/dashboard/PullToRefreshIndicator';
@@ -18,31 +17,23 @@ const Contratos = () => {
   const { contracts, loading, regenerateContract, fetchContracts } = useContracts();
   const isMobile = useIsMobile();
   const [search, setSearch] = useState('');
-  const [bankFilter, setBankFilter] = useState('all');
 
   const { containerRef, isRefreshing, pullIndicator, touchHandlers } = usePullToRefresh({
     onRefresh: fetchContracts,
     enabled: isMobile,
   });
 
-  const banks = useMemo(() => {
-    const unique = [...new Set(contracts.map(c => c.bank_name))].sort();
-    return unique;
-  }, [contracts]);
-
   const filteredContracts = useMemo(() => {
     return contracts.filter(c => {
       const searchTerm = search.trim();
       const cpfSearch = searchTerm.replace(/\D/g, '');
-      const matchesSearch = !searchTerm || 
+      return !searchTerm || 
         c.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (cpfSearch.length > 0 && c.cpf.includes(cpfSearch));
-      const matchesBank = bankFilter === 'all' || c.bank_name === bankFilter;
-      return matchesSearch && matchesBank;
     });
-  }, [contracts, search, bankFilter]);
+  }, [contracts, search]);
 
-  const hasFilters = search || bankFilter !== 'all';
+  const hasFilters = !!search;
 
   const stats = {
     aguardando: filteredContracts.filter((c) => c.contract_status === 'AGUARDANDO_ASSINATURA').length,
@@ -107,14 +98,13 @@ const Contratos = () => {
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs gap-1"
-                    onClick={() => { setSearch(''); setBankFilter('all'); }}
+                    onClick={() => { setSearch(''); }}
                   >
                     <X className="h-3 w-3" /> Limpar
                   </Button>
                 )}
               </div>
-              <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
-                <div className="relative flex-1">
+              <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por nome ou CPF..."
@@ -123,19 +113,6 @@ const Contratos = () => {
                     className="pl-8 h-9 text-xs w-full bg-background/50"
                   />
                 </div>
-                <Select value={bankFilter} onValueChange={setBankFilter}>
-                  <SelectTrigger className="h-9 text-xs w-full sm:w-44 bg-background/50">
-                    <Building2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Banco" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-xs">Todos os bancos</SelectItem>
-                    {banks.map(b => (
-                      <SelectItem key={b} value={b} className="text-xs">{b}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             {hasFilters && (
