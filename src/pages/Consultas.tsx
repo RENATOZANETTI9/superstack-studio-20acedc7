@@ -241,13 +241,15 @@ const Consultas = () => {
             </div>
           </div>
 
-          {/* Page Header */}
-          <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Consulte o CPF do Paciente e visualize os resultados
-            </p>
-          </div>
+          {/* Page Header - Desktop only (on mobile it's shown before the form) */}
+          {!isMobile && (
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Consulte o CPF do Paciente e visualize os resultados
+              </p>
+            </div>
+          )}
 
           {/* 2. Níveis Disponíveis - Before form on mobile */}
           {isMobile && (
@@ -280,6 +282,16 @@ const Consultas = () => {
                 <p className="text-xs text-primary font-medium">{combos[selectedCombo - 1].title} ativo</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{consultasRestantes} consultas restantes</p>
               </div>
+            </div>
+          )}
+
+          {/* Mobile Page Header - before form */}
+          {isMobile && (
+            <div>
+              <h1 className="text-xl font-bold text-foreground">{selectedProductData?.title}</h1>
+              <p className="text-sm text-muted-foreground">
+                Consulte o CPF do Paciente e visualize os resultados
+              </p>
             </div>
           )}
 
