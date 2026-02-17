@@ -32,7 +32,6 @@ const Consultas = () => {
   const isMobile = useIsMobile();
 
   const handlePullRefresh = useCallback(async () => {
-    // Reset proposals as a "refresh"
     await new Promise(resolve => setTimeout(resolve, 500));
   }, []);
 
@@ -103,7 +102,6 @@ const Consultas = () => {
       };
     });
 
-    // Sincronização automática: criar contrato para aprovados
     if (user) {
       for (const proposal of newProposals) {
         if (proposal.status === 'aprovada') {
@@ -170,158 +168,96 @@ const Consultas = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn("space-y-4 sm:space-y-6 pb-20 sm:pb-6", isMobile && "mt-14")}
-      >
-        {/* Products Header - Horizontal scroll on mobile */}
-        <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
-          <div className={cn(
-            "flex gap-2 sm:gap-3",
-            isMobile && "overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
-          )}>
-            {products.map((product) => {
-              const Icon = product.icon;
-              const isSelected = selectedProduct === product.id;
-              
-              return (
-                <button
-                  key={product.id}
-                  onClick={() => {
-                    if (product.active) {
-                      setSelectedProduct(product.id);
-                    } else {
-                      toast.info(`${product.title} estará disponível em breve!`);
-                    }
-                  }}
-                  className={cn(
-                    'flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl border px-3 py-2 sm:px-4 sm:py-3 transition-all duration-300 shrink-0',
-                    isSelected && product.active
-                      ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-                      : 'border-border/50 bg-card/50 hover:border-primary/30',
-                    !product.active && 'opacity-60 cursor-not-allowed'
-                  )}
-                >
-                  <div className={cn(
-                    'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg',
-                    isSelected && product.active ? 'bg-primary/20' : 'bg-muted'
-                  )}>
-                    <Icon className={cn(
-                      'h-4 w-4 sm:h-5 sm:w-5',
-                      isSelected && product.active ? 'text-primary' : 'text-muted-foreground'
-                    )} />
-                  </div>
-                  <div className="text-left">
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <span className={cn(
-                        'font-semibold text-sm sm:text-base whitespace-nowrap',
-                        isSelected && product.active ? 'text-primary' : 'text-foreground'
-                      )}>
-                        {product.title}
-                      </span>
-                      {product.active ? (
-                        <span className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-green-500/20 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-green-500">
-                          <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline">Ativo</span>
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-muted px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-muted-foreground">
-                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline">Em breve</span>
-                        </span>
-                      )}
+        >
+          {/* 1. Products Header */}
+          <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div className={cn(
+              "flex gap-2 sm:gap-3",
+              isMobile && "overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
+            )}>
+              {products.map((product) => {
+                const Icon = product.icon;
+                const isSelected = selectedProduct === product.id;
+                
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => {
+                      if (product.active) {
+                        setSelectedProduct(product.id);
+                      } else {
+                        toast.info(`${product.title} estará disponível em breve!`);
+                      }
+                    }}
+                    className={cn(
+                      'flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl border px-3 py-2 sm:px-4 sm:py-3 transition-all duration-300 shrink-0',
+                      isSelected && product.active
+                        ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+                        : 'border-border/50 bg-card/50 hover:border-primary/30',
+                      !product.active && 'opacity-60 cursor-not-allowed',
+                      isMobile && product.active && 'flex-1',
+                      isMobile && !product.active && 'text-xs px-2 py-1.5'
+                    )}
+                  >
+                    <div className={cn(
+                      'flex items-center justify-center rounded-lg',
+                      isSelected && product.active ? 'bg-primary/20' : 'bg-muted',
+                      isMobile && product.active ? 'h-9 w-9' : 'h-8 w-8 sm:h-10 sm:w-10',
+                      isMobile && !product.active && 'h-7 w-7'
+                    )}>
+                      <Icon className={cn(
+                        isSelected && product.active ? 'text-primary' : 'text-muted-foreground',
+                        isMobile && product.active ? 'h-5 w-5' : 'h-4 w-4 sm:h-5 sm:w-5',
+                        isMobile && !product.active && 'h-3.5 w-3.5'
+                      )} />
                     </div>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{product.description}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Page Header */}
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Consulte o CPF do Paciente e visualize os resultados
-          </p>
-        </div>
-
-        {/* Main Content - Stack on mobile, grid on desktop */}
-        <div className={cn(
-          "grid gap-4 sm:gap-6",
-          isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-5"
-        )}>
-          {/* Consulta Form - Full width on mobile */}
-          <div className={cn(isMobile ? "order-1" : "lg:col-span-2 relative")}>
-            {!isMobile && (
-              <>
-                <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 rounded-3xl blur-md animate-pulse" />
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-sm" />
-              </>
-            )}
-            <div className="relative">
-              <ConsultaForm 
-                onConsulta={handleConsulta}
-                consultasRestantes={consultasRestantes}
-                gatilhosRestantes={consultasRestantes}
-              />
+                    <div className="text-left">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <span className={cn(
+                          'font-semibold whitespace-nowrap',
+                          isSelected && product.active ? 'text-primary' : 'text-foreground',
+                          isMobile && product.active ? 'text-sm' : 'text-sm sm:text-base',
+                          isMobile && !product.active && 'text-[11px]'
+                        )}>
+                          {product.title}
+                        </span>
+                        {product.active ? (
+                          <span className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-green-500/20 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-green-500">
+                            <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className="hidden sm:inline">Ativo</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-muted px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-muted-foreground">
+                            <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className="hidden sm:inline">Em breve</span>
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{product.description}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Middle Info - Hidden on mobile, shown on desktop */}
-          {!isMobile && (
-            <div className="lg:col-span-2">
-              <div className="glass-card rounded-2xl p-4 h-full flex flex-col justify-center">
-                <div className="text-center space-y-3">
-                  <div className="mx-auto w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-primary" />
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-base font-bold text-foreground mb-1">
-                      Consulta em Andamento
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Após inserir o CPF, a análise será automática.
-                    </p>
-                  </div>
+          {/* Page Header */}
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{selectedProductData?.title}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Consulte o CPF do Paciente e visualize os resultados
+            </p>
+          </div>
 
-                  <div className="border-t border-border/50 pt-3">
-                    <p className="text-xs font-semibold text-foreground mb-2">
-                      Se aprovado, enviamos automaticamente:
-                    </p>
-                    
-                    <div className="flex justify-center gap-3">
-                      <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                        <MessageSquare className="h-4 w-4 text-primary mb-1" />
-                        <span className="text-xs font-medium text-foreground">RCS</span>
-                      </div>
-                      <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                        <Mail className="h-4 w-4 text-primary mb-1" />
-                        <span className="text-xs font-medium text-foreground">Email</span>
-                      </div>
-                      <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                        <Phone className="h-4 w-4 text-primary mb-1" />
-                        <span className="text-xs font-medium text-foreground">IA</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Combos - Horizontal scroll on mobile */}
-          <div className={cn(isMobile ? "order-2" : "lg:col-span-1")}>
-            <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+          {/* 2. Níveis Disponíveis - Before form on mobile */}
+          {isMobile && (
+            <div className="glass-card rounded-xl p-3">
               <h3 className="text-sm font-semibold text-foreground mb-3">
                 Níveis Disponíveis
               </h3>
-              <div className={cn(
-                isMobile 
-                  ? "flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide" 
-                  : "space-y-3"
-              )}>
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                 {combos.map((combo, index) => (
-                  <div key={combo.title} className={cn(isMobile && "shrink-0 w-36")}>
+                  <div key={combo.title} className="shrink-0 w-36">
                     <ComboCardMini
                       title={combo.title}
                       consultasLimit={combo.consultasLimit}
@@ -331,9 +267,7 @@ const Consultas = () => {
                       onSelect={() => {
                         if (!combo.locked) {
                           setSelectedCombo(index + 1);
-                          if (index === 0) {
-                            setConsultasRestantes(50);
-                          }
+                          if (index === 0) setConsultasRestantes(50);
                         } else {
                           toast.info('Este plano requer aprovação cadastral.');
                         }
@@ -342,47 +276,131 @@ const Consultas = () => {
                   </div>
                 ))}
               </div>
-              
-              {/* Info about selected combo */}
-              <div className="mt-3 sm:mt-4 rounded-lg bg-primary/10 p-2 sm:p-3">
-                <p className="text-xs text-primary font-medium">
-                  {combos[selectedCombo - 1].title} ativo
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
-                  {consultasRestantes} consultas restantes
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pipeline Section */}
-        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-foreground">
-            Pipeline de Propostas
-          </h3>
-          {proposals.length > 0 ? (
-            <ProposalPipeline 
-              proposals={proposals}
-              onMarketingAction={handleMarketingAction}
-            />
-          ) : (
-            <div className="flex h-32 sm:h-48 items-center justify-center text-center">
-              <div>
-                <p className="text-base sm:text-lg font-medium text-muted-foreground">
-                  Nenhuma proposta no pipeline
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  As propostas aparecerão aqui após as consultas
-                </p>
+              <div className="mt-3 rounded-lg bg-primary/10 p-2">
+                <p className="text-xs text-primary font-medium">{combos[selectedCombo - 1].title} ativo</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{consultasRestantes} consultas restantes</p>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Floating Chat Button */}
-        <FloatingChatButton />
-      </motion.div>
+          {/* 3. Main Content grid */}
+          <div className={cn(
+            "grid gap-4 sm:gap-6",
+            isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-5"
+          )}>
+            {/* Consulta Form */}
+            <div className={cn(isMobile ? "" : "lg:col-span-2 relative")}>
+              {!isMobile && (
+                <>
+                  <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 rounded-3xl blur-md animate-pulse" />
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-sm" />
+                </>
+              )}
+              <div className="relative">
+                <ConsultaForm 
+                  onConsulta={handleConsulta}
+                  consultasRestantes={consultasRestantes}
+                  gatilhosRestantes={consultasRestantes}
+                />
+              </div>
+            </div>
+
+            {/* Middle Info - Desktop only */}
+            {!isMobile && (
+              <div className="lg:col-span-2">
+                <div className="glass-card rounded-2xl p-4 h-full flex flex-col justify-center">
+                  <div className="text-center space-y-3">
+                    <div className="mx-auto w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-foreground mb-1">Consulta em Andamento</h3>
+                      <p className="text-xs text-muted-foreground">Após inserir o CPF, a análise será automática.</p>
+                    </div>
+                    <div className="border-t border-border/50 pt-3">
+                      <p className="text-xs font-semibold text-foreground mb-2">Se aprovado, enviamos automaticamente:</p>
+                      <div className="flex justify-center gap-3">
+                        <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                          <MessageSquare className="h-4 w-4 text-primary mb-1" />
+                          <span className="text-xs font-medium text-foreground">RCS</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                          <Mail className="h-4 w-4 text-primary mb-1" />
+                          <span className="text-xs font-medium text-foreground">Email</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                          <Phone className="h-4 w-4 text-primary mb-1" />
+                          <span className="text-xs font-medium text-foreground">IA</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Combos - Desktop only */}
+            {!isMobile && (
+              <div className="lg:col-span-1">
+                <div className="glass-card rounded-2xl p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Níveis Disponíveis</h3>
+                  <div className="space-y-3">
+                    {combos.map((combo, index) => (
+                      <div key={combo.title}>
+                        <ComboCardMini
+                          title={combo.title}
+                          consultasLimit={combo.consultasLimit}
+                          active={combo.active}
+                          locked={combo.locked}
+                          selected={selectedCombo === index + 1 && !combo.locked}
+                          onSelect={() => {
+                            if (!combo.locked) {
+                              setSelectedCombo(index + 1);
+                              if (index === 0) setConsultasRestantes(50);
+                            } else {
+                              toast.info('Este plano requer aprovação cadastral.');
+                            }
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 rounded-lg bg-primary/10 p-3">
+                    <p className="text-xs text-primary font-medium">{combos[selectedCombo - 1].title} ativo</p>
+                    <p className="text-xs text-muted-foreground mt-1">{consultasRestantes} consultas restantes</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Pipeline Section */}
+          <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-foreground">
+              Pipeline de Propostas
+            </h3>
+            {proposals.length > 0 ? (
+              <ProposalPipeline 
+                proposals={proposals}
+                onMarketingAction={handleMarketingAction}
+              />
+            ) : (
+              <div className="flex h-32 sm:h-48 items-center justify-center text-center">
+                <div>
+                  <p className="text-base sm:text-lg font-medium text-muted-foreground">
+                    Nenhuma proposta no pipeline
+                  </p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    As propostas aparecerão aqui após as consultas
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Floating Chat Button */}
+          <FloatingChatButton />
+        </motion.div>
       </div>
     </DashboardLayout>
   );
