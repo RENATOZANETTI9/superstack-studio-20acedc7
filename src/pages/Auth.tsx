@@ -18,8 +18,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, isLoading } = useAuth();
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('helpude.user@gmail.com');
+  const [password, setPassword] = useState('123456');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
