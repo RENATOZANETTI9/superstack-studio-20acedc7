@@ -34,7 +34,7 @@ export interface Proposal {
   value?: number;
   date: string;
   marketingActions?: {
-    rcs: boolean;
+    sms: boolean;
     email: boolean;
     call: boolean;
   };
@@ -47,7 +47,7 @@ interface PipelineColumnProps {
   icon: React.ReactNode;
   color: string;
   tooltip?: string;
-  onAction?: (proposalId: string, action: 'rcs' | 'email' | 'call') => void;
+  onAction?: (proposalId: string, action: 'sms' | 'email' | 'call') => void;
   onViewDetails?: (proposal: Proposal) => void;
   isMobile?: boolean;
 }
@@ -143,16 +143,16 @@ const PipelineColumn = ({
                   </p>
                   <div className="flex gap-1 sm:gap-2">
                     <Button
-                      variant={proposal.marketingActions?.rcs ? 'default' : 'outline'}
+                      variant={proposal.marketingActions?.sms ? 'default' : 'outline'}
                       size="sm"
                       className={cn(
                         'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.rcs && 'bg-success hover:bg-success/90'
+                        proposal.marketingActions?.sms && 'bg-success hover:bg-success/90'
                       )}
-                      onClick={() => onAction?.(proposal.id, 'rcs')}
+                      onClick={() => onAction?.(proposal.id, 'sms')}
                     >
                       <MessageSquare className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      RCS
+                      SMS
                     </Button>
                     <Button
                       variant={proposal.marketingActions?.email ? 'default' : 'outline'}
@@ -181,12 +181,12 @@ const PipelineColumn = ({
                   </div>
 
                   {/* Status dos gatilhos */}
-                  {(proposal.marketingActions?.rcs || proposal.marketingActions?.email || proposal.marketingActions?.call) && (
+                  {(proposal.marketingActions?.sms || proposal.marketingActions?.email || proposal.marketingActions?.call) && (
                     <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
-                      {proposal.marketingActions.rcs && (
+                      {proposal.marketingActions.sms && (
                         <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
                           <Send className="mr-0.5 h-2 w-2" />
-                          RCS
+                          SMS
                         </Badge>
                       )}
                       {proposal.marketingActions.email && (
@@ -223,7 +223,7 @@ const PipelineColumn = ({
 
 export interface ProposalPipelineProps {
   proposals: Proposal[];
-  onMarketingAction?: (proposalId: string, action: 'rcs' | 'email' | 'call') => void;
+  onMarketingAction?: (proposalId: string, action: 'sms' | 'email' | 'call') => void;
 }
 
 const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProps) => {
@@ -287,7 +287,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
             proposals={proposals}
             icon={<CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
             color="bg-success"
-            tooltip="Pacientes liberados para contratação do crédito. Já receberam RCS, Email Marketing e ligação via IA."
+            tooltip="Pacientes liberados para contratação do crédito. Já receberam SMS, Email Marketing e ligação via IA."
             onAction={onMarketingAction}
             onViewDetails={handleViewDetails}
             isMobile={isMobile}
