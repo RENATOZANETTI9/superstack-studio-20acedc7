@@ -106,16 +106,16 @@ export function useDashboardStats() {
     const ticketMedio = totalConsultas > 0 ? Math.round(valorTotalLiberado / totalConsultas) : 0;
 
     // Marketing - always use ALL history for gatilhos balance (not filtered)
-    const allRcs = allHistory.filter(h => h.type === 'RCS' || h.type === 'Mensagem').length;
+    const allSms = allHistory.filter(h => h.type === 'SMS' || h.type === 'Mensagem').length;
     const allEmails = allHistory.filter(h => h.type === 'E-mail').length;
     const allLigacoes = allHistory.filter(h => h.type === 'Ligação').length;
-    const allTotal = allRcs + allEmails + allLigacoes;
+    const allTotal = allSms + allEmails + allLigacoes;
 
     // Filtered marketing for display
-    const rcsEnviados = history.filter(h => h.type === 'RCS' || h.type === 'Mensagem').length;
+    const smsEnviados = history.filter(h => h.type === 'SMS' || h.type === 'Mensagem').length;
     const emailsEnviados = history.filter(h => h.type === 'E-mail').length;
     const ligacoesIA = history.filter(h => h.type === 'Ligação').length;
-    const totalGatilhos = rcsEnviados + emailsEnviados + ligacoesIA;
+    const totalGatilhos = smsEnviados + emailsEnviados + ligacoesIA;
 
     const gatilhosRestantes = Math.max(0, GATILHOS_LIMIT - allTotal);
 
@@ -128,7 +128,7 @@ export function useDashboardStats() {
       totalConsultas, aprovadas, recusadas, taxaConversao,
       aguardandoAssinatura, pendenciasGerais, creditosPagos, creditosExpirados, creditosCancelados,
       valorTotalLiberado, valorTotalPago, ticketMedio,
-      totalGatilhos, rcsEnviados, emailsEnviados, ligacoesIA,
+      totalGatilhos, rcsEnviados: smsEnviados, emailsEnviados, ligacoesIA,
       gatilhosRestantes, gatilhosLimite: GATILHOS_LIMIT,
       totalInteracoes: history.length, interacoesPorTipo,
     };
@@ -184,7 +184,7 @@ export function useDashboardStats() {
   ].filter(d => d.value > 0), [stats]);
 
   const marketingDistribution = useMemo(() => [
-    { name: 'RCS', value: stats.rcsEnviados, color: 'hsl(var(--secondary))' },
+    { name: 'SMS', value: stats.rcsEnviados, color: 'hsl(var(--secondary))' },
     { name: 'Email', value: stats.emailsEnviados, color: 'hsl(var(--primary))' },
     { name: 'Ligações IA', value: stats.ligacoesIA, color: 'hsl(270, 50%, 60%)' },
   ], [stats]);

@@ -98,7 +98,7 @@ const Consultas = () => {
         status: randomStatus,
         value: randomStatus === 'aprovada' ? Math.floor(Math.random() * 30000) + 5000 : undefined,
         date: new Date().toLocaleString('pt-BR'),
-        marketingActions: randomStatus === 'aprovada' ? { rcs: false, email: false, call: false } : undefined,
+        marketingActions: randomStatus === 'aprovada' ? { sms: false, email: false, call: false } : undefined,
       };
     });
 
@@ -132,15 +132,15 @@ const Consultas = () => {
     setConsultasRestantes(prev => Math.max(0, prev - cpfs.length));
   };
 
-  const handleMarketingAction = (proposalId: string, action: 'rcs' | 'email' | 'call') => {
+  const handleMarketingAction = (proposalId: string, action: 'sms' | 'email' | 'call') => {
     setProposals(prev => 
       prev.map(p => {
         if (p.id === proposalId) {
-          const currentActions = p.marketingActions || { rcs: false, email: false, call: false };
+          const currentActions = p.marketingActions || { sms: false, email: false, call: false };
           const newValue = !currentActions[action];
           
           if (newValue) {
-            const actionNames = { rcs: 'RCS', email: 'Email', call: 'Ligação IA' };
+            const actionNames = { sms: 'SMS', email: 'Email', call: 'Ligação IA' };
             toast.success(`${actionNames[action]} enviado para ${p.name}!`);
             setGatilhosRestantes(prev => Math.max(0, prev - 1));
           }
@@ -334,7 +334,7 @@ const Consultas = () => {
                       <div className="flex justify-center gap-3">
                         <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                           <MessageSquare className="h-4 w-4 text-primary mb-1" />
-                          <span className="text-xs font-medium text-foreground">RCS</span>
+                          <span className="text-xs font-medium text-foreground">SMS</span>
                         </div>
                         <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                           <Mail className="h-4 w-4 text-primary mb-1" />

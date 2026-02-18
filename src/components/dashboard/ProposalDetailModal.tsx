@@ -12,6 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Proposal } from './ProposalPipeline';
 
 interface ProposalDetailModalProps {
@@ -53,6 +60,8 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
   const [isEditing, setIsEditing] = useState(false);
   const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
   const [newValue, setNewValue] = useState('');
+  const [pixKeyType, setPixKeyType] = useState<string>('');
+  const [pixKey, setPixKey] = useState('');
 
   if (!proposal) return null;
 
@@ -84,13 +93,17 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
   const handleCancel = () => {
     setIsEditing(false);
     setNewValue('');
+    setPixKeyType('');
+    setPixKey('');
   };
 
   const handleReenviar = () => {
     // Here you would implement the API call to update the proposal
-    console.log('Reenviar proposta com:', { calculationType, newValue });
+    console.log('Reenviar proposta com:', { calculationType, newValue, pixKeyType, pixKey });
     setIsEditing(false);
     setNewValue('');
+    setPixKeyType('');
+    setPixKey('');
     onOpenChange(false);
   };
 
@@ -107,6 +120,8 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
       if (!value) {
         setIsEditing(false);
         setNewValue('');
+        setPixKeyType('');
+        setPixKey('');
       }
       onOpenChange(value);
     }}>
@@ -195,6 +210,48 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
                       placeholder="0,00"
                       className="max-w-xs bg-background/50"
                     />
+                  </div>
+
+                  {/* Pix Section */}
+                  <div className="border-t border-border/50 pt-4 space-y-3">
+                    <Label className="text-sm font-medium text-foreground block">
+                      Chave Pix para recebimento:
+                    </Label>
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">
+                        Tipo da chave:
+                      </Label>
+                      <Select value={pixKeyType} onValueChange={setPixKeyType}>
+                        <SelectTrigger className="max-w-xs bg-background/50">
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="telefone">Telefone</SelectItem>
+                          <SelectItem value="email">E-mail</SelectItem>
+                          <SelectItem value="cpf">CPF</SelectItem>
+                          <SelectItem value="cnpj">CNPJ</SelectItem>
+                          <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">
+                        Chave Pix:
+                      </Label>
+                      <Input
+                        type="text"
+                        value={pixKey}
+                        onChange={(e) => setPixKey(e.target.value)}
+                        placeholder={
+                          pixKeyType === 'telefone' ? '(00) 00000-0000'
+                          : pixKeyType === 'email' ? 'email@exemplo.com'
+                          : pixKeyType === 'cpf' ? '000.000.000-00'
+                          : pixKeyType === 'cnpj' ? '00.000.000/0001-00'
+                          : 'Cole a chave aqui'
+                        }
+                        className="max-w-xs bg-background/50"
+                      />
+                    </div>
                   </div>
                 </div>
               </motion.div>
