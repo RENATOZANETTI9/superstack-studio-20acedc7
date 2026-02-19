@@ -8,77 +8,42 @@ import brazilMapSrc from '@/assets/brazil-map.png';
 // Pin positions calibrated to Brasil-2.png map boundaries
 // The map landmass sits roughly within x:12-82%, y:4-96% of the image
 const brazilPins = [
-  // Norte — capitais
-  { id: 'AM',       x: 30,  y: 30,  label: 'Manaus' },
-  { id: 'PA',       x: 56,  y: 18,  label: 'Belém' },
+  // Norte
   { id: 'RR',       x: 34,  y: 8,   label: 'Boa Vista' },
   { id: 'AP',       x: 62,  y: 6,   label: 'Macapá' },
-  { id: 'RO',       x: 32,  y: 48,  label: 'Porto Velho' },
-  { id: 'AC',       x: 18,  y: 42,  label: 'Rio Branco' },
-  { id: 'TO',       x: 60,  y: 42,  label: 'Palmas' },
-  // Norte — cidades
-  { id: 'Santarém', x: 48,  y: 16,  label: 'Santarém' },
-  { id: 'Marabá',   x: 58,  y: 30,  label: 'Marabá' },
-  { id: 'Altamira', x: 44,  y: 24,  label: 'Altamira' },
-  { id: 'JiParaná', x: 34,  y: 52,  label: 'Ji-Paraná' },
-  { id: 'Sinop',    x: 42,  y: 38,  label: 'Sinop' },
-  { id: 'Tabatinga',x: 16,  y: 34,  label: 'Tabatinga' },
-  { id: 'Tefé',     x: 26,  y: 28,  label: 'Tefé' },
-  // Nordeste — capitais
+  { id: 'AM',       x: 28,  y: 28,  label: 'Manaus' },
+  { id: 'PA',       x: 56,  y: 16,  label: 'Belém' },
+  { id: 'AC',       x: 16,  y: 40,  label: 'Rio Branco' },
+  { id: 'Altamira', x: 44,  y: 22,  label: 'Altamira' },
+  { id: 'RO',       x: 30,  y: 48,  label: 'Porto Velho' },
+  { id: 'TO',       x: 58,  y: 40,  label: 'Palmas' },
+  // Nordeste
   { id: 'MA',       x: 64,  y: 22,  label: 'São Luís' },
-  { id: 'PI',       x: 68,  y: 30,  label: 'Teresina' },
-  { id: 'CE',       x: 76,  y: 20,  label: 'Fortaleza' },
-  { id: 'RN',       x: 84,  y: 22,  label: 'Natal' },
-  { id: 'PB',       x: 84,  y: 28,  label: 'João Pessoa' },
-  { id: 'PE',       x: 80,  y: 34,  label: 'Recife' },
-  { id: 'AL',       x: 82,  y: 40,  label: 'Maceió' },
-  { id: 'SE',       x: 80,  y: 46,  label: 'Aracaju' },
+  { id: 'CE',       x: 78,  y: 18,  label: 'Fortaleza' },
+  { id: 'RN',       x: 86,  y: 24,  label: 'Natal' },
+  { id: 'PI',       x: 68,  y: 32,  label: 'Teresina' },
+  { id: 'PE',       x: 82,  y: 34,  label: 'Recife' },
+  { id: 'AL',       x: 84,  y: 42,  label: 'Maceió' },
   { id: 'BA',       x: 74,  y: 52,  label: 'Salvador' },
-  // Nordeste — cidades
-  { id: 'Mossoró',  x: 80,  y: 25,  label: 'Mossoró' },
-  { id: 'CampGrd',  x: 82,  y: 31,  label: 'Campina Grande' },
-  { id: 'Juazeiro', x: 74,  y: 27,  label: 'Juazeiro do Norte' },
-  { id: 'Imperatr', x: 62,  y: 32,  label: 'Imperatriz' },
   { id: 'Petrol',   x: 72,  y: 40,  label: 'Petrolina' },
-  { id: 'FeiraSant',x: 76,  y: 54,  label: 'Feira de Santana' },
-  { id: 'VitConq',  x: 70,  y: 58,  label: 'Vitória da Conquista' },
-  { id: 'Barreiras',x: 64,  y: 50,  label: 'Barreiras' },
-  // Centro-Oeste — capitais
-  { id: 'MT',       x: 40,  y: 46,  label: 'Cuiabá' },
+  // Centro-Oeste
+  { id: 'MT',       x: 40,  y: 44,  label: 'Cuiabá' },
   { id: 'GO',       x: 56,  y: 56,  label: 'Goiânia' },
-  { id: 'DF',       x: 62,  y: 60,  label: 'Brasília' },
-  { id: 'MS',       x: 46,  y: 68,  label: 'Campo Grande' },
-  // Centro-Oeste — cidades
-  { id: 'RondonMT', x: 44,  y: 54,  label: 'Rondonópolis' },
-  { id: 'Dourados', x: 46,  y: 74,  label: 'Dourados' },
-  { id: 'Corumbá',  x: 36,  y: 64,  label: 'Corumbá' },
-  // Sudeste — capitais
-  { id: 'MG',       x: 66,  y: 60,  label: 'Belo Horizonte' },
-  { id: 'ES',       x: 76,  y: 62,  label: 'Vitória' },
+  { id: 'DF',       x: 64,  y: 60,  label: 'Brasília' },
+  { id: 'MS',       x: 44,  y: 68,  label: 'Campo Grande' },
+  { id: 'Corumbá',  x: 34,  y: 62,  label: 'Corumbá' },
+  // Sudeste
+  { id: 'MG',       x: 68,  y: 60,  label: 'Belo Horizonte' },
+  { id: 'ES',       x: 78,  y: 62,  label: 'Vitória' },
+  { id: 'SP',       x: 56,  y: 72,  label: 'São Paulo' },
   { id: 'RJ',       x: 72,  y: 70,  label: 'Rio de Janeiro' },
-  { id: 'SP',       x: 58,  y: 72,  label: 'São Paulo' },
-  // Sudeste — cidades
-  { id: 'Uberlândia',x: 58, y: 62,  label: 'Uberlândia' },
-  { id: 'JuizFora', x: 70,  y: 66,  label: 'Juiz de Fora' },
-  { id: 'Campinas', x: 60,  y: 76,  label: 'Campinas' },
-  { id: 'Ribeirão', x: 56,  y: 66,  label: 'Ribeirão Preto' },
-  { id: 'SJCampos', x: 66,  y: 72,  label: 'São José dos Campos' },
-  { id: 'Sorocaba', x: 54,  y: 76,  label: 'Sorocaba' },
-  { id: 'Niterói',  x: 74,  y: 68,  label: 'Niterói' },
-  { id: 'Montes',   x: 68,  y: 56,  label: 'Montes Claros' },
-  // Sul — capitais
+  { id: 'Ribeirão', x: 56,  y: 64,  label: 'Ribeirão Preto' },
+  // Sul
   { id: 'PR',       x: 52,  y: 78,  label: 'Curitiba' },
-  { id: 'SC',       x: 54,  y: 84,  label: 'Florianópolis' },
-  { id: 'RS',       x: 48,  y: 92,  label: 'Porto Alegre' },
-  // Sul — cidades
-  { id: 'Londrina', x: 56,  y: 76,  label: 'Londrina' },
-  { id: 'Joinville',x: 56,  y: 82,  label: 'Joinville' },
-  { id: 'Blumenau', x: 52,  y: 86,  label: 'Blumenau' },
-  { id: 'CaxiasSul',x: 48,  y: 88,  label: 'Caxias do Sul' },
-  { id: 'Pelotas',  x: 46,  y: 96,  label: 'Pelotas' },
-  { id: 'Maringá',  x: 50,  y: 74,  label: 'Maringá' },
-  { id: 'Foz',      x: 44,  y: 78,  label: 'Foz do Iguaçu' },
-  { id: 'Uruguaiana',x: 38, y: 92,  label: 'Uruguaiana' },
+  { id: 'SC',       x: 56,  y: 86,  label: 'Florianópolis' },
+  { id: 'RS',       x: 48,  y: 94,  label: 'Porto Alegre' },
+  { id: 'Foz',      x: 42,  y: 78,  label: 'Foz do Iguaçu' },
+  { id: 'Uruguaiana',x: 36, y: 92,  label: 'Uruguaiana' },
 ];
 
 const infographics = [
