@@ -9,38 +9,32 @@ import brazilMapSrc from '@/assets/brazil-map.png';
 // The map landmass sits roughly within x:12-82%, y:4-96% of the image
 const brazilPins = [
   // Norte
-  { id: 'RR',       x: 34,  y: 8,   label: 'Boa Vista' },
-  
-  { id: 'AM',       x: 28,  y: 28,  label: 'Manaus' },
-  { id: 'PA',       x: 56,  y: 16,  label: 'Belém' },
-  
-  { id: 'Altamira', x: 44,  y: 22,  label: 'Altamira' },
-  { id: 'RO',       x: 30,  y: 48,  label: 'Porto Velho' },
-  { id: 'TO',       x: 58,  y: 40,  label: 'Palmas' },
+  { id: 'RR',       x: 30,  y: 10,  label: 'Boa Vista' },
+  { id: 'AM',       x: 25,  y: 25,  label: 'Manaus' },
+  { id: 'PA',       x: 52,  y: 18,  label: 'Belém' },
+  { id: 'Altamira', x: 42,  y: 28,  label: 'Altamira' },
+  { id: 'RO',       x: 28,  y: 42,  label: 'Porto Velho' },
+  { id: 'TO',       x: 52,  y: 38,  label: 'Palmas' },
   // Nordeste
-  { id: 'MA',       x: 64,  y: 22,  label: 'São Luís' },
-  { id: 'CE',       x: 78,  y: 18,  label: 'Fortaleza' },
-  { id: 'RN',       x: 86,  y: 24,  label: 'Natal' },
-  { id: 'PI',       x: 68,  y: 32,  label: 'Teresina' },
-  { id: 'PE',       x: 82,  y: 34,  label: 'Recife' },
-  { id: 'AL',       x: 84,  y: 42,  label: 'Maceió' },
-  { id: 'BA',       x: 74,  y: 52,  label: 'Salvador' },
-  { id: 'Petrol',   x: 72,  y: 40,  label: 'Petrolina' },
+  { id: 'MA',       x: 60,  y: 22,  label: 'São Luís' },
+  { id: 'CE',       x: 72,  y: 20,  label: 'Fortaleza' },
+  { id: 'RN',       x: 80,  y: 26,  label: 'Natal' },
+  { id: 'PI',       x: 64,  y: 32,  label: 'Teresina' },
+  { id: 'PE',       x: 78,  y: 34,  label: 'Recife' },
+  { id: 'BA',       x: 70,  y: 48,  label: 'Salvador' },
   // Centro-Oeste
-  { id: 'MT',       x: 40,  y: 44,  label: 'Cuiabá' },
-  { id: 'GO',       x: 56,  y: 56,  label: 'Goiânia' },
-  { id: 'DF',       x: 64,  y: 60,  label: 'Brasília' },
-  { id: 'MS',       x: 44,  y: 68,  label: 'Campo Grande' },
-  { id: 'Corumbá',  x: 34,  y: 62,  label: 'Corumbá' },
+  { id: 'MT',       x: 38,  y: 44,  label: 'Cuiabá' },
+  { id: 'GO',       x: 52,  y: 54,  label: 'Goiânia' },
+  { id: 'DF',       x: 60,  y: 58,  label: 'Brasília' },
+  { id: 'MS',       x: 40,  y: 62,  label: 'Campo Grande' },
   // Sudeste
-  { id: 'MG',       x: 68,  y: 60,  label: 'Belo Horizonte' },
-  { id: 'ES',       x: 78,  y: 62,  label: 'Vitória' },
-  { id: 'SP',       x: 56,  y: 72,  label: 'São Paulo' },
-  { id: 'RJ',       x: 72,  y: 70,  label: 'Rio de Janeiro' },
-  { id: 'Ribeirão', x: 56,  y: 64,  label: 'Ribeirão Preto' },
+  { id: 'MG',       x: 64,  y: 58,  label: 'Belo Horizonte' },
+  { id: 'ES',       x: 74,  y: 60,  label: 'Vitória' },
+  { id: 'SP',       x: 52,  y: 70,  label: 'São Paulo' },
+  { id: 'RJ',       x: 66,  y: 68,  label: 'Rio de Janeiro' },
   // Sul
-  { id: 'PR',       x: 52,  y: 78,  label: 'Curitiba' },
-  { id: 'SC',       x: 56,  y: 86,  label: 'Florianópolis' },
+  { id: 'PR',       x: 50,  y: 78,  label: 'Curitiba' },
+  { id: 'SC',       x: 54,  y: 84,  label: 'Florianópolis' },
 ];
 
 const infographics = [
