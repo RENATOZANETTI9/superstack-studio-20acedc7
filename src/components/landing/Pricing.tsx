@@ -105,72 +105,56 @@ const Pricing = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative rounded-3xl p-8 ${
-                plan.popular
-                  ? 'bg-gradient-to-b from-helpude-purple to-helpude-purple-dark text-white scale-105 shadow-2xl'
-                  : 'bg-card border border-border'
-              }`}
+              className="relative rounded-3xl p-8 bg-gradient-to-b from-helpude-purple to-helpude-purple-dark text-white shadow-2xl"
             >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <div className="flex items-center gap-1 bg-helpude-teal text-white text-sm font-medium px-4 py-1.5 rounded-full whitespace-nowrap">
-                    <Star className="w-4 h-4" />
-                    Mais Popular
-                  </div>
-                </div>
-              )}
 
               {/* Header */}
               <div className="mb-6">
-                <div className={`flex items-center gap-2 mb-2`}>
-                  <div className={`p-1.5 rounded-lg ${plan.popular ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <span className={plan.popular ? 'text-white' : 'text-primary'}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 rounded-lg bg-white/20">
+                    <span className="text-white">
                       {plan.icon}
                     </span>
                   </div>
-                  <span className={`text-sm font-medium ${plan.popular ? 'text-white/70' : 'text-muted-foreground'}`}>
+                  <span className="text-sm font-medium text-white/70">
                     {plan.subtitle}
                   </span>
                 </div>
-                <h3 className={`text-2xl font-display font-bold ${plan.popular ? 'text-white' : 'text-foreground'}`}>
+                <h3 className="text-2xl font-display font-bold text-white">
                   {plan.name}
                 </h3>
               </div>
 
               {/* Consultas Limit */}
-              <div className={`mb-4 rounded-2xl p-4 ${plan.popular ? 'bg-white/10' : 'bg-primary/5 border border-primary/10'}`}>
-                <div className={`text-xs font-medium uppercase tracking-wide mb-1 ${plan.popular ? 'text-white/60' : 'text-muted-foreground'}`}>
+              <div className="mb-4 rounded-2xl p-4 bg-white/10">
+                <div className="text-xs font-medium uppercase tracking-wide mb-1 text-white/60">
                   Capacidade
                 </div>
-                <div className={`text-lg font-display font-bold ${plan.popular ? 'text-white' : 'text-primary'}`}>
+                <div className="text-lg font-display font-bold text-white">
                   {plan.consultasLimit}
                 </div>
               </div>
 
-              <p className={`text-sm mb-6 ${plan.popular ? 'text-white/80' : 'text-muted-foreground'}`}>
+              <p className="text-sm mb-6 text-white/80">
                 {plan.description}
               </p>
 
               {/* Features */}
-              <div className={`text-xs font-semibold uppercase tracking-wide mb-3 ${plan.popular ? 'text-white/60' : 'text-muted-foreground'}`}>
+              <div className="text-xs font-semibold uppercase tracking-wide mb-3 text-white/60">
                 Recursos inclusos
               </div>
               <ul className="space-y-3 mb-6">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                      plan.popular ? 'bg-white/20' : 'bg-primary/10'
-                    }`}>
-                      <Check className={`w-3 h-3 ${plan.popular ? 'text-white' : 'text-primary'}`} />
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-white/20">
+                      <Check className="w-3 h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`text-sm ${plan.popular ? 'text-white/90' : 'text-foreground'}`}>
+                      <span className="text-sm text-white/90">
                         {feature.text}
                       </span>
                       {feature.points && (
-                        <span className={`ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                          plan.popular ? 'bg-white/15 text-white/80' : 'bg-primary/10 text-primary'
-                        }`}>
+                        <span className="ml-1.5 text-xs font-medium px-1.5 py-0.5 rounded-full bg-white/15 text-white/80">
                           {feature.points}
                         </span>
                       )}
@@ -181,15 +165,15 @@ const Pricing = () => {
 
               {/* Requirements */}
               {plan.requirements && plan.requirements.length > 0 && (
-                <div className={`rounded-2xl p-4 mb-6 ${plan.popular ? 'bg-white/10' : 'bg-muted/50 border border-border'}`}>
-                  <div className={`flex items-center gap-2 mb-3 text-xs font-semibold uppercase tracking-wide ${plan.popular ? 'text-white/60' : 'text-muted-foreground'}`}>
+                <div className="rounded-2xl p-4 mb-6 bg-white/10">
+                  <div className="flex items-center gap-2 mb-3 text-xs font-semibold uppercase tracking-wide text-white/60">
                     <FileText className="w-3.5 h-3.5" />
                     Requisitos para liberar
                   </div>
                   <ul className="space-y-2">
                     {plan.requirements.map((req, i) => (
-                      <li key={i} className={`flex items-start gap-2 text-sm ${plan.popular ? 'text-white/80' : 'text-foreground'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-2 ${plan.popular ? 'bg-white/50' : 'bg-muted-foreground/50'}`} />
+                      <li key={i} className="flex items-start gap-2 text-sm text-white/80">
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0 mt-2 bg-white/50" />
                         {req.text}
                       </li>
                     ))}
@@ -198,11 +182,11 @@ const Pricing = () => {
               )}
 
               <Button
-                variant={plan.popular ? 'heroOutline' : plan.name === 'Nível Enterprise' ? 'secondary' : 'outline'}
+                variant="heroOutline"
                 className="w-full"
                 size="lg"
               >
-                {plan.name === 'Nível Básico' ? 'Começar Grátis' : plan.popular ? 'Evoluir para Profissional' : 'Falar com Consultor'}
+                {plan.name === 'Nível Básico' ? 'Começar Grátis' : plan.name === 'Nível Profissional' ? 'Evoluir para Profissional' : 'Falar com Consultor'}
               </Button>
             </motion.div>
           ))}
