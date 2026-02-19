@@ -130,7 +130,7 @@ const Hero = () => {
                   src={brazilMapSrc}
                   alt="Mapa do Brasil"
                   className="w-full h-auto"
-                  style={{ filter: 'drop-shadow(0 0 24px rgba(123,95,199,0.45))' }}
+                  style={{ filter: 'drop-shadow(0 0 12px rgba(123,95,199,0.25))' }}
                 />
 
                 {/* SVG overlay — viewBox 0 0 100 100 so pin coords = % of image */}
