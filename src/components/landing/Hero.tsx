@@ -5,36 +5,47 @@ import { Link } from 'react-router-dom';
 import logoPinSrc from '@/assets/logo-pin.png';
 import brazilMapSrc from '@/assets/brazil-map.png';
 
-// Brazil state pin positions (% of SVG viewBox 0 0 500 540)
+// Pin positions as % of the image (x=0 left, y=0 top)
+// Calibrated for the purple/teal gradient Brazil map with transparent background
 const brazilPins = [
-  { id: 'SP', x: 52, y: 72, label: 'São Paulo' },
-  { id: 'RJ', x: 56, y: 70, label: 'Rio de Janeiro' },
-  { id: 'MG', x: 53, y: 64, label: 'Minas Gerais' },
-  { id: 'RS', x: 44, y: 88, label: 'Rio Grande do Sul' },
-  { id: 'PR', x: 47, y: 79, label: 'Paraná' },
-  { id: 'SC', x: 46, y: 83, label: 'Santa Catarina' },
-  { id: 'BA', x: 60, y: 56, label: 'Bahia' },
-  { id: 'GO', x: 48, y: 57, label: 'Goiás' },
-  { id: 'DF', x: 50, y: 57, label: 'Distrito Federal' },
-  { id: 'PE', x: 66, y: 45, label: 'Pernambuco' },
-  { id: 'CE', x: 64, y: 37, label: 'Ceará' },
-  { id: 'MA', x: 56, y: 34, label: 'Maranhão' },
-  { id: 'PA', x: 47, y: 28, label: 'Pará' },
-  { id: 'AM', x: 28, y: 25, label: 'Amazonas' },
-  { id: 'MT', x: 40, y: 50, label: 'Mato Grosso' },
-  { id: 'MS', x: 44, y: 67, label: 'Mato Grosso do Sul' },
-  { id: 'RN', x: 68, y: 39, label: 'Rio Grande do Norte' },
-  { id: 'PB', x: 68, y: 43, label: 'Paraíba' },
-  { id: 'AL', x: 67, y: 49, label: 'Alagoas' },
-  { id: 'ES', x: 58, y: 65, label: 'Espírito Santo' },
-  { id: 'TO', x: 51, y: 43, label: 'Tocantins' },
-  { id: 'RO', x: 31, y: 38, label: 'Rondônia' },
+  // Norte
+  { id: 'AM',  x: 24, y: 28, label: 'Amazonas' },
+  { id: 'PA',  x: 47, y: 22, label: 'Pará' },
+  { id: 'RR',  x: 30, y: 11, label: 'Roraima' },
+  { id: 'AP',  x: 55, y: 9,  label: 'Amapá' },
+  { id: 'RO',  x: 30, y: 43, label: 'Rondônia' },
+  { id: 'AC',  x: 16, y: 38, label: 'Acre' },
+  { id: 'TO',  x: 54, y: 42, label: 'Tocantins' },
+  // Nordeste
+  { id: 'MA',  x: 58, y: 28, label: 'Maranhão' },
+  { id: 'PI',  x: 63, y: 35, label: 'Piauí' },
+  { id: 'CE',  x: 69, y: 27, label: 'Ceará' },
+  { id: 'RN',  x: 75, y: 27, label: 'Rio Grande do Norte' },
+  { id: 'PB',  x: 75, y: 33, label: 'Paraíba' },
+  { id: 'PE',  x: 70, y: 38, label: 'Pernambuco' },
+  { id: 'AL',  x: 74, y: 44, label: 'Alagoas' },
+  { id: 'SE',  x: 72, y: 49, label: 'Sergipe' },
+  { id: 'BA',  x: 63, y: 53, label: 'Bahia' },
+  // Centro-Oeste
+  { id: 'MT',  x: 40, y: 48, label: 'Mato Grosso' },
+  { id: 'GO',  x: 51, y: 58, label: 'Goiás' },
+  { id: 'DF',  x: 54, y: 61, label: 'Distrito Federal' },
+  { id: 'MS',  x: 44, y: 69, label: 'Mato Grosso do Sul' },
+  // Sudeste
+  { id: 'MG',  x: 58, y: 61, label: 'Minas Gerais' },
+  { id: 'ES',  x: 65, y: 63, label: 'Espírito Santo' },
+  { id: 'RJ',  x: 62, y: 70, label: 'Rio de Janeiro' },
+  { id: 'SP',  x: 53, y: 73, label: 'São Paulo' },
+  // Sul
+  { id: 'PR',  x: 49, y: 79, label: 'Paraná' },
+  { id: 'SC',  x: 48, y: 85, label: 'Santa Catarina' },
+  { id: 'RS',  x: 44, y: 91, label: 'Rio Grande do Sul' },
 ];
 
 const infographics = [
   { value: '+1.580', label: 'Profissionais da área de saúde' },
   { value: '+1.000', label: 'Clínicas de Grande e Pequeno Porte ativas' },
-  { value: '+106', label: 'Cidades do Brasil' },
+  { value: '+106',   label: 'Cidades do Brasil' },
   { value: '+4.827', label: 'Procedimentos médicos por mês' },
 ];
 
@@ -43,13 +54,14 @@ const Hero = () => {
     <section className="relative min-h-screen gradient-hero overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-hero-pattern opacity-30" />
-      
+
       {/* Animated Gradient Orbs */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-helpude-purple/30 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-helpude-teal/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-      
+
       <div className="container relative z-10 mx-auto px-4 pt-32 pb-20">
         <div className="max-w-5xl mx-auto text-center">
+
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -84,7 +96,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg md:text-xl text-white/70 max-w-3xl mx-auto mb-10 leading-relaxed"
           >
-            O HelpUde conecta clínicas de saúde a soluções de crédito personalizadas, 
+            O HelpUde conecta clínicas de saúde a soluções de crédito personalizadas,
             permitindo que mais pacientes tenham acesso aos tratamentos que precisam.
           </motion.p>
 
@@ -117,59 +129,53 @@ const Hero = () => {
           >
             {/* Left: Map */}
             <div className="relative flex-shrink-0 w-full md:w-[340px] lg:w-[400px]">
-              <div className="absolute inset-0 bg-helpude-purple/10 rounded-3xl blur-2xl" />
-              <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-3 overflow-hidden">
-                {/* Map image as base */}
-                <div className="relative">
-                  <img
-                    src={brazilMapSrc}
-                    alt="Mapa do Brasil"
-                    className="w-full h-auto opacity-80"
-                    style={{ filter: 'drop-shadow(0 0 20px rgba(123,95,199,0.4))' }}
-                  />
-                  {/* SVG overlay for pins, positioned absolutely over the image */}
-                  <svg
-                    viewBox="0 0 500 540"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute inset-0 w-full h-full"
-                    aria-label="Pins HelpUde no Brasil"
-                  >
-                    {brazilPins.map((pin, index) => {
-                      const px = (pin.x / 100) * 500;
-                      const py = (pin.y / 100) * 540;
-                      return (
-                        <motion.g
-                          key={pin.id}
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.4, delay: 0.8 + index * 0.05 }}
-                        >
-                          <circle cx={px} cy={py + 1} r="7" fill="rgba(0,0,0,0.25)" />
-                          <circle cx={px} cy={py} r="7" fill="white" stroke="rgba(123,95,199,0.7)" strokeWidth="1.2" />
-                          <image
-                            href={logoPinSrc}
-                            x={px - 4.5}
-                            y={py - 4.5}
-                            width="9"
-                            height="9"
-                            preserveAspectRatio="xMidYMid meet"
-                          />
-                          <circle cx={px} cy={py} r="11" fill="none" stroke="rgba(123,95,199,0.25)" strokeWidth="1" />
-                        </motion.g>
-                      );
-                    })}
-                  </svg>
-                </div>
-                <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-helpude-teal/60" />
-                <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-helpude-purple/60" />
-                <div className="absolute bottom-3 left-3 w-2 h-2 rounded-full bg-helpude-purple/60" />
-                <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-helpude-teal/60" />
+              <div className="relative overflow-hidden">
+                {/* Map image */}
+                <img
+                  src={brazilMapSrc}
+                  alt="Mapa do Brasil"
+                  className="w-full h-auto"
+                  style={{ filter: 'drop-shadow(0 0 24px rgba(123,95,199,0.45))' }}
+                />
+
+                {/* SVG overlay — viewBox 0 0 100 100 so pin coords = % of image */}
+                <svg
+                  viewBox="0 0 100 100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="absolute inset-0 w-full h-full"
+                  aria-label="Pins HelpUde no Brasil"
+                >
+                  {brazilPins.map((pin, index) => (
+                    <motion.g
+                      key={pin.id}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.35, delay: 0.9 + index * 0.05 }}
+                    >
+                      {/* drop shadow */}
+                      <circle cx={pin.x} cy={pin.y + 0.5} r="2.3" fill="rgba(0,0,0,0.28)" />
+                      {/* white bg circle */}
+                      <circle cx={pin.x} cy={pin.y} r="2.3" fill="white" stroke="rgba(123,95,199,0.85)" strokeWidth="0.45" />
+                      {/* logo icon */}
+                      <image
+                        href={logoPinSrc}
+                        x={pin.x - 1.5}
+                        y={pin.y - 1.5}
+                        width="3"
+                        height="3"
+                        preserveAspectRatio="xMidYMid meet"
+                      />
+                      {/* outer halo */}
+                      <circle cx={pin.x} cy={pin.y} r="3.8" fill="none" stroke="rgba(123,95,199,0.2)" strokeWidth="0.6" />
+                    </motion.g>
+                  ))}
+                </svg>
               </div>
             </div>
 
             {/* Right: Title + Infographics */}
             <div className="flex-1 text-left w-full">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-white mb-2 leading-snug">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-3 leading-tight">
                 Impactando Clínicas<br />em Todo o Brasil
               </h2>
               <p className="text-white/50 text-sm mb-8">De norte a sul, transformando o acesso à saúde</p>
