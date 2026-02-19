@@ -9,68 +9,76 @@ import brazilMapSrc from '@/assets/brazil-map.png';
 // The map landmass sits roughly within x:12-82%, y:4-96% of the image
 const brazilPins = [
   // Norte — capitais
-  { id: 'AM',       x: 34,  y: 32,  label: 'Manaus' },
-  { id: 'PA',       x: 58,  y: 22,  label: 'Belém' },
-  { id: 'RR',       x: 38,  y: 11,  label: 'Boa Vista' },
-  { id: 'AP',       x: 64,  y: 9,   label: 'Macapá' },
-  { id: 'RO',       x: 36,  y: 47,  label: 'Porto Velho' },
-  { id: 'AC',       x: 24,  y: 43,  label: 'Rio Branco' },
-  { id: 'TO',       x: 62,  y: 44,  label: 'Palmas' },
+  { id: 'AM',       x: 30,  y: 30,  label: 'Manaus' },
+  { id: 'PA',       x: 56,  y: 18,  label: 'Belém' },
+  { id: 'RR',       x: 34,  y: 8,   label: 'Boa Vista' },
+  { id: 'AP',       x: 62,  y: 6,   label: 'Macapá' },
+  { id: 'RO',       x: 32,  y: 48,  label: 'Porto Velho' },
+  { id: 'AC',       x: 18,  y: 42,  label: 'Rio Branco' },
+  { id: 'TO',       x: 60,  y: 42,  label: 'Palmas' },
   // Norte — cidades
-  { id: 'Santarém', x: 52,  y: 19,  label: 'Santarém' },
-  { id: 'Marabá',   x: 61,  y: 31,  label: 'Marabá' },
-  { id: 'Altamira', x: 48,  y: 26,  label: 'Altamira' },
-  { id: 'JiParaná', x: 38,  y: 51,  label: 'Ji-Paraná' },
-  { id: 'Sinop',    x: 46,  y: 40,  label: 'Sinop' },
+  { id: 'Santarém', x: 48,  y: 16,  label: 'Santarém' },
+  { id: 'Marabá',   x: 58,  y: 30,  label: 'Marabá' },
+  { id: 'Altamira', x: 44,  y: 24,  label: 'Altamira' },
+  { id: 'JiParaná', x: 34,  y: 52,  label: 'Ji-Paraná' },
+  { id: 'Sinop',    x: 42,  y: 38,  label: 'Sinop' },
+  { id: 'Tabatinga',x: 16,  y: 34,  label: 'Tabatinga' },
+  { id: 'Tefé',     x: 26,  y: 28,  label: 'Tefé' },
   // Nordeste — capitais
-  { id: 'MA',       x: 65,  y: 26,  label: 'São Luís' },
-  { id: 'PI',       x: 68,  y: 34,  label: 'Teresina' },
-  { id: 'CE',       x: 74,  y: 24,  label: 'Fortaleza' },
-  { id: 'RN',       x: 80,  y: 24,  label: 'Natal' },
-  { id: 'PB',       x: 79,  y: 31,  label: 'João Pessoa' },
-  { id: 'PE',       x: 75,  y: 38,  label: 'Recife' },
-  { id: 'AL',       x: 78,  y: 44,  label: 'Maceió' },
-  { id: 'SE',       x: 76,  y: 50,  label: 'Aracaju' },
-  { id: 'BA',       x: 70,  y: 53,  label: 'Salvador' },
+  { id: 'MA',       x: 64,  y: 22,  label: 'São Luís' },
+  { id: 'PI',       x: 68,  y: 30,  label: 'Teresina' },
+  { id: 'CE',       x: 76,  y: 20,  label: 'Fortaleza' },
+  { id: 'RN',       x: 84,  y: 22,  label: 'Natal' },
+  { id: 'PB',       x: 84,  y: 28,  label: 'João Pessoa' },
+  { id: 'PE',       x: 80,  y: 34,  label: 'Recife' },
+  { id: 'AL',       x: 82,  y: 40,  label: 'Maceió' },
+  { id: 'SE',       x: 80,  y: 46,  label: 'Aracaju' },
+  { id: 'BA',       x: 74,  y: 52,  label: 'Salvador' },
   // Nordeste — cidades
-  { id: 'Mossoró',  x: 77,  y: 28,  label: 'Mossoró' },
-  { id: 'CampGrd',  x: 76,  y: 34,  label: 'Campina Grande' },
-  { id: 'Juazeiro', x: 72,  y: 31,  label: 'Juazeiro do Norte' },
-  { id: 'Imperatr', x: 63,  y: 34,  label: 'Imperatriz' },
-  { id: 'Petrol',   x: 70,  y: 43,  label: 'Petrolina' },
-  { id: 'FeiraSant',x: 73,  y: 55,  label: 'Feira de Santana' },
-  { id: 'VitConq',  x: 69,  y: 59,  label: 'Vitória da Conquista' },
+  { id: 'Mossoró',  x: 80,  y: 25,  label: 'Mossoró' },
+  { id: 'CampGrd',  x: 82,  y: 31,  label: 'Campina Grande' },
+  { id: 'Juazeiro', x: 74,  y: 27,  label: 'Juazeiro do Norte' },
+  { id: 'Imperatr', x: 62,  y: 32,  label: 'Imperatriz' },
+  { id: 'Petrol',   x: 72,  y: 40,  label: 'Petrolina' },
+  { id: 'FeiraSant',x: 76,  y: 54,  label: 'Feira de Santana' },
+  { id: 'VitConq',  x: 70,  y: 58,  label: 'Vitória da Conquista' },
+  { id: 'Barreiras',x: 64,  y: 50,  label: 'Barreiras' },
   // Centro-Oeste — capitais
-  { id: 'MT',       x: 44,  y: 47,  label: 'Cuiabá' },
-  { id: 'GO',       x: 58,  y: 56,  label: 'Goiânia' },
-  { id: 'DF',       x: 62,  y: 61,  label: 'Brasília' },
-  { id: 'MS',       x: 50,  y: 68,  label: 'Campo Grande' },
+  { id: 'MT',       x: 40,  y: 46,  label: 'Cuiabá' },
+  { id: 'GO',       x: 56,  y: 56,  label: 'Goiânia' },
+  { id: 'DF',       x: 62,  y: 60,  label: 'Brasília' },
+  { id: 'MS',       x: 46,  y: 68,  label: 'Campo Grande' },
   // Centro-Oeste — cidades
-  { id: 'RondonMT', x: 47,  y: 53,  label: 'Rondonópolis' },
-  { id: 'Dourados', x: 50,  y: 72,  label: 'Dourados' },
+  { id: 'RondonMT', x: 44,  y: 54,  label: 'Rondonópolis' },
+  { id: 'Dourados', x: 46,  y: 74,  label: 'Dourados' },
+  { id: 'Corumbá',  x: 36,  y: 64,  label: 'Corumbá' },
   // Sudeste — capitais
   { id: 'MG',       x: 66,  y: 60,  label: 'Belo Horizonte' },
-  { id: 'ES',       x: 73,  y: 63,  label: 'Vitória' },
-  { id: 'RJ',       x: 70,  y: 69,  label: 'Rio de Janeiro' },
-  { id: 'SP',       x: 59,  y: 72,  label: 'São Paulo' },
+  { id: 'ES',       x: 76,  y: 62,  label: 'Vitória' },
+  { id: 'RJ',       x: 72,  y: 70,  label: 'Rio de Janeiro' },
+  { id: 'SP',       x: 58,  y: 72,  label: 'São Paulo' },
   // Sudeste — cidades
-  { id: 'Uberlândia',x: 61, y: 62,  label: 'Uberlândia' },
-  { id: 'JuizFora', x: 68,  y: 66,  label: 'Juiz de Fora' },
-  { id: 'Campinas', x: 61,  y: 74,  label: 'Campinas' },
-  { id: 'Ribeirão', x: 62,  y: 69,  label: 'Ribeirão Preto' },
+  { id: 'Uberlândia',x: 58, y: 62,  label: 'Uberlândia' },
+  { id: 'JuizFora', x: 70,  y: 66,  label: 'Juiz de Fora' },
+  { id: 'Campinas', x: 60,  y: 76,  label: 'Campinas' },
+  { id: 'Ribeirão', x: 56,  y: 66,  label: 'Ribeirão Preto' },
   { id: 'SJCampos', x: 66,  y: 72,  label: 'São José dos Campos' },
-  { id: 'Sorocaba', x: 57,  y: 74,  label: 'Sorocaba' },
-  { id: 'Niterói',  x: 71,  y: 68,  label: 'Niterói' },
+  { id: 'Sorocaba', x: 54,  y: 76,  label: 'Sorocaba' },
+  { id: 'Niterói',  x: 74,  y: 68,  label: 'Niterói' },
+  { id: 'Montes',   x: 68,  y: 56,  label: 'Montes Claros' },
   // Sul — capitais
-  { id: 'PR',       x: 56,  y: 78,  label: 'Curitiba' },
+  { id: 'PR',       x: 52,  y: 78,  label: 'Curitiba' },
   { id: 'SC',       x: 54,  y: 84,  label: 'Florianópolis' },
-  { id: 'RS',       x: 51,  y: 90,  label: 'Porto Alegre' },
+  { id: 'RS',       x: 48,  y: 92,  label: 'Porto Alegre' },
   // Sul — cidades
-  { id: 'Londrina', x: 59,  y: 78,  label: 'Londrina' },
-  { id: 'Joinville',x: 57,  y: 82,  label: 'Joinville' },
-  { id: 'Blumenau', x: 55,  y: 84,  label: 'Blumenau' },
-  { id: 'CaxiasSul',x: 53,  y: 88,  label: 'Caxias do Sul' },
-  { id: 'Pelotas',  x: 51,  y: 93,  label: 'Pelotas' },
+  { id: 'Londrina', x: 56,  y: 76,  label: 'Londrina' },
+  { id: 'Joinville',x: 56,  y: 82,  label: 'Joinville' },
+  { id: 'Blumenau', x: 52,  y: 86,  label: 'Blumenau' },
+  { id: 'CaxiasSul',x: 48,  y: 88,  label: 'Caxias do Sul' },
+  { id: 'Pelotas',  x: 46,  y: 96,  label: 'Pelotas' },
+  { id: 'Maringá',  x: 50,  y: 74,  label: 'Maringá' },
+  { id: 'Foz',      x: 44,  y: 78,  label: 'Foz do Iguaçu' },
+  { id: 'Uruguaiana',x: 38, y: 92,  label: 'Uruguaiana' },
 ];
 
 const infographics = [
@@ -184,20 +192,20 @@ const Hero = () => {
                       transition={{ duration: 0.35, delay: 0.9 + index * 0.05 }}
                     >
                       {/* drop shadow */}
-                      <circle cx={pin.x} cy={pin.y + 0.5} r="2.3" fill="rgba(0,0,0,0.28)" />
+                      <circle cx={pin.x} cy={pin.y + 0.4} r="1.6" fill="rgba(0,0,0,0.25)" />
                       {/* white bg circle */}
-                      <circle cx={pin.x} cy={pin.y} r="2.3" fill="white" stroke="rgba(123,95,199,0.85)" strokeWidth="0.45" />
+                      <circle cx={pin.x} cy={pin.y} r="1.6" fill="white" stroke="rgba(123,95,199,0.85)" strokeWidth="0.35" />
                       {/* logo icon */}
                       <image
                         href={logoPinSrc}
-                        x={pin.x - 1.5}
-                        y={pin.y - 1.5}
-                        width="3"
-                        height="3"
+                        x={pin.x - 1}
+                        y={pin.y - 1}
+                        width="2"
+                        height="2"
                         preserveAspectRatio="xMidYMid meet"
                       />
                       {/* outer halo */}
-                      <circle cx={pin.x} cy={pin.y} r="3.8" fill="none" stroke="rgba(123,95,199,0.2)" strokeWidth="0.6" />
+                      <circle cx={pin.x} cy={pin.y} r="2.8" fill="none" stroke="rgba(123,95,199,0.18)" strokeWidth="0.5" />
                     </motion.g>
                   ))}
                 </svg>
