@@ -5,41 +5,41 @@ import { Link } from 'react-router-dom';
 import logoPinSrc from '@/assets/logo-pin.png';
 import brazilMapSrc from '@/assets/brazil-map.png';
 
-// Pin positions as % of the image (x=0 left, y=0 top)
-// Calibrated for the purple/teal gradient Brazil map with transparent background
+// Pin positions calibrated to Brasil-2.png map boundaries
+// The map landmass sits roughly within x:12-82%, y:4-96% of the image
 const brazilPins = [
   // Norte
-  { id: 'AM',  x: 24, y: 28, label: 'Amazonas' },
-  { id: 'PA',  x: 47, y: 22, label: 'Pará' },
-  { id: 'RR',  x: 30, y: 11, label: 'Roraima' },
-  { id: 'AP',  x: 55, y: 9,  label: 'Amapá' },
-  { id: 'RO',  x: 30, y: 43, label: 'Rondônia' },
-  { id: 'AC',  x: 16, y: 38, label: 'Acre' },
-  { id: 'TO',  x: 54, y: 42, label: 'Tocantins' },
+  { id: 'AM',  x: 28, y: 32, label: 'Amazonas' },
+  { id: 'PA',  x: 50, y: 24, label: 'Pará' },
+  { id: 'RR',  x: 33, y: 13, label: 'Roraima' },
+  { id: 'AP',  x: 57, y: 11, label: 'Amapá' },
+  { id: 'RO',  x: 31, y: 46, label: 'Rondônia' },
+  { id: 'AC',  x: 19, y: 42, label: 'Acre' },
+  { id: 'TO',  x: 55, y: 43, label: 'Tocantins' },
   // Nordeste
-  { id: 'MA',  x: 58, y: 28, label: 'Maranhão' },
+  { id: 'MA',  x: 59, y: 28, label: 'Maranhão' },
   { id: 'PI',  x: 63, y: 35, label: 'Piauí' },
-  { id: 'CE',  x: 69, y: 27, label: 'Ceará' },
-  { id: 'RN',  x: 75, y: 27, label: 'Rio Grande do Norte' },
-  { id: 'PB',  x: 75, y: 33, label: 'Paraíba' },
-  { id: 'PE',  x: 70, y: 38, label: 'Pernambuco' },
-  { id: 'AL',  x: 74, y: 44, label: 'Alagoas' },
-  { id: 'SE',  x: 72, y: 49, label: 'Sergipe' },
-  { id: 'BA',  x: 63, y: 53, label: 'Bahia' },
+  { id: 'CE',  x: 68, y: 27, label: 'Ceará' },
+  { id: 'RN',  x: 73, y: 26, label: 'Rio Grande do Norte' },
+  { id: 'PB',  x: 73, y: 32, label: 'Paraíba' },
+  { id: 'PE',  x: 68, y: 38, label: 'Pernambuco' },
+  { id: 'AL',  x: 72, y: 43, label: 'Alagoas' },
+  { id: 'SE',  x: 70, y: 48, label: 'Sergipe' },
+  { id: 'BA',  x: 63, y: 52, label: 'Bahia' },
   // Centro-Oeste
-  { id: 'MT',  x: 40, y: 48, label: 'Mato Grosso' },
-  { id: 'GO',  x: 51, y: 58, label: 'Goiás' },
-  { id: 'DF',  x: 54, y: 61, label: 'Distrito Federal' },
-  { id: 'MS',  x: 44, y: 69, label: 'Mato Grosso do Sul' },
+  { id: 'MT',  x: 40, y: 47, label: 'Mato Grosso' },
+  { id: 'GO',  x: 52, y: 57, label: 'Goiás' },
+  { id: 'DF',  x: 55, y: 60, label: 'Distrito Federal' },
+  { id: 'MS',  x: 45, y: 67, label: 'Mato Grosso do Sul' },
   // Sudeste
-  { id: 'MG',  x: 58, y: 61, label: 'Minas Gerais' },
-  { id: 'ES',  x: 65, y: 63, label: 'Espírito Santo' },
-  { id: 'RJ',  x: 62, y: 70, label: 'Rio de Janeiro' },
-  { id: 'SP',  x: 53, y: 73, label: 'São Paulo' },
+  { id: 'MG',  x: 59, y: 60, label: 'Minas Gerais' },
+  { id: 'ES',  x: 66, y: 62, label: 'Espírito Santo' },
+  { id: 'RJ',  x: 62, y: 68, label: 'Rio de Janeiro' },
+  { id: 'SP',  x: 54, y: 71, label: 'São Paulo' },
   // Sul
-  { id: 'PR',  x: 49, y: 79, label: 'Paraná' },
-  { id: 'SC',  x: 48, y: 85, label: 'Santa Catarina' },
-  { id: 'RS',  x: 44, y: 91, label: 'Rio Grande do Sul' },
+  { id: 'PR',  x: 50, y: 77, label: 'Paraná' },
+  { id: 'SC',  x: 49, y: 83, label: 'Santa Catarina' },
+  { id: 'RS',  x: 46, y: 89, label: 'Rio Grande do Sul' },
 ];
 
 const infographics = [
