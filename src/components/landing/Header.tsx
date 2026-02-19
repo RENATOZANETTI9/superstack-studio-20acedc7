@@ -31,9 +31,9 @@ const Header = () => {
     >
       <div className="mx-4 mt-4">
         <div
-          className={`glass-card rounded-2xl transition-colors duration-300 ${
+          className={`glass-card rounded-2xl transition-all duration-300 ${
             scrolled
-              ? 'bg-white/90 border-white/40 shadow-lg backdrop-blur-xl'
+              ? 'bg-white/15 border-white/25 shadow-lg backdrop-blur-2xl'
               : 'bg-white/10 border-white/20'
           }`}
         >
@@ -50,11 +50,7 @@ const Header = () => {
                   <a
                     key={link.name}
                     href={link.href}
-                    className={`transition-colors text-sm font-medium ${
-                      scrolled
-                        ? 'text-helpude-purple/80 hover:text-helpude-purple'
-                        : 'text-white/80 hover:text-white'
-                    }`}
+                    className="text-white/80 hover:text-white transition-colors text-sm font-medium"
                   >
                     {link.name}
                   </a>
@@ -66,11 +62,7 @@ const Header = () => {
                 <Link to="/auth">
                   <Button
                     variant="ghost"
-                    className={`transition-colors ${
-                      scrolled
-                        ? 'text-helpude-purple hover:bg-helpude-purple/10'
-                        : 'text-white hover:bg-white/10'
-                    }`}
+                    className="text-white hover:bg-white/10"
                   >
                     Entrar
                   </Button>
@@ -84,7 +76,7 @@ const Header = () => {
 
               {/* Mobile Menu Button */}
               <button
-                className={`md:hidden p-2 ${scrolled ? 'text-helpude-purple' : 'text-white'}`}
+                className="md:hidden text-white p-2"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -104,25 +96,17 @@ const Header = () => {
                     <a
                       key={link.name}
                       href={link.href}
-                      className={`py-2 px-4 rounded-lg transition-colors ${
-                        scrolled
-                          ? 'text-helpude-purple/80 hover:text-helpude-purple hover:bg-helpude-purple/5'
-                          : 'text-white/80 hover:text-white hover:bg-white/10'
-                      }`}
+                    className="text-white/80 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {link.name}
                     </a>
                   ))}
-                  <div className={`flex flex-col gap-2 mt-4 pt-4 border-t ${scrolled ? 'border-helpude-purple/10' : 'border-white/10'}`}>
+                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
                     <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                       <Button
                         variant="ghost"
-                        className={`w-full ${
-                          scrolled
-                            ? 'text-helpude-purple hover:bg-helpude-purple/10'
-                            : 'text-white hover:bg-white/10'
-                        }`}
+                        className="w-full text-white hover:bg-white/10"
                       >
                         Entrar
                       </Button>
