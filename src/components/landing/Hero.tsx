@@ -10,7 +10,7 @@ import brazilMapSrc from '@/assets/brazil-map.png';
 const brazilPins = [
   // Norte
   { id: 'RR',       x: 34,  y: 8,   label: 'Boa Vista' },
-  { id: 'AP',       x: 62,  y: 6,   label: 'Macapá' },
+  
   { id: 'AM',       x: 28,  y: 28,  label: 'Manaus' },
   { id: 'PA',       x: 56,  y: 16,  label: 'Belém' },
   { id: 'AC',       x: 16,  y: 40,  label: 'Rio Branco' },
@@ -41,9 +41,6 @@ const brazilPins = [
   // Sul
   { id: 'PR',       x: 52,  y: 78,  label: 'Curitiba' },
   { id: 'SC',       x: 56,  y: 86,  label: 'Florianópolis' },
-  { id: 'RS',       x: 48,  y: 94,  label: 'Porto Alegre' },
-  { id: 'Foz',      x: 42,  y: 78,  label: 'Foz do Iguaçu' },
-  { id: 'Uruguaiana',x: 36, y: 92,  label: 'Uruguaiana' },
 ];
 
 const infographics = [
