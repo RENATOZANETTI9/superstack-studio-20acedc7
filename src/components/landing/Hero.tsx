@@ -13,7 +13,7 @@ const brazilPins = [
   
   { id: 'AM',       x: 28,  y: 28,  label: 'Manaus' },
   { id: 'PA',       x: 56,  y: 16,  label: 'Belém' },
-  { id: 'AC',       x: 16,  y: 40,  label: 'Rio Branco' },
+  
   { id: 'Altamira', x: 44,  y: 22,  label: 'Altamira' },
   { id: 'RO',       x: 30,  y: 48,  label: 'Porto Velho' },
   { id: 'TO',       x: 58,  y: 40,  label: 'Palmas' },
