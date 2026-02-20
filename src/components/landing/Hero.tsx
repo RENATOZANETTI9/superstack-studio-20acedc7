@@ -20,8 +20,16 @@ const brazilPins = [
   { id: 'CE',       x: 72,  y: 20,  label: 'Fortaleza' },
   { id: 'RN',       x: 80,  y: 26,  label: 'Natal' },
   { id: 'PI',       x: 64,  y: 32,  label: 'Teresina' },
+  { id: 'PB',       x: 82,  y: 30,  label: 'João Pessoa' },
   { id: 'PE',       x: 78,  y: 34,  label: 'Recife' },
+  { id: 'AL',       x: 80,  y: 38,  label: 'Maceió' },
+  { id: 'SE',       x: 76,  y: 42,  label: 'Aracaju' },
+  // Bahia
   { id: 'BA',       x: 70,  y: 48,  label: 'Salvador' },
+  { id: 'BA2',      x: 62,  y: 44,  label: 'Barreiras' },
+  { id: 'BA3',      x: 66,  y: 52,  label: 'Feira de Santana' },
+  { id: 'BA4',      x: 58,  y: 50,  label: 'Vitória da Conquista' },
+  { id: 'BA5',      x: 64,  y: 56,  label: 'Ilhéus' },
   // Centro-Oeste
   { id: 'MT',       x: 38,  y: 44,  label: 'Cuiabá' },
   { id: 'GO',       x: 52,  y: 54,  label: 'Goiânia' },
