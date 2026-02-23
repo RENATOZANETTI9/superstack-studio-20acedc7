@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
-import FloatingChatButton from '@/components/FloatingChatButton';
+
 import { useDashboardStats, PeriodFilter } from '@/hooks/useDashboardStats';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -96,7 +96,7 @@ const DashboardHome = () => {
           />
         </div>
 
-        <FloatingChatButton />
+        
         </motion.div>
       </div>
     </DashboardLayout>
