@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ContractPipeline from '@/components/contratos/ContractPipeline';
-import FloatingChatButton from '@/components/FloatingChatButton';
+
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useContracts } from '@/hooks/useContracts';
@@ -136,7 +136,7 @@ const Contratos = () => {
             )}
           </div>
 
-          <FloatingChatButton />
+          
         </motion.div>
       </div>
     </DashboardLayout>
