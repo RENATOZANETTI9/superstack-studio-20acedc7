@@ -275,6 +275,15 @@
   }
 }
 
+/* Chatwoot widget - brand colors */
+.woot-widget-bubble {
+  background: hsl(259, 51%, 56%) !important;
+}
+
+.woot-widget-bubble:hover {
+  background: hsl(259, 51%, 48%) !important;
+}
+
 /* Mobile-specific styles */
 @media (max-width: 767px) {
   html {
@@ -284,5 +293,14 @@
   .glass-card {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Move Chatwoot bubble above mobile bottom nav */
+  .woot-widget-bubble {
+    bottom: 80px !important;
+  }
+
+  .woot--bubble-holder {
+    bottom: 80px !important;
   }
 }
