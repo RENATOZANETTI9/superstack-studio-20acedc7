@@ -135,6 +135,72 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
         </DialogHeader>
 
         <div className="mt-4 space-y-6">
+          {/* Dados para gatilhos de marketing */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Dados para gatilhos de marketing</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Telefone</Label>
+                <Input
+                  type="tel"
+                  value={telefone}
+                  onChange={(e) => setTelefone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className="bg-background/50"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Email</Label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Tipo Chave Pix</Label>
+                <Select value={pixKeyType} onValueChange={setPixKeyType}>
+                  <SelectTrigger className="bg-background/50">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="telefone">Telefone</SelectItem>
+                    <SelectItem value="email">E-mail</SelectItem>
+                    <SelectItem value="cpf">CPF</SelectItem>
+                    <SelectItem value="cnpj">CNPJ</SelectItem>
+                    <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Chave Pix</Label>
+                <Input
+                  type="text"
+                  value={pixKey}
+                  onChange={(e) => setPixKey(e.target.value)}
+                  placeholder={
+                    pixKeyType === 'telefone' ? '(00) 00000-0000'
+                    : pixKeyType === 'email' ? 'email@exemplo.com'
+                    : pixKeyType === 'cpf' ? '000.000.000-00'
+                    : pixKeyType === 'cnpj' ? '00.000.000/0001-00'
+                    : 'Cole a chave aqui'
+                  }
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => console.log('Ativar gatilho de marketing', { telefone, email, pixKeyType, pixKey })}>
+              <Send className="h-4 w-4" />
+              Ativar gatilho de marketing
+            </Button>
+          </div>
+
+          <div className="border-t border-border/50 pt-4" />
+
           {/* Row 1: Banco, Status, Origem */}
           <div className="grid grid-cols-3 gap-6">
             <div>
@@ -259,65 +325,6 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
             </div>
           </div>
 
-          {/* Dados do Paciente */}
-          <div className="border-t border-border/50 pt-4 space-y-4">
-            <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Dados do Paciente</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Telefone</Label>
-                <Input
-                  type="tel"
-                  value={telefone}
-                  onChange={(e) => setTelefone(e.target.value)}
-                  placeholder="(00) 00000-0000"
-                  className="bg-background/50"
-                />
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Email</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@exemplo.com"
-                  className="bg-background/50"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Tipo Chave Pix</Label>
-                <Select value={pixKeyType} onValueChange={setPixKeyType}>
-                  <SelectTrigger className="bg-background/50">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="telefone">Telefone</SelectItem>
-                    <SelectItem value="email">E-mail</SelectItem>
-                    <SelectItem value="cpf">CPF</SelectItem>
-                    <SelectItem value="cnpj">CNPJ</SelectItem>
-                    <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Chave Pix</Label>
-                <Input
-                  type="text"
-                  value={pixKey}
-                  onChange={(e) => setPixKey(e.target.value)}
-                  placeholder={
-                    pixKeyType === 'telefone' ? '(00) 00000-0000'
-                    : pixKeyType === 'email' ? 'email@exemplo.com'
-                    : pixKeyType === 'cpf' ? '000.000.000-00'
-                    : pixKeyType === 'cnpj' ? '00.000.000/0001-00'
-                    : 'Cole a chave aqui'
-                  }
-                  className="bg-background/50"
-                />
-              </div>
-            </div>
-          </div>
 
 
           <div className="pt-4 border-t border-border/50">
