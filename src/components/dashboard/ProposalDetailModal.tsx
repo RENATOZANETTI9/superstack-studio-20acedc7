@@ -130,7 +130,7 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
       <DialogContent className="glass-card border-border/50 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-foreground">
-            Status dos Bancos
+            Detalhes da Proposta
           </DialogTitle>
         </DialogHeader>
 
@@ -199,7 +199,9 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
             </Button>
           </div>
 
-          <div className="border-t border-border/50 pt-4" />
+          <div className="border-t border-border/50 pt-4">
+            <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Status dos Bancos</h4>
+          </div>
 
           {/* Row 1: Banco, Status, Origem */}
           <div className="grid grid-cols-3 gap-6">
