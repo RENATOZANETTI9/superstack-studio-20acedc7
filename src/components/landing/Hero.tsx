@@ -74,7 +74,7 @@ const Hero = () => {
           >
             <Sparkles className="w-4 h-4 text-helpude-teal-light" />
             <span className="text-white/90 text-sm font-medium">
-              Plataforma #1 em Crédito para Clínicas
+              Transformando Vidas e Melhorando Resultados
             </span>
           </motion.div>
 
