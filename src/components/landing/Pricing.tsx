@@ -32,7 +32,9 @@ const plans: Plan[] = [
     features: [
       { text: 'Consultas individuais', points: '50 Pontos Help' },
       { text: 'Pipeline de propostas' },
-      { text: 'Gatilhos de Marketing básico', points: '50 Pontos Help' },
+      { text: 'Envio de SMS', points: '50 Pontos Help' },
+      { text: 'Ligações por IA', points: '50 Pontos Help' },
+      { text: 'Envio de email marketing', points: '50 Pontos Help' },
     ],
     popular: false,
   },
