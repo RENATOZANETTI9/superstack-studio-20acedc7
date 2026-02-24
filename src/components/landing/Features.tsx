@@ -30,7 +30,7 @@ const features = [
   {
     icon: Zap,
     title: 'Automação de Marketing',
-    description: 'Envie mensagens automáticas via WhatsApp, SMS e RCS para seus clientes.',
+    description: 'Envio de marketing digital institucional de sua clínica para seus pacientes através de IA de ligação, SMS e email Mkt.',
     color: 'from-helpude-teal to-helpude-purple',
   },
   {
