@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import logoPinSrc from '@/assets/logo-pin.png';
@@ -72,7 +72,7 @@ const Hero = () => {
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-8"
           >
-            <Sparkles className="w-4 h-4 text-helpude-teal-light" />
+            
             <span className="text-white/90 text-sm font-medium">
               Transformando Vidas e Melhorando Resultados
             </span>
