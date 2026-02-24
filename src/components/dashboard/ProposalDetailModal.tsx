@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Edit, Send } from 'lucide-react';
+import { Edit, Send, FileSignature, PenTool } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
   const [pixKey, setPixKey] = useState('');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
+  const [showSignatureFields, setShowSignatureFields] = useState(false);
 
   if (!proposal) return null;
 
@@ -160,40 +161,7 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Tipo Chave Pix</Label>
-                <Select value={pixKeyType} onValueChange={setPixKeyType}>
-                  <SelectTrigger className="bg-background/50">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="telefone">Telefone</SelectItem>
-                    <SelectItem value="email">E-mail</SelectItem>
-                    <SelectItem value="cpf">CPF</SelectItem>
-                    <SelectItem value="cnpj">CNPJ</SelectItem>
-                    <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Chave Pix</Label>
-                <Input
-                  type="text"
-                  value={pixKey}
-                  onChange={(e) => setPixKey(e.target.value)}
-                  placeholder={
-                    pixKeyType === 'telefone' ? '(00) 00000-0000'
-                    : pixKeyType === 'email' ? 'email@exemplo.com'
-                    : pixKeyType === 'cpf' ? '000.000.000-00'
-                    : pixKeyType === 'cnpj' ? '00.000.000/0001-00'
-                    : 'Cole a chave aqui'
-                  }
-                  className="bg-background/50"
-                />
-              </div>
-            </div>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => console.log('Ativar gatilho de marketing', { telefone, email, pixKeyType, pixKey })}>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => console.log('Ativar gatilho de marketing', { telefone, email })}>
               <Send className="h-4 w-4" />
               Ativar gatilho de marketing
             </Button>
@@ -310,20 +278,67 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
               <p className="text-foreground font-medium">{bankStatus.dataCriacao}</p>
             </div>
             <div className="col-span-2">
-              <p className="text-sm text-muted-foreground mb-1">Link do Contrato</p>
-              {bankStatus.linkContrato ? (
-                <a 
-                  href={bankStatus.linkContrato} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1 transition-colors"
-                >
-                  Abrir contrato
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              ) : (
-                <p className="text-muted-foreground">—</p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Contrato</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowSignatureFields(!showSignatureFields)}
+              >
+                <FileSignature className="h-4 w-4" />
+                Gerar link de assinatura
+              </Button>
+
+              <AnimatePresence>
+                {showSignatureFields && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-3 space-y-3 rounded-lg border border-border/50 bg-muted/20 p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm text-muted-foreground mb-2 block">Tipo Chave Pix</Label>
+                          <Select value={pixKeyType} onValueChange={setPixKeyType}>
+                            <SelectTrigger className="bg-background/50">
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="telefone">Telefone</SelectItem>
+                              <SelectItem value="email">E-mail</SelectItem>
+                              <SelectItem value="cpf">CPF</SelectItem>
+                              <SelectItem value="cnpj">CNPJ</SelectItem>
+                              <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground mb-2 block">Chave Pix</Label>
+                          <Input
+                            type="text"
+                            value={pixKey}
+                            onChange={(e) => setPixKey(e.target.value)}
+                            placeholder={
+                              pixKeyType === 'telefone' ? '(00) 00000-0000'
+                              : pixKeyType === 'email' ? 'email@exemplo.com'
+                              : pixKeyType === 'cpf' ? '000.000.000-00'
+                              : pixKeyType === 'cnpj' ? '00.000.000/0001-00'
+                              : 'Cole a chave aqui'
+                            }
+                            className="bg-background/50"
+                          />
+                        </div>
+                      </div>
+                      <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => console.log('Assinar contrato', { pixKeyType, pixKey })}>
+                        <PenTool className="h-4 w-4" />
+                        Assinar contrato
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
