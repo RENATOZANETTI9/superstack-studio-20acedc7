@@ -35,11 +35,11 @@ const Footer = () => {
 
           {/* Product */}
           <div>
-            <h4 className="font-display font-semibold text-white mb-6">Produto</h4>
+            <h4 className="font-display font-semibold text-white mb-6">Níveis</h4>
             <ul className="space-y-3">
-              {['Recursos', 'Planos', 'Integrações', 'API', 'Atualizações'].map((item) => (
+              {['Nível Básico', 'Nível Profissional', 'Nível Enterprise'].map((item) => (
                 <li key={item}>
-                  <a href="#" className="text-sidebar-foreground/70 hover:text-white text-sm transition-colors">
+                  <a href="#pricing" className="text-sidebar-foreground/70 hover:text-white text-sm transition-colors">
                     {item}
                   </a>
                 </li>
