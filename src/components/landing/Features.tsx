@@ -58,7 +58,7 @@ const Features = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">
+          <h2 id="contact" className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">
             Tudo que sua clínica{' '}
             <span className="gradient-text">precisa</span>
           </h2>
