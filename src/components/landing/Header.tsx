@@ -18,7 +18,7 @@ const Header = () => {
   const navLinks = [
     { name: 'Recursos', href: '#features' },
     { name: 'Níveis', href: '#pricing' },
-    { name: 'Sobre', href: '#about' },
+    { name: 'Sobre', href: '#hero' },
     { name: 'Contato', href: '#contact' },
   ];
 
@@ -60,14 +60,6 @@ const Header = () => {
               {/* Desktop CTA */}
               <div className="hidden md:flex items-center gap-3">
                 <Link to="/auth">
-                  <Button
-                    variant="ghost"
-                    className="text-white hover:bg-white/10"
-                  >
-                    Entrar
-                  </Button>
-                </Link>
-                <Link to="/auth">
                   <Button variant="hero" size="default">
                     Acessar Sistema
                   </Button>
@@ -103,14 +95,6 @@ const Header = () => {
                     </a>
                   ))}
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
-                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                      <Button
-                        variant="ghost"
-                        className="w-full text-white hover:bg-white/10"
-                      >
-                        Entrar
-                      </Button>
-                    </Link>
                     <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="hero" className="w-full">
                         Acessar Sistema
