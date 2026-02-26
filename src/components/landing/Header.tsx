@@ -60,6 +60,11 @@ const Header = () => {
               {/* Desktop CTA */}
               <div className="hidden md:flex items-center gap-3">
                 <Link to="/auth">
+                  <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/auth">
                   <Button variant="hero" size="default">
                     Acessar Sistema
                   </Button>
