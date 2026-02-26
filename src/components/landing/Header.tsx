@@ -71,13 +71,20 @@ const Header = () => {
                 </Link>
               </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                className="md:hidden text-white p-2"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
+              {/* Mobile CTA + Menu Button */}
+              <div className="flex md:hidden items-center gap-2">
+                <Link to="/auth">
+                  <Button variant="hero" size="sm">
+                    Acessar Sistema
+                  </Button>
+                </Link>
+                <button
+                  className="text-white p-2"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                >
+                  {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
+              </div>
             </div>
 
             {/* Mobile Menu */}
