@@ -86,7 +86,6 @@ const Footer = () => {
                   Av. Paulista 1106, 16º andar - Bela Vista, São Paulo - SP
                 </span>
               </li>
-              </li>
             </ul>
           </div>
         </div>
