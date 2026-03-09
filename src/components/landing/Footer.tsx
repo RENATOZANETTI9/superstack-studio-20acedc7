@@ -83,14 +83,22 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-helpude-teal flex-shrink-0 mt-0.5" />
                 <span className="text-sidebar-foreground/70 text-sm">
-                  São Paulo, SP - Brasil
+                  Av. Paulista 1106, 16º andar - Bela Vista, São Paulo - SP
                 </span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-sidebar-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        {/* Legal disclaimer */}
+        <div className="border-t border-sidebar-border mt-12 pt-8">
+          <p className="text-sidebar-foreground/40 text-xs leading-relaxed max-w-5xl">
+            A HelpUde é uma Healthtech que oferece serviço 100% digital, não é uma instituição financeira e não realiza operações de crédito diretamente. A HelpUde é uma plataforma digital pertencente a R2A Soluções LTDA 20.451.457/0001-20, matriz: Alameda Salvador, Edifício Salvador Shopping Business, Torre Europa, Sala 1818, Caminho das Árvores, Salvador – Bahia. CEP: 41820-790. Filial: Avenida Paulista 1106, Andar 16 - Bela Vista - São Paulo SP - CEP: 01310-914. Que atua como correspondente bancário, seguindo as diretrizes do Banco Central do Brasil, nos termos da Resolução CMN 4.935/2021, do BACEN. Toda avaliação de crédito será realizada conforme a política de crédito da Instituição Financeira escolhida pelo usuário. Antes da contratação de qualquer serviço através de nossos parceiros, você receberá todas as condições e informações relativas ao produto a ser contratado, de forma completa e transparente.
+          </p>
+        </div>
+
+        {/* Copyright & links */}
+        <div className="border-t border-sidebar-border mt-6 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sidebar-foreground/50 text-sm">
             © {currentYear} HelpUde. Todos os direitos reservados.
           </p>
