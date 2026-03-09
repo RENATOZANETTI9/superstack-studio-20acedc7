@@ -83,8 +83,9 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-helpude-teal flex-shrink-0 mt-0.5" />
                 <span className="text-sidebar-foreground/70 text-sm">
-                  São Paulo, SP - Brasil
+                  Av. Paulista 1106, 16º andar - Bela Vista, São Paulo - SP
                 </span>
+              </li>
               </li>
             </ul>
           </div>
