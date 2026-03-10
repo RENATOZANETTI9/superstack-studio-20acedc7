@@ -14,6 +14,8 @@ import Permissoes from "./pages/usuarios/Permissoes";
 import Hierarquias from "./pages/usuarios/Hierarquias";
 import Lista from "./pages/usuarios/Lista";
 import NotFound from "./pages/NotFound";
+import TermosDeUso from "./pages/TermosDeUso";
+import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,8 @@ const App = () => (
             <Route path="/dashboard/usuarios/permissoes" element={<Permissoes />} />
             <Route path="/dashboard/usuarios/hierarquias" element={<Hierarquias />} />
             <Route path="/dashboard/usuarios/lista" element={<Lista />} />
+            <Route path="/termos-de-uso" element={<TermosDeUso />} />
+            <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
