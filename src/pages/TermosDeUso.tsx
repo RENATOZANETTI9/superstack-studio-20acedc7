@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button';
 
 const TermosDeUso = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen gradient-hero text-white">
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <Link to="/">
-          <Button variant="ghost" className="mb-8">
+          <Button variant="ghost" className="mb-8 text-white/80 hover:text-white hover:bg-white/10">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
         </Link>
 
-        <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-2">Termos de Uso</h1>
-        <p className="text-muted-foreground mb-8">Última atualização: 10 de março de 2026</p>
+        <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">Termos de Uso</h1>
+        <p className="text-white/60 mb-8">Última atualização: 10 de março de 2026</p>
 
-        <div className="prose prose-lg max-w-none text-foreground/90 space-y-6">
+        <div className="prose prose-lg max-w-none text-white/90 space-y-6">
           <section>
             <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">1. Identificação da Empresa</h2>
             <p>A plataforma HelpUde é de propriedade e operada por <strong>R2A Soluções LTDA</strong>, inscrita no CNPJ/MF sob o nº 20.451.457/0001-20.</p>
