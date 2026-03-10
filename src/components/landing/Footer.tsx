@@ -103,15 +103,15 @@ const Footer = () => {
             © {currentYear} HelpUde. Todos os direitos reservados.
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-sidebar-foreground/50 hover:text-white text-sm transition-colors">
+            <Link to="/termos-de-uso" className="text-sidebar-foreground/50 hover:text-white text-sm transition-colors">
               Termos de Uso
-            </a>
-            <a href="#" className="text-sidebar-foreground/50 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link to="/politica-de-privacidade" className="text-sidebar-foreground/50 hover:text-white text-sm transition-colors">
               Política de Privacidade
-            </a>
-            <a href="#" className="text-sidebar-foreground/50 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link to="/politica-de-privacidade" className="text-sidebar-foreground/50 hover:text-white text-sm transition-colors">
               LGPD
-            </a>
+            </Link>
           </div>
         </div>
       </div>
