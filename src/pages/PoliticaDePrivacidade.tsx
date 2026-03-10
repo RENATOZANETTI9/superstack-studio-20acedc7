@@ -18,12 +18,12 @@ const PoliticaDePrivacidade = () => {
 
         <div className="prose prose-lg max-w-none text-white/90 space-y-6">
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">1. Introdução</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">1. Introdução</h2>
             <p>A <strong>R2A Soluções LTDA</strong> (CNPJ: 20.451.457/0001-20), proprietária da plataforma HelpUde, está comprometida com a proteção da privacidade e dos dados pessoais de seus usuários, em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018) e demais normas aplicáveis.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">2. Dados Pessoais Coletados</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">2. Dados Pessoais Coletados</h2>
             <p>Podemos coletar os seguintes dados pessoais:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li><strong>Dados de identificação:</strong> nome completo, CPF, RG, data de nascimento;</li>
@@ -35,7 +35,7 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">3. Finalidade do Tratamento</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">3. Finalidade do Tratamento</h2>
             <p>Os dados pessoais coletados são utilizados para as seguintes finalidades:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Viabilizar a prestação dos serviços oferecidos pela plataforma;</li>
@@ -49,7 +49,7 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">4. Base Legal para o Tratamento</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">4. Base Legal para o Tratamento</h2>
             <p>O tratamento de dados pessoais é realizado com base nas seguintes hipóteses legais previstas na LGPD:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Consentimento do titular (Art. 7º, I);</li>
@@ -61,7 +61,7 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">5. Compartilhamento de Dados</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">5. Compartilhamento de Dados</h2>
             <p>Os dados pessoais poderão ser compartilhados com:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li><strong>Instituições financeiras parceiras:</strong> para análise e concessão de crédito;</li>
@@ -73,7 +73,7 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">6. Cookies e Tecnologias de Rastreamento</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">6. Cookies e Tecnologias de Rastreamento</h2>
             <p>Utilizamos cookies e tecnologias similares para:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Garantir o funcionamento adequado da plataforma;</li>
@@ -85,13 +85,13 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">7. Armazenamento e Segurança</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">7. Armazenamento e Segurança</h2>
             <p>Os dados pessoais são armazenados em servidores seguros, com adoção de medidas técnicas e administrativas adequadas para proteger contra acessos não autorizados, destruição, perda, alteração ou qualquer forma de tratamento inadequado.</p>
             <p>Os dados são retidos pelo tempo necessário para cumprir as finalidades para as quais foram coletados, respeitando os prazos legais aplicáveis.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">8. Direitos do Titular</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">8. Direitos do Titular</h2>
             <p>De acordo com a LGPD, você tem direito a:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Confirmação da existência de tratamento de dados;</li>
@@ -107,17 +107,17 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">9. Transferência Internacional de Dados</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">9. Transferência Internacional de Dados</h2>
             <p>Seus dados pessoais poderão ser transferidos para servidores localizados fora do Brasil, sempre em conformidade com a LGPD e mediante a adoção de garantias adequadas de proteção.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">10. Alterações nesta Política</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">10. Alterações nesta Política</h2>
             <p>Esta Política de Privacidade poderá ser atualizada periodicamente. Recomendamos que você a consulte regularmente. Alterações significativas serão comunicadas através da plataforma.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">11. Encarregado de Proteção de Dados (DPO)</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">11. Encarregado de Proteção de Dados (DPO)</h2>
             <p>Para questões relacionadas à proteção de dados pessoais, entre em contato com nosso Encarregado:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li><strong>E-mail:</strong> contato@helpude.com.br</li>
@@ -126,7 +126,7 @@ const PoliticaDePrivacidade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">12. Legislação Aplicável</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">12. Legislação Aplicável</h2>
             <p>Esta Política de Privacidade é regida pela legislação brasileira, em especial pela Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018). Fica eleito o Foro da Comarca de São Paulo/SP para dirimir quaisquer controvérsias.</p>
           </section>
         </div>
