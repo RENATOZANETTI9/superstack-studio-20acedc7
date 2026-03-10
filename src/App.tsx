@@ -14,6 +14,8 @@ import Permissoes from "./pages/usuarios/Permissoes";
 import Hierarquias from "./pages/usuarios/Hierarquias";
 import Lista from "./pages/usuarios/Lista";
 import NotFound from "./pages/NotFound";
+import TermosDeUso from "./pages/TermosDeUso";
+import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
 
 const queryClient = new QueryClient();
 
