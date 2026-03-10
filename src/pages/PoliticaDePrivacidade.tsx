@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button';
 
 const PoliticaDePrivacidade = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen gradient-hero text-white">
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <Link to="/">
-          <Button variant="ghost" className="mb-8">
+          <Button variant="ghost" className="mb-8 text-white/80 hover:text-white hover:bg-white/10">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
         </Link>
 
-        <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-2">Política de Privacidade</h1>
-        <p className="text-muted-foreground mb-8">Última atualização: 10 de março de 2026</p>
+        <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">Política de Privacidade</h1>
+        <p className="text-white/60 mb-8">Última atualização: 10 de março de 2026</p>
 
-        <div className="prose prose-lg max-w-none text-foreground/90 space-y-6">
+        <div className="prose prose-lg max-w-none text-white/90 space-y-6">
           <section>
             <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">1. Introdução</h2>
             <p>A <strong>R2A Soluções LTDA</strong> (CNPJ: 20.451.457/0001-20), proprietária da plataforma HelpUde, está comprometida com a proteção da privacidade e dos dados pessoais de seus usuários, em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018) e demais normas aplicáveis.</p>

@@ -18,7 +18,7 @@ const TermosDeUso = () => {
 
         <div className="prose prose-lg max-w-none text-white/90 space-y-6">
           <section>
-            <h2 className="text-xl font-display font-semibold text-foreground mt-8 mb-3">1. Identificação da Empresa</h2>
+            <h2 className="text-xl font-display font-semibold text-white mt-8 mb-3">1. Identificação da Empresa</h2>
             <p>A plataforma HelpUde é de propriedade e operada por <strong>R2A Soluções LTDA</strong>, inscrita no CNPJ/MF sob o nº 20.451.457/0001-20.</p>
             <ul className="list-disc pl-6 space-y-1">
               <li><strong>Matriz:</strong> Alameda Salvador, Edifício Salvador Shopping Business, Torre Europa, Sala 1818, Caminho das Árvores, Salvador – Bahia. CEP: 41820-790.</li>
