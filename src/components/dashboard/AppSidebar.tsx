@@ -40,6 +40,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const navigate = useNavigate();
   const { user, isMaster, logout } = useAuth();
   const [usersOpen, setUsersOpen] = useState(false);
+  const [partnersOpen, setPartnersOpen] = useState(false);
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
