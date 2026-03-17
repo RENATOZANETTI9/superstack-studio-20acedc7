@@ -225,10 +225,10 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                       isActive('/dashboard/partners/rede') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
                     <Network className="h-5 w-5 shrink-0" /><span>Rede</span>
                   </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/comissoes')}
+                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/bonificacoes')}
                     className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/comissoes') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <DollarSign className="h-5 w-5 shrink-0" /><span>Comissões</span>
+                      isActive('/dashboard/partners/bonificacoes') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                    <DollarSign className="h-5 w-5 shrink-0" /><span>Bonificações</span>
                   </Button>
                   <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/config')}
                     className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
