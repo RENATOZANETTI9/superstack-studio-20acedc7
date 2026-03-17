@@ -47,7 +47,7 @@ const App = () => (
             <Route path="/dashboard/partners" element={<PartnersDashboard />} />
             <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
             <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
-            <Route path="/dashboard/partners/comissoes" element={<PartnersCommissions />} />
+            <Route path="/dashboard/partners/bonificacoes" element={<PartnersBonificacoes />} />
             <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
             <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
             <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
