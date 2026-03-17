@@ -41,8 +41,8 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isMaster, logout } = useAuth();
-  const [usersOpen, setUsersOpen] = useState(false);
-  const [partnersOpen, setPartnersOpen] = useState(false);
+  const [usersOpen, setUsersOpen] = useState(location.pathname.startsWith('/dashboard/usuarios'));
+  const [partnersOpen, setPartnersOpen] = useState(location.pathname.startsWith('/dashboard/partners'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
