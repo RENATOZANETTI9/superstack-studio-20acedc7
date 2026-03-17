@@ -18,7 +18,9 @@ import {
   UserPlus,
   Network,
   DollarSign,
-  Settings
+  Settings,
+  Calculator,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
