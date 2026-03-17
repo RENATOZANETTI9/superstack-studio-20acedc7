@@ -11,7 +11,6 @@ import {
   Target, Activity, Info
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
 import PartnerCharts from '@/components/partners/PartnerCharts';
 import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
 
@@ -68,7 +67,6 @@ const PartnersDashboard = () => {
     ? (partners.reduce((sum, p) => sum + Number(p.seh_score || 0), 0) / partners.length).toFixed(1) 
     : '0';
 
-  // Level distribution
   const levelDist = { ELITE: 0, OURO: 0, PRATA: 0, BRONZE: 0 };
   partners.forEach(p => { if (levelDist[p.current_level as keyof typeof levelDist] !== undefined) levelDist[p.current_level as keyof typeof levelDist]++; });
 
@@ -77,7 +75,7 @@ const PartnersDashboard = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">HelpU Partners</h1>
+            <h1 className="text-2xl font-bold text-foreground">Help Ude Partners</h1>
             <p className="text-muted-foreground">Gestão de parceiros e performance</p>
           </div>
           <Button onClick={fetchData} variant="outline" size="sm">Atualizar dados</Button>
@@ -85,114 +83,80 @@ const PartnersDashboard = () => {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10"><Users className="h-5 w-5 text-primary" /></div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Partners</p>
-                  <p className="text-2xl font-bold">{totalPartners}</p>
-                  <p className="text-xs text-muted-foreground">{activePartners} ativos</p>
+          <Card><CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10"><Users className="h-5 w-5 text-primary" /></div>
+              <div><p className="text-sm text-muted-foreground">Partners</p><p className="text-2xl font-bold">{totalPartners}</p><p className="text-xs text-muted-foreground">{activePartners} ativos</p></div>
+            </div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10"><Building2 className="h-5 w-5 text-green-500" /></div>
+              <div><p className="text-sm text-muted-foreground">Clínicas</p><p className="text-2xl font-bold">{totalClinics}</p><p className="text-xs text-muted-foreground">{activeClinics} ativas</p></div>
+            </div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10"><Target className="h-5 w-5 text-blue-500" /></div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">SEH Médio</p>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[280px]">
+                      <p className="text-xs font-medium mb-1">Score de Eficiência Help Ude (0-100)</p>
+                      <p className="text-xs">Métrica composta que avalia a performance do partner:</p>
+                      <ul className="text-xs mt-1 space-y-0.5">
+                        <li>• <strong>Ativação (30%)</strong>: % de clínicas ativas</li>
+                        <li>• <strong>Volume (35%)</strong>: consultas por mês</li>
+                        <li>• <strong>Conversão (35%)</strong>: taxa de aprovação + pagamento</li>
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
+                <p className="text-2xl font-bold">{avgSeh}</p><p className="text-xs text-muted-foreground">Score 0-100</p>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-500/10"><Building2 className="h-5 w-5 text-green-500" /></div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Clínicas</p>
-                  <p className="text-2xl font-bold">{totalClinics}</p>
-                  <p className="text-xs text-muted-foreground">{activeClinics} ativas</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10"><Target className="h-5 w-5 text-blue-500" /></div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm text-muted-foreground">SEH Médio</p>
-                    <Tooltip>
-                      <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
-                      <TooltipContent className="max-w-[280px]">
-                        <p className="text-xs font-medium mb-1">Score de Eficiência HelpU (0-100)</p>
-                        <p className="text-xs">Métrica composta que avalia a performance do partner em 3 pilares:</p>
-                        <ul className="text-xs mt-1 space-y-0.5">
-                          <li>• <strong>Ativação (30%)</strong>: % de clínicas ativas</li>
-                          <li>• <strong>Volume (35%)</strong>: consultas por mês</li>
-                          <li>• <strong>Conversão (35%)</strong>: taxa de aprovação + pagamento</li>
-                        </ul>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <p className="text-2xl font-bold">{avgSeh}</p>
-                  <p className="text-xs text-muted-foreground">Score 0-100</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-yellow-500/10"><DollarSign className="h-5 w-5 text-yellow-500" /></div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Bonificações</p>
-                  <p className="text-2xl font-bold">R$ {totalBonificacoes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-muted-foreground">Acumulado</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-red-500/10"><AlertTriangle className="h-5 w-5 text-red-500" /></div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Alertas</p>
-                  <p className="text-2xl font-bold">{pendingAlerts}</p>
-                  <p className="text-xs text-muted-foreground">Pendentes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-500/10"><DollarSign className="h-5 w-5 text-yellow-500" /></div>
+              <div><p className="text-sm text-muted-foreground">Bonificações</p><p className="text-2xl font-bold">R$ {totalBonificacoes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground">Acumulado</p></div>
+            </div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-500/10"><AlertTriangle className="h-5 w-5 text-red-500" /></div>
+              <div><p className="text-sm text-muted-foreground">Alertas</p><p className="text-2xl font-bold">{pendingAlerts}</p><p className="text-xs text-muted-foreground">Pendentes</p></div>
+            </div>
+          </CardContent></Card>
         </div>
 
         {/* SEH Level Guide + Distribution */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Target className="h-4 w-4" /> Níveis de Partner (SEH)
-              </CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-4 w-4" /> Níveis de Partner (SEH)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {levelRanges.map(lr => (
                 <div key={lr.level} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                   <Badge className={`${lr.color} text-white min-w-[70px] justify-center`}>{lr.level}</Badge>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">SEH {lr.min}–{lr.max}</p>
-                    <p className="text-xs text-muted-foreground">{lr.desc}</p>
-                  </div>
+                  <div className="flex-1"><p className="text-sm font-medium">SEH {lr.min}–{lr.max}</p><p className="text-xs text-muted-foreground">{lr.desc}</p></div>
                   <span className="text-lg font-bold">{levelDist[lr.level as keyof typeof levelDist]}</span>
                 </div>
               ))}
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Distribuição por Tipo</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Distribuição por Tipo</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10">
                 <span className="text-sm">Master Partners</span>
-                <span className="text-lg font-bold">{partners.filter(p => p.type === 'MASTER').length}</span>
+                <span className="text-lg font-bold text-purple-600">{partners.filter(p => p.type === 'MASTER').length}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <span className="text-sm">Partners</span>
+                <span className="text-sm">Partners Comuns</span>
                 <span className="text-lg font-bold">{partners.filter(p => p.type === 'PARTNER').length}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10">
@@ -207,15 +171,12 @@ const PartnersDashboard = () => {
           </Card>
         </div>
 
-        {/* Charts */}
         <PartnerCharts metrics={metrics} commissions={commissions} />
 
-        {/* Tabs */}
         <Tabs defaultValue="partners" className="space-y-4">
           <TabsList>
             <TabsTrigger value="partners">Partners</TabsTrigger>
             <TabsTrigger value="alerts">Alertas ({pendingAlerts})</TabsTrigger>
-            <TabsTrigger value="bonificacoes">Bonificações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="partners">
@@ -225,10 +186,7 @@ const PartnersDashboard = () => {
                 {loading ? (
                   <div className="flex justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" /></div>
                 ) : partners.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhum partner cadastrado</p>
-                  </div>
+                  <div className="text-center py-12 text-muted-foreground"><Users className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhum partner cadastrado</p></div>
                 ) : (
                   <div className="space-y-3">
                     {partners.map(partner => {
@@ -237,13 +195,11 @@ const PartnersDashboard = () => {
                       return (
                         <div key={partner.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                           <div className="flex items-center gap-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                              <Users className="h-5 w-5 text-primary" />
-                            </div>
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10"><Users className="h-5 w-5 text-primary" /></div>
                             <div>
                               <div className="flex items-center gap-2">
                                 <p className="font-medium">{partner.legal_name}</p>
-                                <Badge variant="outline" className="text-xs">{partner.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
+                                <Badge variant="outline" className={`text-xs ${partner.type === 'MASTER' ? 'border-purple-500 text-purple-700' : ''}`}>{partner.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
                               </div>
                               <p className="text-sm text-muted-foreground">{partner.email} · {active} clínicas ativas</p>
                             </div>
@@ -252,8 +208,8 @@ const PartnersDashboard = () => {
                             <Badge className={levelColors[partner.current_level] || 'bg-muted'}>{partner.current_level}</Badge>
                             <div className="text-right">
                               <p className="text-sm font-medium">SEH: {Number(partner.seh_score || 0).toFixed(1)}</p>
-                              <Badge variant={partner.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                                {partner.status === 'ACTIVE' ? 'Ativo' : partner.status}
+                              <Badge variant={partner.status === 'ACTIVE' ? 'default' : partner.status === 'SUSPENDED' ? 'destructive' : 'secondary'}>
+                                {partner.status === 'ACTIVE' ? 'Ativo' : partner.status === 'PENDING' ? 'Pendente' : 'Suspenso'}
                               </Badge>
                             </div>
                           </div>
@@ -271,10 +227,7 @@ const PartnersDashboard = () => {
               <CardHeader><CardTitle className="text-lg">Alertas Pendentes</CardTitle></CardHeader>
               <CardContent>
                 {alerts.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhum alerta pendente</p>
-                  </div>
+                  <div className="text-center py-12 text-muted-foreground"><Activity className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhum alerta pendente</p></div>
                 ) : (
                   <div className="space-y-3">
                     {alerts.map(alert => (
@@ -287,35 +240,6 @@ const PartnersDashboard = () => {
                             <Badge variant="outline">{alert.alert_type}</Badge>
                             <Badge variant="outline">{alert.severity}</Badge>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="bonificacoes">
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Bonificações Recentes</CardTitle></CardHeader>
-              <CardContent>
-                {commissions.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhuma bonificação registrada</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {commissions.slice(0, 10).map(c => (
-                      <div key={c.id} className="flex items-center justify-between p-4 rounded-lg border">
-                        <div>
-                          <p className="font-medium">{c.commission_type === 'DIRECT' ? 'Direta' : c.commission_type === 'OVERRIDE' ? 'Rede (Override)' : c.commission_type}</p>
-                          <p className="text-sm text-muted-foreground">Ref: {c.reference_month}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-green-600">R$ {Number(c.commission_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                          <Badge variant={c.status === 'PAID' ? 'default' : 'secondary'}>{c.status === 'PAID' ? 'Pago' : c.status === 'APPROVED' ? 'Aprovado' : 'Calculado'}</Badge>
                         </div>
                       </div>
                     ))}

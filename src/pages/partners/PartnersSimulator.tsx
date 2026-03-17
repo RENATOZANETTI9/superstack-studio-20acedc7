@@ -178,7 +178,7 @@ const PartnersSimulator = () => {
                     <span className="font-bold">R$ {totalPaidValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <span className="text-sm font-medium">Comissão Direta/Mês</span>
+                    <span className="text-sm font-medium">Bonificação Direta/Mês</span>
                     <span className="font-bold text-green-600">R$ {directCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">

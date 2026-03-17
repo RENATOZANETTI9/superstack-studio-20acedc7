@@ -11,13 +11,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, UserPlus, Building2, Link2, Copy, ExternalLink, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, UserPlus, Link2, Copy, ChevronDown, ChevronUp, Filter, Calendar } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const levelColors: Record<string, string> = {
   BRONZE: 'bg-amber-700 text-white',
   PRATA: 'bg-gray-400 text-white',
   OURO: 'bg-yellow-500 text-white',
   ELITE: 'bg-purple-600 text-white',
+};
+
+const statusLabels: Record<string, string> = {
+  ACTIVE: 'Ativo',
+  PENDING: 'Pendente',
+  SUSPENDED: 'Suspenso',
 };
 
 const PartnersManagement = () => {
@@ -30,10 +41,14 @@ const PartnersManagement = () => {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterMinClinics, setFilterMinClinics] = useState('');
+  const [filterClinicStatus, setFilterClinicStatus] = useState('ALL');
+  const [filterMinConsultas, setFilterMinConsultas] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [form, setForm] = useState({
-    type: 'PARTNER',
     person_type: 'CPF',
     document_number: '',
     legal_name: '',
@@ -45,9 +60,7 @@ const PartnersManagement = () => {
     monthly_relationship_clinics: 0,
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -65,7 +78,6 @@ const PartnersManagement = () => {
   const getPartnerClinics = (partnerId: string) => clinics.filter(c => c.partner_id === partnerId);
   const getPartnerLinks = (partnerId: string) => links.filter(l => l.partner_id === partnerId);
   const getActiveClinicsCount = (partnerId: string) => getPartnerClinics(partnerId).filter(c => c.is_active).length;
-
   const canBecomeMaster = (partnerId: string) => getActiveClinicsCount(partnerId) >= 20;
 
   const handleCreate = async () => {
@@ -74,13 +86,9 @@ const PartnersManagement = () => {
       return;
     }
 
-    if (form.type === 'MASTER') {
-      toast({ title: 'Master Partners são promovidos automaticamente ao atingir 20 clínicas ativas', variant: 'destructive' });
-      return;
-    }
-
     const { error } = await supabase.from('partners').insert({
       ...form,
+      type: 'PARTNER',
       user_id: user!.id,
       status: 'PENDING',
     });
@@ -90,11 +98,7 @@ const PartnersManagement = () => {
     } else {
       toast({ title: 'Partner criado com sucesso!' });
       setDialogOpen(false);
-      setForm({
-        type: 'PARTNER', person_type: 'CPF', document_number: '', legal_name: '',
-        email: '', phone: '', region_state: '', region_city: '',
-        years_in_health_market: 0, monthly_relationship_clinics: 0,
-      });
+      setForm({ person_type: 'CPF', document_number: '', legal_name: '', email: '', phone: '', region_state: '', region_city: '', years_in_health_market: 0, monthly_relationship_clinics: 0 });
       fetchData();
     }
   };
@@ -105,13 +109,27 @@ const PartnersManagement = () => {
   };
 
   const filtered = partners.filter(p => {
-    const matchSearch = !search || 
-      p.legal_name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.email?.toLowerCase().includes(search.toLowerCase()) ||
-      p.document_number?.includes(search);
+    const matchSearch = !search || p.legal_name?.toLowerCase().includes(search.toLowerCase()) || p.email?.toLowerCase().includes(search.toLowerCase()) || p.document_number?.includes(search);
     const matchType = filterType === 'ALL' || p.type === filterType;
     const matchStatus = filterStatus === 'ALL' || p.status === filterStatus;
-    return matchSearch && matchType && matchStatus;
+    
+    const pClinics = getPartnerClinics(p.id);
+    const activeClinicsCount = pClinics.filter(c => c.is_active).length;
+    const inactiveClinicsCount = pClinics.filter(c => !c.is_active).length;
+    const matchMinClinics = !filterMinClinics || pClinics.length >= Number(filterMinClinics);
+    
+    const matchClinicStatus = filterClinicStatus === 'ALL' || 
+      (filterClinicStatus === 'ONLY_ACTIVE' && activeClinicsCount > 0) ||
+      (filterClinicStatus === 'ONLY_INACTIVE' && inactiveClinicsCount > 0) ||
+      (filterClinicStatus === 'HAS_BOTH' && activeClinicsCount > 0 && inactiveClinicsCount > 0);
+    
+    const totalConsultas = pClinics.reduce((s, c) => s + (c.consultations_count || 0), 0);
+    const matchMinConsultas = !filterMinConsultas || totalConsultas >= Number(filterMinConsultas);
+    
+    const matchDateFrom = !dateFrom || new Date(p.created_at) >= dateFrom;
+    const matchDateTo = !dateTo || new Date(p.created_at) <= new Date(dateTo.getTime() + 86400000);
+    
+    return matchSearch && matchType && matchStatus && matchMinClinics && matchClinicStatus && matchMinConsultas && matchDateFrom && matchDateTo;
   });
 
   return (
@@ -120,7 +138,7 @@ const PartnersManagement = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Cadastro de Partners</h1>
-            <p className="text-muted-foreground">Gerenciar parceiros, master partners e suas clínicas</p>
+            <p className="text-muted-foreground">Gerenciar parceiros Help Ude e suas clínicas vinculadas</p>
           </div>
           {isMaster && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -129,15 +147,15 @@ const PartnersManagement = () => {
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Cadastrar Partner</DialogTitle>
+                  <DialogTitle>Cadastrar Novo Partner</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-                    <p>💡 Para se tornar <strong>Master Partner</strong>, o parceiro precisa ter no mínimo <strong>20 clínicas ativas</strong> vinculadas. A promoção é automática.</p>
+                    <p>💡 Todo partner é cadastrado como <strong>Partner Comum</strong>. A promoção a <strong>Master Partner</strong> é automática ao atingir <strong>20 clínicas ativas</strong>. Ao se tornar Master, um link de recrutamento de partners é gerado automaticamente.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Pessoa</Label>
+                      <Label>Tipo de Pessoa</Label>
                       <Select value={form.person_type} onValueChange={v => setForm({...form, person_type: v})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -147,7 +165,7 @@ const PartnersManagement = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label>Documento</Label>
+                      <Label>Documento *</Label>
                       <Input value={form.document_number} onChange={e => setForm({...form, document_number: e.target.value})} placeholder="000.000.000-00" />
                     </div>
                   </div>
@@ -181,28 +199,82 @@ const PartnersManagement = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nome, e-mail ou documento..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
-          </div>
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[160px]"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos os Tipos</SelectItem>
-              <SelectItem value="PARTNER">Partner</SelectItem>
-              <SelectItem value="MASTER">Master Partner</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos Status</SelectItem>
-              <SelectItem value="ACTIVE">Ativo</SelectItem>
-              <SelectItem value="PENDING">Pendente</SelectItem>
-              <SelectItem value="SUSPENDED">Suspenso</SelectItem>
-            </SelectContent>
-          </Select>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Buscar nome, e-mail, doc..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+              </div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos os Tipos</SelectItem>
+                  <SelectItem value="PARTNER">Partner Comum</SelectItem>
+                  <SelectItem value="MASTER">Master Partner</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos Status</SelectItem>
+                  <SelectItem value="ACTIVE">Ativo</SelectItem>
+                  <SelectItem value="PENDING">Pendente</SelectItem>
+                  <SelectItem value="SUSPENDED">Suspenso</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterClinicStatus} onValueChange={setFilterClinicStatus}>
+                <SelectTrigger><SelectValue placeholder="Clínicas" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas Clínicas</SelectItem>
+                  <SelectItem value="ONLY_ACTIVE">Com Clínicas Ativas</SelectItem>
+                  <SelectItem value="ONLY_INACTIVE">Com Clínicas Inativas</SelectItem>
+                  <SelectItem value="HAS_BOTH">Ativas e Inativas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Data início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent mode="single" selected={dateFrom} onSelect={setDateFrom} className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "dd/MM/yyyy") : "Data fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent mode="single" selected={dateTo} onSelect={setDateTo} className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+                </PopoverContent>
+              </Popover>
+              <Input placeholder="Mín. clínicas vinculadas" type="number" value={filterMinClinics} onChange={e => setFilterMinClinics(e.target.value)} />
+              <Input placeholder="Mín. consultas no período" type="number" value={filterMinConsultas} onChange={e => setFilterMinConsultas(e.target.value)} />
+            </div>
+            {(search || filterType !== 'ALL' || filterStatus !== 'ALL' || filterClinicStatus !== 'ALL' || filterMinClinics || filterMinConsultas || dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => {
+                setSearch(''); setFilterType('ALL'); setFilterStatus('ALL'); setFilterClinicStatus('ALL');
+                setFilterMinClinics(''); setFilterMinConsultas(''); setDateFrom(undefined); setDateTo(undefined);
+              }}>Limpar filtros</Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Results count */}
+        <div className="text-sm text-muted-foreground">
+          {filtered.length} partner{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
         </div>
 
         {/* Partners List */}
@@ -224,27 +296,24 @@ const PartnersManagement = () => {
 
               return (
                 <Card key={p.id} className="overflow-hidden">
-                  <div 
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                    onClick={() => setExpandedPartner(isExpanded ? null : p.id)}
-                  >
+                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setExpandedPartner(isExpanded ? null : p.id)}>
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                         <UserPlus className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{p.legal_name}</p>
-                          <Badge variant="outline" className="text-xs">{p.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
+                          <Badge variant="outline" className={cn("text-xs", p.type === 'MASTER' ? 'border-purple-500 text-purple-700' : '')}>{p.type === 'MASTER' ? 'Master Partner' : 'Partner Comum'}</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">{p.email} · {p.document_number}</p>
+                        <p className="text-sm text-muted-foreground">{p.email} · {p.region_city}/{p.region_state}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden sm:block">
                         <div className="flex items-center gap-2">
                           <Badge className={levelColors[p.current_level] || 'bg-muted'}>{p.current_level}</Badge>
-                          <Badge variant={p.status === 'ACTIVE' ? 'default' : 'secondary'}>{p.status === 'ACTIVE' ? 'Ativo' : p.status === 'PENDING' ? 'Pendente' : p.status}</Badge>
+                          <Badge variant={p.status === 'ACTIVE' ? 'default' : p.status === 'SUSPENDED' ? 'destructive' : 'secondary'}>{statusLabels[p.status] || p.status}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           SEH: {Number(p.seh_score || 0).toFixed(1)} · {activeClinics.length} clínicas ativas
@@ -259,8 +328,7 @@ const PartnersManagement = () => {
 
                   {isExpanded && (
                     <div className="border-t p-4 space-y-4">
-                      {/* Summary stats */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                         <div className="p-3 rounded-lg bg-muted/50 text-center">
                           <p className="text-lg font-bold">{pClinics.length}</p>
                           <p className="text-xs text-muted-foreground">Total Clínicas</p>
@@ -268,6 +336,10 @@ const PartnersManagement = () => {
                         <div className="p-3 rounded-lg bg-green-500/10 text-center">
                           <p className="text-lg font-bold text-green-600">{activeClinics.length}</p>
                           <p className="text-xs text-muted-foreground">Ativas</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-red-500/10 text-center">
+                          <p className="text-lg font-bold text-red-600">{inactiveClinics.length}</p>
+                          <p className="text-xs text-muted-foreground">Inativas</p>
                         </div>
                         <div className="p-3 rounded-lg bg-muted/50 text-center">
                           <p className="text-lg font-bold">{totalConsultations}</p>
@@ -283,6 +355,14 @@ const PartnersManagement = () => {
                         </div>
                       </div>
 
+                      {/* Info */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div><span className="text-muted-foreground">Documento:</span> <span className="font-medium">{p.document_number}</span></div>
+                        <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{p.phone || '—'}</span></div>
+                        <div><span className="text-muted-foreground">Mercado:</span> <span className="font-medium">{p.years_in_health_market} anos</span></div>
+                        <div><span className="text-muted-foreground">Cadastro:</span> <span className="font-medium">{new Date(p.created_at).toLocaleDateString('pt-BR')}</span></div>
+                      </div>
+
                       {/* Links */}
                       {pLinks.length > 0 && (
                         <div>
@@ -291,7 +371,7 @@ const PartnersManagement = () => {
                             {pLinks.map(l => (
                               <div key={l.id} className="flex items-center gap-3 p-2 rounded bg-muted/50 text-sm">
                                 <Badge variant="outline" className="text-xs">
-                                  {l.link_type === 'CLINIC_REGISTRATION' ? '🏥 Clínica' : l.link_type === 'PARTNER_INVITATION' ? '🤝 Partner' : l.link_type}
+                                  {l.link_type === 'CLINIC_REGISTRATION' ? '🏥 Cadastro Clínica' : l.link_type === 'PARTNER_INVITATION' ? '🤝 Recrutamento Partner' : l.link_type}
                                 </Badge>
                                 <code className="text-xs flex-1 truncate">{l.link_url}</code>
                                 <span className="text-xs text-muted-foreground">{l.uses_count} usos</span>
@@ -302,8 +382,8 @@ const PartnersManagement = () => {
                             ))}
                           </div>
                           {p.type === 'PARTNER' && !pLinks.some(l => l.link_type === 'PARTNER_INVITATION') && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              ℹ️ O link de recrutamento de partners será habilitado quando este partner for promovido a Master Partner (mín. 20 clínicas ativas).
+                            <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted/30 rounded">
+                              ℹ️ O link de recrutamento de partners será habilitado automaticamente quando este partner atingir <strong>20 clínicas ativas</strong> (atualmente: {activeClinics.length}).
                             </p>
                           )}
                         </div>
@@ -331,7 +411,7 @@ const PartnersManagement = () => {
                                 <tbody>
                                   {activeClinics.map(c => (
                                     <tr key={c.id} className="border-b">
-                                      <td className="py-2"><div><p className="font-medium">{c.clinic_name}</p><p className="text-xs text-muted-foreground">{c.clinic_external_id}</p></div></td>
+                                      <td className="py-2"><p className="font-medium">{c.clinic_name}</p><p className="text-xs text-muted-foreground">{c.clinic_external_id}</p></td>
                                       <td className="py-2">{c.consultations_count}</td>
                                       <td className="py-2">{c.approvals_count}</td>
                                       <td className="py-2 font-medium text-green-600">{c.paid_count}</td>
