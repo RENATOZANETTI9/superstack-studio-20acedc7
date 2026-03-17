@@ -284,6 +284,20 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
             )} />
             <span className="text-[10px]">Usuários</span>
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => handleNavigate('/dashboard/partners')}
+            className={cn(
+              'flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
+              location.pathname.startsWith('/dashboard/partners') && 'text-sidebar-primary'
+            )}
+          >
+            <Handshake className={cn(
+              'h-5 w-5',
+              location.pathname.startsWith('/dashboard/partners') && 'text-primary'
+            )} />
+            <span className="text-[10px]">Partners</span>
+          </Button>
         </nav>
       </>
     );
