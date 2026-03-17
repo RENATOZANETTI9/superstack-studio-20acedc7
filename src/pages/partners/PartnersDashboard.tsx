@@ -11,6 +11,8 @@ import {
   Star, Target, ArrowUpRight, ArrowDownRight, Activity
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import PartnerCharts from '@/components/partners/PartnerCharts';
+import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
 
 const levelColors: Record<string, string> = {
   BRONZE: 'bg-amber-700 text-white',
