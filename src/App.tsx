@@ -13,6 +13,11 @@ import Usuarios from "./pages/Usuarios";
 import Permissoes from "./pages/usuarios/Permissoes";
 import Hierarquias from "./pages/usuarios/Hierarquias";
 import Lista from "./pages/usuarios/Lista";
+import PartnersDashboard from "./pages/partners/PartnersDashboard";
+import PartnersManagement from "./pages/partners/PartnersManagement";
+import PartnersNetwork from "./pages/partners/PartnersNetwork";
+import PartnersCommissions from "./pages/partners/PartnersCommissions";
+import PartnersConfig from "./pages/partners/PartnersConfig";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
@@ -37,6 +42,11 @@ const App = () => (
             <Route path="/dashboard/usuarios/permissoes" element={<Permissoes />} />
             <Route path="/dashboard/usuarios/hierarquias" element={<Hierarquias />} />
             <Route path="/dashboard/usuarios/lista" element={<Lista />} />
+            <Route path="/dashboard/partners" element={<PartnersDashboard />} />
+            <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
+            <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
+            <Route path="/dashboard/partners/comissoes" element={<PartnersCommissions />} />
+            <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

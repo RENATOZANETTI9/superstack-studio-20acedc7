@@ -13,7 +13,12 @@ import {
   X,
   Key,
   GitBranch,
-  UserCircle
+  UserCircle,
+  Handshake,
+  UserPlus,
+  Network,
+  DollarSign,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
