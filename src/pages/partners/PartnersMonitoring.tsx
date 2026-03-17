@@ -33,11 +33,8 @@ const PartnersMonitoring = () => {
     setLoading(false);
   };
 
-  // Health metrics
-  const totalAlerts = alerts.length;
   const unresolvedAlerts = alerts.filter(a => !a.resolved_at).length;
   const criticalAlerts = alerts.filter(a => a.severity === 'CRITICAL' && !a.resolved_at).length;
-  const totalCommissions = commissions.length;
   const paidCommissions = commissions.filter(c => c.status === 'PAID').length;
   const pendingCommissions = commissions.filter(c => c.status === 'CALCULATED' || c.status === 'APPROVED').length;
 
@@ -50,20 +47,14 @@ const PartnersMonitoring = () => {
     fetchData();
   };
 
-  // CSV Export
   const exportCSV = (data: any[], filename: string) => {
     if (data.length === 0) return;
     const headers = Object.keys(data[0]);
-    const csv = [
-      headers.join(','),
-      ...data.map(row => headers.map(h => JSON.stringify(row[h] ?? '')).join(','))
-    ].join('\n');
+    const csv = [headers.join(','), ...data.map(row => headers.map(h => JSON.stringify(row[h] ?? '')).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    a.href = url; a.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -82,66 +73,46 @@ const PartnersMonitoring = () => {
             <h1 className="text-2xl font-bold text-foreground">Monitoramento & Auditoria</h1>
             <p className="text-muted-foreground">Saúde operacional, alertas e logs de auditoria</p>
           </div>
-          <Button onClick={fetchData} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" /> Atualizar
-          </Button>
+          <Button onClick={fetchData} variant="outline" size="sm"><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</Button>
         </div>
 
-        {/* Health KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <AlertTriangle className={`h-8 w-8 mx-auto mb-2 ${criticalAlerts > 0 ? 'text-red-500' : 'text-green-500'}`} />
-              <p className="text-2xl font-bold">{criticalAlerts}</p>
-              <p className="text-xs text-muted-foreground">Alertas Críticos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-              <p className="text-2xl font-bold">{unresolvedAlerts}</p>
-              <p className="text-xs text-muted-foreground">Alertas Pendentes</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-              <p className="text-2xl font-bold">{paidCommissions}</p>
-              <p className="text-xs text-muted-foreground">Comissões Pagas</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Activity className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-              <p className="text-2xl font-bold">{pendingCommissions}</p>
-              <p className="text-xs text-muted-foreground">Comissões Pendentes</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="pt-6 text-center">
+            <AlertTriangle className={`h-8 w-8 mx-auto mb-2 ${criticalAlerts > 0 ? 'text-red-500' : 'text-green-500'}`} />
+            <p className="text-2xl font-bold">{criticalAlerts}</p><p className="text-xs text-muted-foreground">Alertas Críticos</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6 text-center">
+            <Clock className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+            <p className="text-2xl font-bold">{unresolvedAlerts}</p><p className="text-xs text-muted-foreground">Alertas Pendentes</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6 text-center">
+            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="text-2xl font-bold">{paidCommissions}</p><p className="text-xs text-muted-foreground">Bonificações Pagas</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6 text-center">
+            <Activity className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+            <p className="text-2xl font-bold">{pendingCommissions}</p><p className="text-xs text-muted-foreground">Bonificações Pendentes</p>
+          </CardContent></Card>
         </div>
 
         <Tabs defaultValue="alerts">
           <TabsList>
             <TabsTrigger value="alerts">Alertas</TabsTrigger>
             <TabsTrigger value="audit">Auditoria Config</TabsTrigger>
-            <TabsTrigger value="commissions">Relatório Financeiro</TabsTrigger>
+            <TabsTrigger value="financial">Relatório Financeiro</TabsTrigger>
           </TabsList>
 
           <TabsContent value="alerts">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">Todos os Alertas</CardTitle>
-                <Button variant="outline" size="sm" onClick={() => exportCSV(alerts, 'alertas')}>
-                  <Download className="h-4 w-4 mr-1" /> CSV
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => exportCSV(alerts, 'alertas')}><Download className="h-4 w-4 mr-1" /> CSV</Button>
               </CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="flex justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" /></div>
                 ) : alerts.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Shield className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhum alerta registrado</p>
-                  </div>
+                  <div className="text-center py-12 text-muted-foreground"><Shield className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhum alerta registrado</p></div>
                 ) : (
                   <div className="space-y-3">
                     {alerts.map(alert => (
@@ -159,9 +130,7 @@ const PartnersMonitoring = () => {
                           </div>
                         </div>
                         {!alert.resolved_at ? (
-                          <Button size="sm" variant="outline" onClick={() => resolveAlert(alert.id)}>
-                            <CheckCircle className="h-4 w-4 mr-1" /> Resolver
-                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => resolveAlert(alert.id)}><CheckCircle className="h-4 w-4 mr-1" /> Resolver</Button>
                         ) : (
                           <Badge variant="default" className="bg-green-100 text-green-800">Resolvido</Badge>
                         )}
@@ -177,27 +146,15 @@ const PartnersMonitoring = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">Log de Alterações de Configuração</CardTitle>
-                <Button variant="outline" size="sm" onClick={() => exportCSV(configHistory, 'auditoria_config')}>
-                  <Download className="h-4 w-4 mr-1" /> CSV
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => exportCSV(configHistory, 'auditoria_config')}><Download className="h-4 w-4 mr-1" /> CSV</Button>
               </CardHeader>
               <CardContent>
                 {configHistory.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Shield className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhuma alteração registrada</p>
-                  </div>
+                  <div className="text-center py-12 text-muted-foreground"><Shield className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhuma alteração registrada</p></div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b text-left">
-                          <th className="pb-3">Data</th>
-                          <th className="pb-3">Config Key</th>
-                          <th className="pb-3">Valor Antigo</th>
-                          <th className="pb-3">Valor Novo</th>
-                        </tr>
-                      </thead>
+                      <thead><tr className="border-b text-left"><th className="pb-3">Data</th><th className="pb-3">Chave Config</th><th className="pb-3">Valor Antigo</th><th className="pb-3">Valor Novo</th></tr></thead>
                       <tbody>
                         {configHistory.map(h => (
                           <tr key={h.id} className="border-b">
@@ -215,63 +172,33 @@ const PartnersMonitoring = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="commissions">
+          <TabsContent value="financial">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Relatório de Comissões</CardTitle>
-                <Button variant="outline" size="sm" onClick={() => exportCSV(commissions, 'comissoes')}>
-                  <Download className="h-4 w-4 mr-1" /> CSV
-                </Button>
+                <CardTitle className="text-lg">Relatório de Bonificações</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => exportCSV(commissions, 'bonificacoes')}><Download className="h-4 w-4 mr-1" /> CSV</Button>
               </CardHeader>
               <CardContent>
                 {commissions.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhuma comissão registrada</p>
-                  </div>
+                  <div className="text-center py-12 text-muted-foreground"><TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhuma bonificação registrada</p></div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b text-left">
-                          <th className="pb-3">Tipo</th>
-                          <th className="pb-3">Mês Ref.</th>
-                          <th className="pb-3">Valor Base</th>
-                          <th className="pb-3">Taxa</th>
-                          <th className="pb-3">Comissão</th>
-                          <th className="pb-3">Status</th>
-                          <th className="pb-3">Ações</th>
-                        </tr>
-                      </thead>
+                      <thead><tr className="border-b text-left">
+                        <th className="pb-3">Tipo</th><th className="pb-3">Mês Ref.</th><th className="pb-3">Valor Base</th><th className="pb-3">Taxa</th><th className="pb-3">Bonificação</th><th className="pb-3">Status</th><th className="pb-3">Ações</th>
+                      </tr></thead>
                       <tbody>
                         {commissions.map(c => (
                           <tr key={c.id} className="border-b">
-                            <td className="py-3"><Badge variant="outline">{c.commission_type}</Badge></td>
+                            <td className="py-3"><Badge variant="outline">{c.commission_type === 'DIRECT' ? 'Direta' : 'Rede'}</Badge></td>
                             <td className="py-3">{c.reference_month}</td>
                             <td className="py-3">R$ {Number(c.net_paid_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td className="py-3">{(Number(c.commission_rate) * 100).toFixed(2)}%</td>
                             <td className="py-3 font-bold text-green-600">R$ {Number(c.commission_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="py-3"><Badge className={c.status === 'PAID' ? 'bg-green-100 text-green-800' : c.status === 'APPROVED' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}>{c.status === 'PAID' ? 'Pago' : c.status === 'APPROVED' ? 'Aprovado' : 'Calculado'}</Badge></td>
                             <td className="py-3">
-                              <Badge className={
-                                c.status === 'PAID' ? 'bg-green-100 text-green-800' :
-                                c.status === 'APPROVED' ? 'bg-yellow-100 text-yellow-800' :
-                                c.status === 'CALCULATED' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
-                              }>{c.status}</Badge>
-                            </td>
-                            <td className="py-3">
-                              {c.status === 'CALCULATED' && (
-                                <Button size="sm" variant="outline" onClick={async () => {
-                                  await supabase.from('partner_commissions').update({ status: 'APPROVED', approved_at: new Date().toISOString() }).eq('id', c.id);
-                                  fetchData();
-                                }}>Aprovar</Button>
-                              )}
-                              {c.status === 'APPROVED' && (
-                                <Button size="sm" variant="default" onClick={async () => {
-                                  await supabase.from('partner_commissions').update({ status: 'PAID', paid_at: new Date().toISOString() }).eq('id', c.id);
-                                  fetchData();
-                                }}>Pagar</Button>
-                              )}
+                              {c.status === 'CALCULATED' && <Button size="sm" variant="outline" onClick={async () => { await supabase.from('partner_commissions').update({ status: 'APPROVED', approved_at: new Date().toISOString() }).eq('id', c.id); fetchData(); }}>Aprovar</Button>}
+                              {c.status === 'APPROVED' && <Button size="sm" variant="default" onClick={async () => { await supabase.from('partner_commissions').update({ status: 'PAID', paid_at: new Date().toISOString() }).eq('id', c.id); fetchData(); }}>Pagar</Button>}
                             </td>
                           </tr>
                         ))}

@@ -6,6 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings, DollarSign, Target, Zap, Gift, Flag } from 'lucide-react';
 
+const categoryLabels: Record<string, string> = {
+  COMMISSION_RATES: 'Taxas de Bonificação',
+  LEVEL_THRESHOLDS: 'Faixas de Nível',
+  SEH_WEIGHTS: 'Pesos SEH',
+  PIX_TIERS: 'Faixas PIX',
+  MIMO_TIERS: 'Faixas Mimo',
+  FEATURE_FLAGS: 'Funcionalidades',
+  ALERT_RULES: 'Regras de Alerta',
+  GENERAL: 'Geral',
+};
+
 const categoryIcons: Record<string, any> = {
   COMMISSION_RATES: DollarSign,
   LEVEL_THRESHOLDS: Target,
@@ -42,7 +53,7 @@ const PartnersConfig = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Configurações do Sistema</h1>
-          <p className="text-muted-foreground">Parâmetros, faixas, feature flags e regras do módulo Partners</p>
+          <p className="text-muted-foreground">Parâmetros, faixas, funcionalidades e regras do módulo Partners</p>
         </div>
 
         {loading ? (
@@ -54,7 +65,7 @@ const PartnersConfig = () => {
             <TabsList className="flex-wrap h-auto gap-1">
               {categories.map(cat => (
                 <TabsTrigger key={cat} value={cat} className="text-xs">
-                  {cat.replace(/_/g, ' ')}
+                  {categoryLabels[cat] || cat}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -73,7 +84,7 @@ const PartnersConfig = () => {
                             <Icon className="h-4 w-4 text-primary" />
                           </div>
                           <div>
-                            <CardTitle className="text-base">{config.config_key}</CardTitle>
+                            <CardTitle className="text-base">{config.config_key.replace(/_/g, ' ')}</CardTitle>
                             <CardDescription>{config.description}</CardDescription>
                           </div>
                           <Badge variant={config.is_active ? 'default' : 'secondary'} className="ml-auto">

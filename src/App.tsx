@@ -16,7 +16,7 @@ import Lista from "./pages/usuarios/Lista";
 import PartnersDashboard from "./pages/partners/PartnersDashboard";
 import PartnersManagement from "./pages/partners/PartnersManagement";
 import PartnersNetwork from "./pages/partners/PartnersNetwork";
-import PartnersCommissions from "./pages/partners/PartnersCommissions";
+import PartnersBonificacoes from "./pages/partners/PartnersBonificacoes";
 import PartnersConfig from "./pages/partners/PartnersConfig";
 import PartnersSimulator from "./pages/partners/PartnersSimulator";
 import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
@@ -47,7 +47,7 @@ const App = () => (
             <Route path="/dashboard/partners" element={<PartnersDashboard />} />
             <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
             <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
-            <Route path="/dashboard/partners/comissoes" element={<PartnersCommissions />} />
+            <Route path="/dashboard/partners/bonificacoes" element={<PartnersBonificacoes />} />
             <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
             <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
             <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
