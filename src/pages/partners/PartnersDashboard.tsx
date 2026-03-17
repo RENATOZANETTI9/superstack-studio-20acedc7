@@ -11,6 +11,8 @@ import {
   Star, Target, ArrowUpRight, ArrowDownRight, Activity
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import PartnerCharts from '@/components/partners/PartnerCharts';
+import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
 
 const levelColors: Record<string, string> = {
   BRONZE: 'bg-amber-700 text-white',
@@ -21,6 +23,7 @@ const levelColors: Record<string, string> = {
 
 const PartnersDashboard = () => {
   const { user } = useAuth();
+  usePartnerAlertRealtime();
   const [partners, setPartners] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -152,6 +155,9 @@ const PartnersDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Charts */}
+        <PartnerCharts metrics={metrics} commissions={commissions} />
 
         {/* Tabs */}
         <Tabs defaultValue="partners" className="space-y-4">
