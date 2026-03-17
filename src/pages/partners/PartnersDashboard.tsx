@@ -23,6 +23,7 @@ const levelColors: Record<string, string> = {
 
 const PartnersDashboard = () => {
   const { user } = useAuth();
+  usePartnerAlertRealtime();
   const [partners, setPartners] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
