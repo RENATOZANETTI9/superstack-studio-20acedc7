@@ -16,7 +16,7 @@ import Lista from "./pages/usuarios/Lista";
 import PartnersDashboard from "./pages/partners/PartnersDashboard";
 import PartnersManagement from "./pages/partners/PartnersManagement";
 import PartnersNetwork from "./pages/partners/PartnersNetwork";
-import PartnersCommissions from "./pages/partners/PartnersCommissions";
+import PartnersBonificacoes from "./pages/partners/PartnersBonificacoes";
 import PartnersConfig from "./pages/partners/PartnersConfig";
 import PartnersSimulator from "./pages/partners/PartnersSimulator";
 import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
