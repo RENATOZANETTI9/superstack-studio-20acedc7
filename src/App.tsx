@@ -18,6 +18,8 @@ import PartnersManagement from "./pages/partners/PartnersManagement";
 import PartnersNetwork from "./pages/partners/PartnersNetwork";
 import PartnersCommissions from "./pages/partners/PartnersCommissions";
 import PartnersConfig from "./pages/partners/PartnersConfig";
+import PartnersSimulator from "./pages/partners/PartnersSimulator";
+import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
@@ -47,6 +49,8 @@ const App = () => (
             <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
             <Route path="/dashboard/partners/comissoes" element={<PartnersCommissions />} />
             <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
+            <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
+            <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
