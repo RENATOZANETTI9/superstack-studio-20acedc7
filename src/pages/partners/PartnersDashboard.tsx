@@ -156,6 +156,9 @@ const PartnersDashboard = () => {
           </Card>
         </div>
 
+        {/* Charts */}
+        <PartnerCharts metrics={metrics} commissions={commissions} />
+
         {/* Tabs */}
         <Tabs defaultValue="partners" className="space-y-4">
           <TabsList>
