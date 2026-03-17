@@ -18,6 +18,8 @@ import PartnersManagement from "./pages/partners/PartnersManagement";
 import PartnersNetwork from "./pages/partners/PartnersNetwork";
 import PartnersCommissions from "./pages/partners/PartnersCommissions";
 import PartnersConfig from "./pages/partners/PartnersConfig";
+import PartnersSimulator from "./pages/partners/PartnersSimulator";
+import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
