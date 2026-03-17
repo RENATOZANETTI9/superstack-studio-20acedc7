@@ -417,6 +417,57 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
             </CollapsibleContent>
           )}
         </Collapsible>
+
+        {/* Partners Menu */}
+        <Collapsible open={partnersOpen} onOpenChange={setPartnersOpen}>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary',
+                collapsed && 'justify-center px-2'
+              )}
+            >
+              <Handshake className="h-5 w-5 shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left">Partners</span>
+                  <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', partnersOpen && 'rotate-180')} />
+                </>
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          {!collapsed && (
+            <CollapsibleContent className="space-y-1 pt-1">
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <LayoutDashboard className="h-4 w-4 shrink-0" /><span>Dashboard</span>
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/cadastro')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners/cadastro') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <UserPlus className="h-4 w-4 shrink-0" /><span>Cadastro</span>
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/rede')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners/rede') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <Network className="h-4 w-4 shrink-0" /><span>Rede</span>
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/comissoes')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners/comissoes') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <DollarSign className="h-4 w-4 shrink-0" /><span>Comissões</span>
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/config')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners/config') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <Settings className="h-4 w-4 shrink-0" /><span>Configurações</span>
+              </Button>
+            </CollapsibleContent>
+          )}
+        </Collapsible>
       </nav>
 
       {/* Logout */}
