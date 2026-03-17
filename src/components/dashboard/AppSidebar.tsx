@@ -326,7 +326,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
         {!collapsed && (
-          <h1 className="text-xl font-bold text-sidebar-foreground">HelpUde</h1>
+          <h1 className="text-xl font-bold text-sidebar-foreground">Help Ude</h1>
         )}
         <Button
           variant="ghost"
