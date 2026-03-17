@@ -491,6 +491,16 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   isActive('/dashboard/partners/config') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
                 <Settings className="h-4 w-4 shrink-0" /><span>Configurações</span>
               </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/simulador')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners/simulador') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <Calculator className="h-4 w-4 shrink-0" /><span>Simulador</span>
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/monitoramento')}
+                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/partners/monitoramento') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                <Activity className="h-4 w-4 shrink-0" /><span>Monitoramento</span>
+              </Button>
             </CollapsibleContent>
           )}
         </Collapsible>
