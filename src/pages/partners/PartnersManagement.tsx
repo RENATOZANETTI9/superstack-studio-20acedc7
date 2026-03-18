@@ -399,6 +399,21 @@ const PartnersManagement = () => {
 
                   {isExpanded && (
                     <div className="border-t p-4 space-y-4">
+                      {/* Action buttons */}
+                      {isMaster && (
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openEditDialog(p); }}>
+                            <Pencil className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={p.status === 'ACTIVE' ? 'destructive' : 'default'}
+                            onClick={(e) => { e.stopPropagation(); togglePartnerStatus(p); }}
+                          >
+                            {p.status === 'ACTIVE' ? <><PowerOff className="h-3 w-3 mr-1" /> Desativar</> : <><Power className="h-3 w-3 mr-1" /> Ativar</>}
+                          </Button>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                         <div className="p-3 rounded-lg bg-muted/50 text-center">
                           <p className="text-lg font-bold">{pClinics.length}</p>
