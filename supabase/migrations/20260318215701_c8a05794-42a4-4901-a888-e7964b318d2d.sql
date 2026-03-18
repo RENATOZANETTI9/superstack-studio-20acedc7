@@ -1,0 +1,2 @@
+ALTER TABLE public.partner_alerts DROP CONSTRAINT partner_alerts_alert_type_check;
+ALTER TABLE public.partner_alerts ADD CONSTRAINT partner_alerts_alert_type_check CHECK (alert_type = ANY (ARRAY['LOW_DAILY_VOLUME'::text, 'DROPPED_BELOW_AVERAGE'::text, 'UNCONVERTED_APPROVAL'::text, 'INACTIVE_CLINIC_RISK'::text, 'LEVEL_AT_RISK'::text, 'QUALIFICATION_OPPORTUNITY'::text, 'SIMULATION_DECLINE'::text, 'PROMOTION'::text]));

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   TrendingUp, TrendingDown, Minus, Search, RefreshCw,
   Building2, Activity, BarChart3
@@ -49,8 +50,9 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [trendFilter, setTrendFilter] = useState<Trend | 'all'>('all');
+  const [period, setPeriod] = useState<'7' | '30' | '90'>('30');
 
-  useEffect(() => { fetchData(); }, [partnerId, masterPartnerId]);
+  useEffect(() => { fetchData(); }, [partnerId, masterPartnerId, period]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,8 +81,10 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
     // Fetch partners for names
     const { data: partnersData } = await supabase.from('partners').select('id, legal_name');
 
-    // Fetch metrics (last 60 days)
-    let metricsQuery = supabase.from('partner_metrics_daily').select('*').order('metric_date', { ascending: true }).limit(1000);
+    // Fetch metrics filtered by period
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - Number(period));
+    let metricsQuery = supabase.from('partner_metrics_daily').select('*').gte('metric_date', sinceDate.toISOString().split('T')[0]).order('metric_date', { ascending: true }).limit(1000);
     if (relevantPartnerIds.length > 0) {
       metricsQuery = metricsQuery.in('partner_id', relevantPartnerIds);
     }
@@ -191,6 +195,15 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <Tabs value={period} onValueChange={(v) => setPeriod(v as '7' | '30' | '90')}>
+        <TabsList>
+          <TabsTrigger value="7">7 dias</TabsTrigger>
+          <TabsTrigger value="30">30 dias</TabsTrigger>
+          <TabsTrigger value="90">90 dias</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card><CardContent className="pt-6 text-center">
