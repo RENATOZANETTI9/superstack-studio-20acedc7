@@ -52,6 +52,7 @@ const App = () => (
             <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
             <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
             <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
+            <Route path="/register/partner" element={<RegisterPartner />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
