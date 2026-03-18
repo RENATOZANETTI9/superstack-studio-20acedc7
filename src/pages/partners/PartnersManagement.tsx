@@ -47,8 +47,21 @@ const PartnersManagement = () => {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<any>(null);
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [form, setForm] = useState({
+    person_type: 'CPF',
+    document_number: '',
+    legal_name: '',
+    email: '',
+    phone: '',
+    region_state: '',
+    region_city: '',
+    years_in_health_market: 0,
+    monthly_relationship_clinics: 0,
+  });
+  const [editForm, setEditForm] = useState({
     person_type: 'CPF',
     document_number: '',
     legal_name: '',
