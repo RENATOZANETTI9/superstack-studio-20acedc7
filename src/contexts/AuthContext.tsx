@@ -151,8 +151,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const getAllUsers = async (): Promise<{ users: any[]; error: string | null }> => {
-    if (role !== 'master') {
-      return { users: [], error: 'Apenas usuários master podem ver todos os usuários' };
+    if (role !== 'master' && role !== 'admin') {
+      return { users: [], error: 'Apenas usuários master ou admin podem ver todos os usuários' };
     }
 
     // Fetch profiles
