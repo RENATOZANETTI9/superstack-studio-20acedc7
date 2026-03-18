@@ -23,6 +23,7 @@ import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
+import RegisterPartner from "./pages/RegisterPartner";
 
 const queryClient = new QueryClient();
 
