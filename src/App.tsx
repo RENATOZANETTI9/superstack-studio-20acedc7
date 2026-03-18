@@ -20,6 +20,7 @@ import PartnersBonificacoes from "./pages/partners/PartnersBonificacoes";
 import PartnersConfig from "./pages/partners/PartnersConfig";
 import PartnersSimulator from "./pages/partners/PartnersSimulator";
 import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
+import PartnersMarketing from "./pages/partners/PartnersMarketing";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
             <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
             <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
+            <Route path="/dashboard/partners/marketing" element={<PartnersMarketing />} />
             <Route path="/register/partner" element={<RegisterPartner />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />

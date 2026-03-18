@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
   Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
-  UserPlus, Network, DollarSign, Settings, Calculator, Activity
+  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -58,6 +58,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: true },
     { title: 'Bonificações', icon: DollarSign, path: '/dashboard/partners/bonificacoes', visible: true },
     { title: 'Simulador', icon: Calculator, path: '/dashboard/partners/simulador', visible: true },
+    { title: 'Marketing', icon: Megaphone, path: '/dashboard/partners/marketing', visible: true },
     { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
   ].filter(item => item.visible);
