@@ -28,6 +28,11 @@ const levelRanges = [
   { level: 'BRONZE', min: 0, max: 49.9, color: 'bg-amber-700', desc: 'Acesso básico, link de cadastro de clínicas' },
 ];
 
+const sehPillars = [
+  { name: 'Volume', weight: '50%', desc: 'Simulações realizadas vs meta mensal' },
+  { name: 'Conversão', weight: '50%', desc: 'Média entre taxa de aprovação e taxa de pagamento' },
+];
+
 const PartnersDashboard = () => {
   const { user } = useAuth();
   usePartnerAlertRealtime();

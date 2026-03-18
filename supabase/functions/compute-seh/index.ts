@@ -40,7 +40,11 @@ Deno.serve(async (req) => {
       .eq('config_key', 'seh_weights')
       .single();
 
-    const weights = sehConfig?.config_value as any || { activation: 0.30, volume: 0.35, conversion: 0.35 };
+    const weights = sehConfig?.config_value as any || { volume: 0.50, conversion: 0.50 };
+
+    // Reference: 5 simulations/day × 20 working days per clinic
+    const SIMULATIONS_PER_DAY = 5;
+    const WORKING_DAYS = 20;
 
     // Fetch all active partners
     const { data: partners } = await supabaseAdmin
@@ -52,28 +56,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Nenhum partner ativo', updated: 0 }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Fetch level thresholds
-    const { data: levelConfigs } = await supabaseAdmin
-      .from('partner_system_config')
-      .select('config_key, config_value')
-      .eq('category', 'LEVEL_THRESHOLDS');
-
-    const levels = (levelConfigs || []).reduce((acc: any, l: any) => {
-      acc[l.config_key] = l.config_value;
-      return acc;
-    }, {});
-
     let updated = 0;
 
     for (const partner of partners) {
-      // Fetch clinic stats
+      // Fetch clinic count for meta calculation
       const { data: clinics } = await supabaseAdmin
         .from('partner_clinic_relations')
-        .select('is_active')
+        .select('id')
         .eq('partner_id', partner.id);
 
       const totalClinics = clinics?.length || 0;
-      const activeClinics = clinics?.filter((c: any) => c.is_active).length || 0;
+      const metaSimulacoes = totalClinics * SIMULATIONS_PER_DAY * WORKING_DAYS;
 
       // Fetch latest metrics
       const { data: latestMetrics } = await supabaseAdmin
@@ -84,19 +77,15 @@ Deno.serve(async (req) => {
         .limit(1)
         .single();
 
-      // Calculate SEH
-      const activationRate = totalClinics > 0 ? (activeClinics / totalClinics) * 100 : 0;
-      const pilarActivation = Math.min(activationRate, 100);
-
+      // Calculate SEH - only Volume + Conversion
       const consultations = latestMetrics?.consultations || 0;
-      const metaConsultas = 100; // default target
-      const pilarVolume = Math.min((consultations / metaConsultas) * 100, 100);
+      const pilarVolume = metaSimulacoes > 0 ? Math.min((consultations / metaSimulacoes) * 100, 100) : 0;
 
       const approvalRate = latestMetrics?.approval_rate || 0;
       const paidRate = latestMetrics?.paid_rate || 0;
       const pilarConversion = (Number(approvalRate) * 0.5 + Number(paidRate) * 0.5);
 
-      const seh = (pilarActivation * weights.activation) + (pilarVolume * weights.volume) + (pilarConversion * weights.conversion);
+      const seh = (pilarVolume * (weights.volume || 0.50)) + (pilarConversion * (weights.conversion || 0.50));
       const sehCapped = Math.min(Math.max(seh, 0), 100);
 
       // Determine level

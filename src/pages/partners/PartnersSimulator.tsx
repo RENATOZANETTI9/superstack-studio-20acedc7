@@ -14,16 +14,21 @@ const PartnersSimulator = () => {
   const isAdmin = isAdminRole(role as any);
   const isPartner = isPartnerRole(role as any);
 
+  const ref = PARTNER_RULES.SEH_REFERENCE;
   const [clinics, setClinics] = useState(5);
-  const [activationRate, setActivationRate] = useState(80);
-  const [consultationsMonth, setConsultationsMonth] = useState(50);
-  const [approvalRate, setApprovalRate] = useState(60);
-  const [paidRate, setPaidRate] = useState(70);
-  const [avgTicket, setAvgTicket] = useState(5000);
+  const [consultationsMonth, setConsultationsMonth] = useState(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
+  const [approvalRate, setApprovalRate] = useState(ref.APPROVAL_RATE * 100);
+  const [paidRate, setPaidRate] = useState(ref.PAID_RATE * 100);
+  const [avgTicket, setAvgTicket] = useState(ref.AVG_TICKET);
   const [weights, setWeights] = useState(PARTNER_RULES.SEH_WEIGHTS);
   const [rates, setRates] = useState({ direct: PARTNER_RULES.COMMISSION_RATE_DIRECT, override: PARTNER_RULES.COMMISSION_RATE_OVERRIDE });
 
   useEffect(() => { loadConfig(); }, []);
+
+  // Recalculate consultations when clinics change
+  useEffect(() => {
+    setConsultationsMonth(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
+  }, [clinics]);
 
   const loadConfig = async () => {
     const { data: sehConfig } = await supabase
@@ -33,7 +38,9 @@ const PartnersSimulator = () => {
       .single();
     if (sehConfig?.config_value) {
       const w = sehConfig.config_value as any;
-      setWeights({ activation: w.activation || 0.30, volume: w.volume || 0.35, conversion: w.conversion || 0.35 });
+      if (w.volume !== undefined && w.conversion !== undefined) {
+        setWeights({ volume: w.volume, conversion: w.conversion });
+      }
     }
 
     const { data: rateConfigs } = await supabase
@@ -46,15 +53,11 @@ const PartnersSimulator = () => {
     if (r.commission_rate_override) setRates(prev => ({ ...prev, override: r.commission_rate_override }));
   };
 
-  const activeClinics = Math.round(clinics * (activationRate / 100));
-  const approvedContracts = Math.round(consultationsMonth * (approvalRate / 100));
-  const paidContracts = Math.round(approvedContracts * (paidRate / 100));
-  const totalPaidValue = paidContracts * avgTicket;
-
-  const pilarActivation = Math.min(activationRate, 100);
-  const pilarVolume = Math.min((consultationsMonth / 100) * 100, 100);
+  // SEH Calculation - only Volume + Conversion
+  const metaSimulacoes = clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS; // expected simulations
+  const pilarVolume = metaSimulacoes > 0 ? Math.min((consultationsMonth / metaSimulacoes) * 100, 100) : 0;
   const pilarConversion = (approvalRate * 0.5 + paidRate * 0.5);
-  const seh = (pilarActivation * weights.activation) + (pilarVolume * weights.volume) + (pilarConversion * weights.conversion);
+  const seh = (pilarVolume * weights.volume) + (pilarConversion * weights.conversion);
   const sehScore = Math.min(Math.max(seh, 0), 100);
 
   let level = 'BRONZE';
@@ -62,6 +65,10 @@ const PartnersSimulator = () => {
   else if (sehScore >= 70) level = 'OURO';
   else if (sehScore >= 50) level = 'PRATA';
 
+  // Financial projection
+  const approvedContracts = Math.round(consultationsMonth * (approvalRate / 100));
+  const paidContracts = Math.round(approvedContracts * (paidRate / 100));
+  const totalPaidValue = paidContracts * avgTicket;
   const directCommission = totalPaidValue * rates.direct;
   const yearlyProjection = directCommission * 12;
 
@@ -82,13 +89,12 @@ const PartnersSimulator = () => {
           </p>
         </div>
 
-        {/* Help context */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-foreground">
-              <strong>💡 Como usar:</strong> Ajuste os parâmetros à esquerda para simular diferentes cenários. 
-              Os resultados de SEH e projeção financeira são calculados em tempo real.
-              {isPartner && ' Você pode editar: quantidade de clínicas, consultas por mês e ticket médio.'}
+              <strong>💡 Como usar:</strong> Ajuste os parâmetros para simular diferentes cenários. 
+              O SEH considera <strong>Volume de Simulações ({(weights.volume * 100).toFixed(0)}%)</strong> e <strong>Conversão ({(weights.conversion * 100).toFixed(0)}%)</strong>.
+              {isPartner && ' Você pode editar: quantidade de clínicas, simulações/mês e ticket médio.'}
             </p>
           </CardContent>
         </Card>
@@ -103,7 +109,7 @@ const PartnersSimulator = () => {
               </CardTitle>
               <CardDescription>
                 {isPartner 
-                  ? 'Ajuste os campos editáveis abaixo para simular diferentes cenários operacionais.'
+                  ? 'Ajuste os campos editáveis para simular cenários operacionais.'
                   : 'Todos os parâmetros estão disponíveis para simulação completa.'}
               </CardDescription>
             </CardHeader>
@@ -120,30 +126,12 @@ const PartnersSimulator = () => {
                   <Input type="number" value={clinics} onChange={e => setClinics(Number(e.target.value))} min={0} />
                 </div>
 
-                {/* Hidden for partner/master_partner */}
-                {!isPartner ? (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                      Taxa de Ativação (%)
-                      <Tooltip>
-                        <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                        <TooltipContent>Percentual de clínicas que se mantêm ativas</TooltipContent>
-                      </Tooltip>
-                    </label>
-                    <Input type="number" value={activationRate} onChange={e => setActivationRate(Number(e.target.value))} min={0} max={100} />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50 text-muted-foreground text-xs">
-                    <EyeOff className="h-3 w-3 mr-1" /> Parâmetro restrito
-                  </div>
-                )}
-
                 <div>
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    Consultas/Mês
+                    Simulações/Mês
                     <Tooltip>
                       <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                      <TooltipContent>Volume mensal estimado de consultas geradas</TooltipContent>
+                      <TooltipContent>Volume mensal de simulações (ref: {ref.SIMULATIONS_PER_DAY} por clínica/dia × {ref.WORKING_DAYS} dias úteis)</TooltipContent>
                     </Tooltip>
                   </label>
                   <Input type="number" value={consultationsMonth} onChange={e => setConsultationsMonth(Number(e.target.value))} min={0} />
@@ -155,7 +143,7 @@ const PartnersSimulator = () => {
                       Taxa Aprovação (%)
                       <Tooltip>
                         <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                        <TooltipContent>Percentual de consultas que se tornam aprovadas</TooltipContent>
+                        <TooltipContent>Percentual de simulações que viram propostas aprovadas (ref: {ref.APPROVAL_RATE * 100}%)</TooltipContent>
                       </Tooltip>
                     </label>
                     <Input type="number" value={approvalRate} onChange={e => setApprovalRate(Number(e.target.value))} min={0} max={100} />
@@ -172,7 +160,7 @@ const PartnersSimulator = () => {
                       Taxa Pagamento (%)
                       <Tooltip>
                         <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                        <TooltipContent>Percentual de aprovados que se tornam pagos</TooltipContent>
+                        <TooltipContent>Percentual de aprovados que se tornam pagos (ref: {ref.PAID_RATE * 100}%)</TooltipContent>
                       </Tooltip>
                     </label>
                     <Input type="number" value={paidRate} onChange={e => setPaidRate(Number(e.target.value))} min={0} max={100} />
@@ -188,7 +176,7 @@ const PartnersSimulator = () => {
                     Ticket Médio (R$)
                     <Tooltip>
                       <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                      <TooltipContent>Valor médio por contrato pago</TooltipContent>
+                      <TooltipContent>Valor médio por contrato pago (ref: R$ {formatCurrency(ref.AVG_TICKET)})</TooltipContent>
                     </Tooltip>
                   </label>
                   <Input type="number" value={avgTicket} onChange={e => setAvgTicket(Number(e.target.value))} min={0} />
@@ -197,7 +185,7 @@ const PartnersSimulator = () => {
 
               {isPartner && (
                 <p className="text-xs text-muted-foreground p-2 bg-muted/50 rounded-lg">
-                  🔒 Os campos <strong>taxa de ativação, aprovação e pagamento</strong> são parâmetros estratégicos e não estão disponíveis para edição neste perfil. Valores padrão do sistema são utilizados na simulação.
+                  🔒 Os campos <strong>taxa de aprovação e pagamento</strong> são parâmetros estratégicos e não estão disponíveis para edição neste perfil. Valores padrão do sistema são utilizados.
                 </p>
               )}
             </CardContent>
@@ -222,15 +210,8 @@ const PartnersSimulator = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      Pilar Ativação ({(weights.activation * 100).toFixed(0)}%)
-                      <Tooltip><TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger><TooltipContent>% de clínicas que permanecem ativas</TooltipContent></Tooltip>
-                    </span>
-                    <span className="font-medium">{pilarActivation.toFixed(1)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground flex items-center gap-1">
                       Pilar Volume ({(weights.volume * 100).toFixed(0)}%)
-                      <Tooltip><TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger><TooltipContent>Consultas geradas por mês (base 100)</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger><TooltipContent>Simulações realizadas vs meta ({metaSimulacoes}/mês)</TooltipContent></Tooltip>
                     </span>
                     <span className="font-medium">{pilarVolume.toFixed(1)}</span>
                   </div>
@@ -253,13 +234,17 @@ const PartnersSimulator = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Projeção Financeira</p>
-                    <p className="text-xs text-muted-foreground">Baseado na taxa de bonificação direta de {(rates.direct * 100).toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">Taxa de bonificação direta: {(rates.direct * 100).toFixed(1)}%</p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                    <span className="text-sm">Clínicas Ativas</span>
-                    <span className="font-bold">{activeClinics}</span>
+                    <span className="text-sm">Simulações/Mês</span>
+                    <span className="font-bold">{consultationsMonth}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <span className="text-sm">Propostas Aprovadas</span>
+                    <span className="font-bold">{approvedContracts}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                     <span className="text-sm">Contratos Pagos/Mês</span>
