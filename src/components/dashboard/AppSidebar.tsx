@@ -154,6 +154,13 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   ))}
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* Clínicas Menu */}
+              <Button variant="ghost" onClick={() => handleNavigate('/dashboard/clinicas')}
+                className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary')}>
+                <Building2 className="h-6 w-6 shrink-0" /><span>Clínicas</span>
+              </Button>
             </nav>
 
             <div className="border-t border-sidebar-border p-4">
