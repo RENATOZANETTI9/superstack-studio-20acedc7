@@ -56,6 +56,8 @@ const App = () => (
             <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
             <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
             <Route path="/dashboard/partners/marketing" element={<PartnersMarketing />} />
+            <Route path="/dashboard/partners/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
+            <Route path="/dashboard/clinicas" element={<Clinicas />} />
             <Route path="/register/partner" element={<RegisterPartner />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
