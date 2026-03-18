@@ -61,6 +61,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Bonificações', icon: DollarSign, path: '/dashboard/partners/bonificacoes', visible: true },
     { title: 'Simulador', icon: Calculator, path: '/dashboard/partners/simulador', visible: true },
     { title: 'Marketing', icon: Megaphone, path: '/dashboard/partners/marketing', visible: true },
+    { title: 'Simulações Clínicas', icon: BarChart3, path: '/dashboard/partners/simulacoes-clinicas', visible: true },
     { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
   ].filter(item => item.visible);
