@@ -31,8 +31,22 @@ export const PARTNER_RULES = {
     { min: 240001, max: Infinity, label: 'Acima de R$ 240.000', pix: 'R$ 1.200' },
   ],
   
-  /** SEH weights */
-  SEH_WEIGHTS: { activation: 0.30, volume: 0.35, conversion: 0.35 },
+  /** SEH weights (only volume + conversion, no activation) */
+  SEH_WEIGHTS: { volume: 0.50, conversion: 0.50 },
+  
+  /** SEH reference values */
+  SEH_REFERENCE: {
+    /** Simulations per clinic per day */
+    SIMULATIONS_PER_DAY: 5,
+    /** Working days per month */
+    WORKING_DAYS: 20,
+    /** Approval rate reference */
+    APPROVAL_RATE: 0.20,
+    /** Paid rate (of approved) reference */
+    PAID_RATE: 0.40,
+    /** Average ticket */
+    AVG_TICKET: 3500,
+  },
   
   /** Level thresholds */
   LEVEL_THRESHOLDS: [

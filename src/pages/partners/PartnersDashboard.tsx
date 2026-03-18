@@ -28,6 +28,11 @@ const levelRanges = [
   { level: 'BRONZE', min: 0, max: 49.9, color: 'bg-amber-700', desc: 'Acesso básico, link de cadastro de clínicas' },
 ];
 
+const sehPillars = [
+  { name: 'Volume', weight: '50%', desc: 'Simulações realizadas vs meta mensal' },
+  { name: 'Conversão', weight: '50%', desc: 'Média entre taxa de aprovação e taxa de pagamento' },
+];
+
 const PartnersDashboard = () => {
   const { user } = useAuth();
   usePartnerAlertRealtime();
@@ -103,15 +108,14 @@ const PartnersDashboard = () => {
                   <p className="text-sm text-muted-foreground">SEH Médio</p>
                   <Tooltip>
                     <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent className="max-w-[280px]">
-                      <p className="text-xs font-medium mb-1">Score de Eficiência Help Ude (0-100)</p>
-                      <p className="text-xs">Métrica composta que avalia a performance do partner:</p>
-                      <ul className="text-xs mt-1 space-y-0.5">
-                        <li>• <strong>Ativação (30%)</strong>: % de clínicas ativas</li>
-                        <li>• <strong>Volume (35%)</strong>: consultas por mês</li>
-                        <li>• <strong>Conversão (35%)</strong>: taxa de aprovação + pagamento</li>
-                      </ul>
-                    </TooltipContent>
+                     <TooltipContent className="max-w-[280px]">
+                       <p className="text-xs font-medium mb-1">Score de Eficiência Help Ude (0-100)</p>
+                       <p className="text-xs">Métrica composta que avalia a performance do partner:</p>
+                       <ul className="text-xs mt-1 space-y-0.5">
+                         <li>• <strong>Volume (50%)</strong>: simulações realizadas vs meta</li>
+                         <li>• <strong>Conversão (50%)</strong>: taxa de aprovação + pagamento</li>
+                       </ul>
+                     </TooltipContent>
                   </Tooltip>
                 </div>
                 <p className="text-2xl font-bold">{avgSeh}</p><p className="text-xs text-muted-foreground">Score 0-100</p>
