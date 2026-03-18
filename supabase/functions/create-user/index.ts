@@ -39,9 +39,9 @@ Deno.serve(async (req) => {
       .eq('user_id', requestingUser.id)
       .single();
 
-    if (!roleData || roleData.role !== 'master') {
+    if (!roleData || (roleData.role !== 'master' && roleData.role !== 'admin')) {
       return new Response(
-        JSON.stringify({ error: 'Apenas usuários master podem criar novos usuários' }),
+        JSON.stringify({ error: 'Apenas usuários master ou admin podem criar novos usuários' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
