@@ -45,14 +45,11 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   ];
 
-  // Only admin sees Buscar Crédito and Créditos Aprovados in full
-  // Partners only see their own data (handled at page level)
-  if (!isPartner) {
-    menuItems.unshift(
-      { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas' },
-      { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos' },
-    );
-  }
+  // Buscar Crédito and Créditos Aprovados visible to all roles
+  menuItems.unshift(
+    { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas' },
+    { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos' },
+  );
 
   // Partner submenu items with RBAC
   const partnerSubItems = [
