@@ -195,6 +195,15 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <Tabs value={period} onValueChange={(v) => setPeriod(v as '7' | '30' | '90')}>
+        <TabsList>
+          <TabsTrigger value="7">7 dias</TabsTrigger>
+          <TabsTrigger value="30">30 dias</TabsTrigger>
+          <TabsTrigger value="90">90 dias</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card><CardContent className="pt-6 text-center">
