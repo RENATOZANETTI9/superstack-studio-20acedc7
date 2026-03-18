@@ -580,7 +580,7 @@ const PartnersManagement = () => {
                   </div>
 
                   {isExpanded && (
-                    <div className="border-t p-4 space-y-4">
+                    <div className="border-t p-4 space-y-5">
                       {/* Action buttons - admin only */}
                       {isAdmin && (
                         <div className="flex items-center gap-2">
@@ -599,34 +599,156 @@ const PartnersManagement = () => {
                         </p>
                       )}
 
-                      {/* Full registration data */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div><span className="text-muted-foreground">Tipo Pessoa:</span> <span className="font-medium">{p.person_type}</span></div>
-                        <div><span className="text-muted-foreground">Documento:</span> <span className="font-medium">{p.document_number}</span></div>
-                        <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{p.phone || '—'}</span></div>
-                        <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{p.email}</span></div>
-                        <div><span className="text-muted-foreground">Estado/Cidade:</span> <span className="font-medium">{p.region_city}/{p.region_state}</span></div>
-                        <div><span className="text-muted-foreground">Mercado:</span> <span className="font-medium">{p.years_in_health_market} anos</span></div>
-                        <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{isMasterPartner ? 'Master Partner' : 'Partner Comum'}</span></div>
-                        <div><span className="text-muted-foreground">Cadastro:</span> <span className="font-medium">{new Date(p.created_at).toLocaleDateString('pt-BR')}</span></div>
-                        <div><span className="text-muted-foreground">Nível:</span> <Badge className={cn(LEVEL_COLORS[p.current_level], 'text-[10px]')}>{p.current_level}</Badge></div>
-                        <div><span className="text-muted-foreground">SEH Score:</span> <span className="font-medium">{Number(p.seh_score || 0).toFixed(1)}</span></div>
-                        <div><span className="text-muted-foreground">Ativação:</span> <span className="font-medium">{p.activated_at ? new Date(p.activated_at).toLocaleDateString('pt-BR') : '—'}</span></div>
-                        <div><span className="text-muted-foreground">Status:</span> <Badge variant={p.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-[10px]">{STATUS_LABELS[p.status]}</Badge></div>
+                      {/* ===== SEÇÃO 1: Dados Cadastrais Completos ===== */}
+                      <div>
+                        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-foreground">
+                          📋 Dados Cadastrais
+                          <Tooltip><TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                            <TooltipContent className="max-w-[250px]"><p className="text-xs">Informações completas do cadastro do partner. {isAdmin ? 'Você pode editar clicando em "Editar".' : 'Somente administradores podem alterar estes dados.'}</p></TooltipContent>
+                          </Tooltip>
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm bg-muted/30 rounded-lg p-4">
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Nome / Razão Social</span>
+                            <span className="font-medium">{p.legal_name}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Tipo de Pessoa</span>
+                            <span className="font-medium">{p.person_type === 'CPF' ? 'Pessoa Física (CPF)' : 'Pessoa Jurídica (CNPJ)'}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Documento</span>
+                            <span className="font-medium font-mono">{p.document_number || '—'}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">E-mail</span>
+                            <span className="font-medium truncate">{p.email}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Telefone</span>
+                            <span className="font-medium">{p.phone || '—'}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Localização</span>
+                            <span className="font-medium">{p.region_city || '—'} / {p.region_state || '—'}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Anos no Mercado</span>
+                            <span className="font-medium">{p.years_in_health_market || 0} anos</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Clínicas Relacionamento/Mês</span>
+                            <span className="font-medium">{p.monthly_relationship_clinics || 0}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Links */}
+                      {/* ===== SEÇÃO 2: Status e Datas ===== */}
+                      <div>
+                        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-foreground">
+                          📅 Status e Cronologia
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                          <div className="p-3 rounded-lg bg-muted/30 text-center">
+                            <Badge variant={p.status === 'ACTIVE' ? 'default' : p.status === 'SUSPENDED' ? 'destructive' : 'secondary'} className="text-[10px] mb-1">
+                              {STATUS_LABELS[p.status] || p.status}
+                            </Badge>
+                            <p className="text-[10px] text-muted-foreground">Status Atual</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/30 text-center">
+                            <Badge className={cn(LEVEL_COLORS[p.current_level], 'text-[10px] mb-1')}>{p.current_level}</Badge>
+                            <p className="text-[10px] text-muted-foreground">Nível</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/30 text-center">
+                            <p className="text-xs font-medium">{new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
+                            <p className="text-[10px] text-muted-foreground">Data Cadastro</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/30 text-center">
+                            <p className="text-xs font-medium">{p.activated_at ? new Date(p.activated_at).toLocaleDateString('pt-BR') : '—'}</p>
+                            <p className="text-[10px] text-muted-foreground">Data Ativação</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/30 text-center">
+                            <p className="text-xs font-medium">{p.onboarded_at ? new Date(p.onboarded_at).toLocaleDateString('pt-BR') : '—'}</p>
+                            <p className="text-[10px] text-muted-foreground">Data Onboarding</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/30 text-center">
+                            <p className="text-xs font-medium">{Number(p.seh_score || 0).toFixed(1)}</p>
+                            <p className="text-[10px] text-muted-foreground">Score SEH</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ===== SEÇÃO 3: Origem e Vínculo Hierárquico ===== */}
+                      {(() => {
+                        const parentRel = network.find(n => n.child_partner_id === p.id && n.is_active);
+                        const parentPartner = parentRel ? getPartnerById(parentRel.parent_partner_id) : null;
+                        const referralLink = pLinks.find(l => l.link_type === 'CLINIC_REGISTRATION') || pLinks[0];
+                        
+                        return (
+                          <div>
+                            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-foreground">
+                              🔗 Origem e Vínculo Hierárquico
+                              <Tooltip><TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                                <TooltipContent className="max-w-[250px]"><p className="text-xs">Indica quem indicou este partner e a qual rede ele pertence. A vinculação é estabelecida automaticamente via link de cadastro.</p></TooltipContent>
+                              </Tooltip>
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div className="p-3 rounded-lg border border-border/50 bg-muted/20">
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Tipo do Partner</p>
+                                <div className="flex items-center gap-2">
+                                  {isMasterPartner
+                                    ? <Badge className="bg-purple-600 text-white text-xs">Master Partner</Badge>
+                                    : <Badge variant="outline" className="text-xs">Partner Comum</Badge>}
+                                  {isMasterPartner && (
+                                    <Tooltip><TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                                      <TooltipContent className="max-w-[220px]"><p className="text-xs">Promovido automaticamente ao atingir {PARTNER_RULES.MASTER_PROMOTION_THRESHOLD}+ clínicas ativas.</p></TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="p-3 rounded-lg border border-border/50 bg-muted/20">
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Indicado por</p>
+                                {parentPartner ? (
+                                  <div>
+                                    <p className="font-medium text-sm">{parentPartner.legal_name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {parentPartner.type === 'MASTER' ? 'Master Partner' : 'Partner'} · Desde {new Date(parentRel.linked_at).toLocaleDateString('pt-BR')}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">Cadastro direto (sem indicação)</p>
+                                )}
+                              </div>
+                              <div className="p-3 rounded-lg border border-border/50 bg-muted/20">
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Rede Vinculada</p>
+                                {parentPartner ? (
+                                  <p className="text-sm font-medium">Rede {parentPartner.legal_name}</p>
+                                ) : isMasterPartner ? (
+                                  <p className="text-sm font-medium text-purple-600">Líder de rede própria</p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">Partner independente</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* ===== SEÇÃO 4: Links de Cadastro ===== */}
                       {pLinks.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium mb-2 flex items-center gap-2"><Link2 className="h-4 w-4" /> Links de Cadastro</h4>
+                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
+                            <Link2 className="h-4 w-4" /> Links de Cadastro
+                          </h4>
                           <div className="space-y-2">
                             {pLinks.map(l => (
                               <div key={l.id} className="flex items-center gap-3 p-2 rounded bg-muted/50 text-sm">
-                                <Badge variant="outline" className="text-xs">
-                                  {l.link_type === 'CLINIC_REGISTRATION' ? '🏥 Cadastro Clínica' : l.link_type === 'PARTNER_INVITATION' ? '🤝 Recrutamento Partner' : l.link_type}
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {l.link_type === 'CLINIC_REGISTRATION' ? '🏥 Clínica' : l.link_type === 'PARTNER_INVITATION' ? '🤝 Partner' : l.link_type}
                                 </Badge>
                                 <code className="text-xs flex-1 truncate">{l.link_url}</code>
-                                <span className="text-xs text-muted-foreground">{l.uses_count} usos</span>
+                                <span className="text-xs text-muted-foreground shrink-0">{l.uses_count} usos</span>
+                                <Badge variant={l.is_active ? 'default' : 'secondary'} className="text-[10px] shrink-0">{l.is_active ? 'Ativo' : 'Inativo'}</Badge>
                                 <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); copyToClipboard(l.link_url); }}>
                                   <Copy className="h-3 w-3" />
                                 </Button>
@@ -636,7 +758,7 @@ const PartnersManagement = () => {
                         </div>
                       )}
 
-                      {/* Conditional render based on partner type */}
+                      {/* ===== SEÇÃO 5: Resumos Operacionais ===== */}
                       {isMasterPartner ? renderMasterPartnerDetail(p) : renderPartnerClinicsDetail(p)}
                     </div>
                   )}
