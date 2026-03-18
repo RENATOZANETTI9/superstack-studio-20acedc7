@@ -110,8 +110,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const createUser = async (email: string, password: string): Promise<{ error: string | null }> => {
-    if (role !== 'master') {
-      return { error: 'Apenas usuários master podem criar novos usuários' };
+    if (role !== 'master' && role !== 'admin') {
+      return { error: 'Apenas usuários master ou admin podem criar novos usuários' };
     }
 
     // Use the edge function to create user with admin privileges
@@ -131,8 +131,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const deleteUser = async (userId: string): Promise<{ error: string | null }> => {
-    if (role !== 'master') {
-      return { error: 'Apenas usuários master podem excluir usuários' };
+    if (role !== 'master' && role !== 'admin') {
+      return { error: 'Apenas usuários master ou admin podem excluir usuários' };
     }
 
     const { data, error } = await supabase.functions.invoke('delete-user', {
@@ -151,8 +151,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const getAllUsers = async (): Promise<{ users: any[]; error: string | null }> => {
-    if (role !== 'master') {
-      return { users: [], error: 'Apenas usuários master podem ver todos os usuários' };
+    if (role !== 'master' && role !== 'admin') {
+      return { users: [], error: 'Apenas usuários master ou admin podem ver todos os usuários' };
     }
 
     // Fetch profiles
@@ -193,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role,
         isAuthenticated: !!user,
         isLoading,
-        isMaster: role === 'master',
+        isMaster: role === 'master' || role === 'admin',
         login,
         logout,
         createUser,
