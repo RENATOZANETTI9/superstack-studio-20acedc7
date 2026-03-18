@@ -50,8 +50,9 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [trendFilter, setTrendFilter] = useState<Trend | 'all'>('all');
+  const [period, setPeriod] = useState<'7' | '30' | '90'>('30');
 
-  useEffect(() => { fetchData(); }, [partnerId, masterPartnerId]);
+  useEffect(() => { fetchData(); }, [partnerId, masterPartnerId, period]);
 
   const fetchData = async () => {
     setLoading(true);
