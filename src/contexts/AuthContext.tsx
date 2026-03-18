@@ -110,8 +110,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const createUser = async (email: string, password: string): Promise<{ error: string | null }> => {
-    if (role !== 'master') {
-      return { error: 'Apenas usuários master podem criar novos usuários' };
+    if (role !== 'master' && role !== 'admin') {
+      return { error: 'Apenas usuários master ou admin podem criar novos usuários' };
     }
 
     // Use the edge function to create user with admin privileges
