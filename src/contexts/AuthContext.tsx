@@ -131,8 +131,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const deleteUser = async (userId: string): Promise<{ error: string | null }> => {
-    if (role !== 'master') {
-      return { error: 'Apenas usuários master podem excluir usuários' };
+    if (role !== 'master' && role !== 'admin') {
+      return { error: 'Apenas usuários master ou admin podem excluir usuários' };
     }
 
     const { data, error } = await supabase.functions.invoke('delete-user', {
