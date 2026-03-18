@@ -735,28 +735,60 @@ const PartnersManagement = () => {
                       })()}
 
                       {/* ===== SEÇÃO 4: Links de Cadastro ===== */}
-                      {pLinks.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
-                            <Link2 className="h-4 w-4" /> Links de Cadastro
-                          </h4>
-                          <div className="space-y-2">
-                            {pLinks.map(l => (
-                              <div key={l.id} className="flex items-center gap-3 p-2 rounded bg-muted/50 text-sm">
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  {l.link_type === 'CLINIC_REGISTRATION' ? '🏥 Clínica' : l.link_type === 'PARTNER_INVITATION' ? '🤝 Partner' : l.link_type}
-                                </Badge>
-                                <code className="text-xs flex-1 truncate">{l.link_url}</code>
-                                <span className="text-xs text-muted-foreground shrink-0">{l.uses_count} usos</span>
-                                <Badge variant={l.is_active ? 'default' : 'secondary'} className="text-[10px] shrink-0">{l.is_active ? 'Ativo' : 'Inativo'}</Badge>
-                                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); copyToClipboard(l.link_url); }}>
-                                  <Copy className="h-3 w-3" />
-                                </Button>
+                      {(() => {
+                        const invitationLink = pLinks.find(l => l.link_type === 'PARTNER_INVITATION' && l.is_active);
+                        const otherLinks = pLinks.filter(l => l.link_type !== 'PARTNER_INVITATION');
+                        const registrationUrl = invitationLink ? `${window.location.origin}/register/partner?ref=${invitationLink.link_code}` : null;
+
+                        return (
+                          <div className="space-y-3">
+                            {/* Prominent Partner Invitation Link for Master Partners */}
+                            {isMasterPartner && invitationLink && (
+                              <div className="p-4 rounded-lg border-2 border-purple-500/30 bg-purple-500/5">
+                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
+                                  🤝 Link de Cadastro de Partners
+                                  <Tooltip><TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                                    <TooltipContent className="max-w-[280px]"><p className="text-xs">Compartilhe este link com pessoas que deseja recrutar como partners. Ao se cadastrar por este link, o novo partner será automaticamente vinculado à sua rede.</p></TooltipContent>
+                                  </Tooltip>
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                  <Input readOnly value={registrationUrl || ''} className="text-xs font-mono bg-background" />
+                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); copyToClipboard(registrationUrl || ''); }}>
+                                    <Copy className="h-3 w-3 mr-1" /> Copiar
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {invitationLink.uses_count} parceiro{invitationLink.uses_count !== 1 ? 's' : ''} cadastrado{invitationLink.uses_count !== 1 ? 's' : ''} por este link
+                                </p>
                               </div>
-                            ))}
+                            )}
+
+                            {/* Other links */}
+                            {otherLinks.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
+                                  <Link2 className="h-4 w-4" /> Outros Links
+                                </h4>
+                                <div className="space-y-2">
+                                  {otherLinks.map(l => (
+                                    <div key={l.id} className="flex items-center gap-3 p-2 rounded bg-muted/50 text-sm">
+                                      <Badge variant="outline" className="text-xs shrink-0">
+                                        {l.link_type === 'CLINIC_REGISTRATION' ? '🏥 Clínica' : l.link_type}
+                                      </Badge>
+                                      <code className="text-xs flex-1 truncate">{l.link_url}</code>
+                                      <span className="text-xs text-muted-foreground shrink-0">{l.uses_count} usos</span>
+                                      <Badge variant={l.is_active ? 'default' : 'secondary'} className="text-[10px] shrink-0">{l.is_active ? 'Ativo' : 'Inativo'}</Badge>
+                                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); copyToClipboard(l.link_url); }}>
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* ===== SEÇÃO 5: Resumos Operacionais ===== */}
                       {isMasterPartner ? renderMasterPartnerDetail(p) : renderPartnerClinicsDetail(p)}
