@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
   Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
-  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone
+  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone,
+  Building2, BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const { user, isMaster, role, logout } = useAuth();
   const [usersOpen, setUsersOpen] = useState(location.pathname.startsWith('/dashboard/usuarios'));
   const [partnersOpen, setPartnersOpen] = useState(location.pathname.startsWith('/dashboard/partners'));
+  const [clinicasOpen, setClinicasOpen] = useState(location.pathname.startsWith('/dashboard/clinicas'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -59,6 +61,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Bonificações', icon: DollarSign, path: '/dashboard/partners/bonificacoes', visible: true },
     { title: 'Simulador', icon: Calculator, path: '/dashboard/partners/simulador', visible: true },
     { title: 'Marketing', icon: Megaphone, path: '/dashboard/partners/marketing', visible: true },
+    { title: 'Simulações Clínicas', icon: BarChart3, path: '/dashboard/partners/simulacoes-clinicas', visible: true },
     { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
   ].filter(item => item.visible);
@@ -151,6 +154,13 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   ))}
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* Clínicas Menu */}
+              <Button variant="ghost" onClick={() => handleNavigate('/dashboard/clinicas')}
+                className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                  isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary')}>
+                <Building2 className="h-6 w-6 shrink-0" /><span>Clínicas</span>
+              </Button>
             </nav>
 
             <div className="border-t border-sidebar-border p-4">
@@ -272,6 +282,14 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
             </CollapsibleContent>
           )}
         </Collapsible>
+
+        {/* Clínicas Menu */}
+        <Button variant="ghost" onClick={() => navigate('/dashboard/clinicas')}
+          className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+            isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
+          <Building2 className="h-5 w-5 shrink-0" />
+          {!collapsed && <span>Clínicas</span>}
+        </Button>
       </nav>
 
       <div className="border-t border-sidebar-border p-2">
