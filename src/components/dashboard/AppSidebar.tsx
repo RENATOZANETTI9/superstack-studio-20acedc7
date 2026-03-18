@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
   Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
-  UserPlus, Network, DollarSign, Settings, Calculator, Activity
+  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
