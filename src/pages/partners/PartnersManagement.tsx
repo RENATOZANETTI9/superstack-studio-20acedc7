@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, UserPlus, Link2, Copy, ChevronDown, ChevronUp, Filter, Calendar } from 'lucide-react';
+import { Plus, Search, UserPlus, Link2, Copy, ChevronDown, ChevronUp, Filter, Calendar, Pencil, Power, PowerOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
