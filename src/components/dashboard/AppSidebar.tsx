@@ -1,36 +1,16 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  FileSearch, 
-  FileSignature,
-  Users, 
-  LogOut,
-  ChevronDown,
-  Shield,
-  User,
-  Menu,
-  X,
-  Key,
-  GitBranch,
-  UserCircle,
-  Handshake,
-  UserPlus,
-  Network,
-  DollarSign,
-  Settings,
-  Calculator,
-  Activity
+  LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
+  Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
+  UserPlus, Network, DollarSign, Settings, Calculator, Activity
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { isAdminRole, isPartnerRole, canAccessConfig, canAccessMonitoring, canAccessUsersMenu } from '@/lib/partner-rules';
 
 interface AppSidebarProps {
   collapsed: boolean;
@@ -40,274 +20,170 @@ interface AppSidebarProps {
 const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isMaster, logout } = useAuth();
+  const { user, isMaster, role, logout } = useAuth();
   const [usersOpen, setUsersOpen] = useState(location.pathname.startsWith('/dashboard/usuarios'));
   const [partnersOpen, setPartnersOpen] = useState(location.pathname.startsWith('/dashboard/partners'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
+  const appRole = role as any;
+  const isAdmin = isAdminRole(appRole);
+  const isPartner = isPartnerRole(appRole);
+  const showUsersMenu = canAccessUsersMenu(appRole);
+  const showConfig = canAccessConfig(appRole);
+  const showMonitoring = canAccessMonitoring(appRole);
 
+  const handleLogout = async () => { await logout(); navigate('/'); };
   const isActive = (path: string) => location.pathname === path;
-
   const handleNavigate = (path: string) => {
     navigate(path);
-    if (isMobile) {
-      setMobileMenuOpen(false);
-    }
+    if (isMobile) setMobileMenuOpen(false);
   };
 
+  // Base menu items - visible to all
   const menuItems = [
-    {
-      title: 'Buscar Crédito',
-      icon: FileSearch,
-      path: '/dashboard/consultas',
-    },
-    {
-      title: 'Créditos Aprovados',
-      icon: FileSignature,
-      path: '/dashboard/contratos',
-    },
-    {
-      title: 'Dashboard',
-      icon: LayoutDashboard,
-      path: '/dashboard',
-    },
+    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   ];
 
-  // Mobile Bottom Navigation
+  // Only admin sees Buscar Crédito and Créditos Aprovados in full
+  // Partners only see their own data (handled at page level)
+  if (!isPartner) {
+    menuItems.unshift(
+      { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas' },
+      { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos' },
+    );
+  }
+
+  // Partner submenu items with RBAC
+  const partnerSubItems = [
+    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/partners', visible: true },
+    { title: 'Cadastro', icon: UserPlus, path: '/dashboard/partners/cadastro', visible: true },
+    { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: true },
+    { title: 'Bonificações', icon: DollarSign, path: '/dashboard/partners/bonificacoes', visible: true },
+    { title: 'Simulador', icon: Calculator, path: '/dashboard/partners/simulador', visible: true },
+    { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
+    { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
+  ].filter(item => item.visible);
+
+  const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
+    : role === 'master_partner' ? 'Master Partner' 
+    : role === 'partner' ? 'Partner' 
+    : role === 'cs_geral' ? 'CS Geral'
+    : role === 'cs_exclusiva' ? 'CS Exclusiva'
+    : role === 'clinic_owner' ? 'Dono Clínica'
+    : role === 'attendant' ? 'Atendente'
+    : 'Usuário';
+
+  // Mobile layout
   if (isMobile) {
     return (
       <>
-        {/* Mobile Top Header */}
         <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4">
           <h1 className="text-lg font-bold text-sidebar-foreground">Help Ude</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
-          >
+          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-sidebar-foreground hover:bg-sidebar-accent">
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </header>
 
-        {/* Mobile Full Menu Overlay */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-40 bg-sidebar pt-14">
-            {/* User Info */}
             <div className="border-b border-sidebar-border p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary">
-                  {isMaster ? (
-                    <Shield className="h-6 w-6 text-white" />
-                  ) : (
-                    <User className="h-6 w-6 text-white" />
-                  )}
+                  {isAdmin ? <Shield className="h-6 w-6 text-white" /> : <User className="h-6 w-6 text-white" />}
                 </div>
                 <div className="overflow-hidden">
-                  <p className="truncate font-medium text-sidebar-foreground">
-                    {user?.email?.split('@')[0]}
-                  </p>
-                  <p className="text-sm text-sidebar-foreground/60">
-                    {isMaster ? 'Master' : 'Usuário'}
-                  </p>
+                  <p className="truncate font-medium text-sidebar-foreground">{user?.email?.split('@')[0]}</p>
+                  <p className="text-sm text-sidebar-foreground/60">{roleLabel}</p>
                 </div>
               </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 space-y-1 p-4">
+            <nav className="flex-1 space-y-1 p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 14rem)' }}>
               {menuItems.map((item) => (
-                <Button
-                  key={item.path}
-                  variant="ghost"
-                  onClick={() => handleNavigate(item.path)}
-                  className={cn(
-                    'w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                    isActive(item.path) && 'bg-sidebar-accent text-sidebar-primary'
-                  )}
-                >
-                  <item.icon className="h-6 w-6 shrink-0" />
-                  <span>{item.title}</span>
+                <Button key={item.path} variant="ghost" onClick={() => handleNavigate(item.path)}
+                  className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    isActive(item.path) && 'bg-sidebar-accent text-sidebar-primary')}>
+                  <item.icon className="h-6 w-6 shrink-0" /><span>{item.title}</span>
                 </Button>
               ))}
 
-              {/* Users Menu */}
-              <Collapsible open={usersOpen} onOpenChange={setUsersOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      'w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      (location.pathname.startsWith('/dashboard/usuarios')) && 'bg-sidebar-accent text-sidebar-primary'
-                    )}
-                  >
-                    <Users className="h-6 w-6 shrink-0" />
-                    <span className="flex-1 text-left">Gestão de Usuários</span>
-                    <ChevronDown className={cn(
-                      'h-5 w-5 transition-transform duration-200',
-                      usersOpen && 'rotate-180'
-                    )} />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 pt-1">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleNavigate('/dashboard/usuarios/permissoes')}
-                    className={cn(
-                      'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/usuarios/permissoes') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                    )}
-                  >
-                    <Key className="h-5 w-5 shrink-0" />
-                    <span>Permissões</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleNavigate('/dashboard/usuarios/hierarquias')}
-                    className={cn(
-                      'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/usuarios/hierarquias') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                    )}
-                  >
-                    <GitBranch className="h-5 w-5 shrink-0" />
-                    <span>Hierarquias</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleNavigate('/dashboard/usuarios/lista')}
-                    className={cn(
-                      'w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/usuarios/lista') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                    )}
-                  >
-                    <UserCircle className="h-5 w-5 shrink-0" />
-                    <span>Usuários</span>
-                  </Button>
-                </CollapsibleContent>
-              </Collapsible>
+              {/* Users Menu - admin only */}
+              {showUsersMenu && (
+                <Collapsible open={usersOpen} onOpenChange={setUsersOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent',
+                      location.pathname.startsWith('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary')}>
+                      <Users className="h-6 w-6 shrink-0" /><span className="flex-1 text-left">Gestão de Usuários</span>
+                      <ChevronDown className={cn('h-5 w-5 transition-transform duration-200', usersOpen && 'rotate-180')} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-1">
+                    {[
+                      { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
+                      { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
+                      { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
+                    ].map(sub => (
+                      <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
+                        className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
+                          isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                        <sub.icon className="h-5 w-5 shrink-0" /><span>{sub.title}</span>
+                      </Button>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
 
               {/* Partners Menu */}
               <Collapsible open={partnersOpen} onOpenChange={setPartnersOpen}>
                 <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      'w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      (location.pathname.startsWith('/dashboard/partners')) && 'bg-sidebar-accent text-sidebar-primary'
-                    )}
-                  >
-                    <Handshake className="h-6 w-6 shrink-0" />
-                    <span className="flex-1 text-left">Partners</span>
-                    <ChevronDown className={cn(
-                      'h-5 w-5 transition-transform duration-200',
-                      partnersOpen && 'rotate-180'
-                    )} />
+                  <Button variant="ghost" className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent',
+                    location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary')}>
+                    <Handshake className="h-6 w-6 shrink-0" /><span className="flex-1 text-left">Partners</span>
+                    <ChevronDown className={cn('h-5 w-5 transition-transform duration-200', partnersOpen && 'rotate-180')} />
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-1 pt-1">
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <LayoutDashboard className="h-5 w-5 shrink-0" /><span>Dashboard</span>
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/cadastro')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/cadastro') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <UserPlus className="h-5 w-5 shrink-0" /><span>Cadastro</span>
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/rede')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/rede') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <Network className="h-5 w-5 shrink-0" /><span>Rede</span>
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/bonificacoes')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/bonificacoes') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <DollarSign className="h-5 w-5 shrink-0" /><span>Bonificações</span>
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/config')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/config') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <Settings className="h-5 w-5 shrink-0" /><span>Configurações</span>
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/simulador')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/simulador') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <Calculator className="h-5 w-5 shrink-0" /><span>Simulador</span>
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners/monitoramento')}
-                    className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      isActive('/dashboard/partners/monitoramento') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                    <Activity className="h-5 w-5 shrink-0" /><span>Monitoramento</span>
-                  </Button>
+                  {partnerSubItems.map(sub => (
+                    <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
+                      className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
+                        isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                      <sub.icon className="h-5 w-5 shrink-0" /><span>{sub.title}</span>
+                    </Button>
+                  ))}
                 </CollapsibleContent>
               </Collapsible>
             </nav>
 
-            {/* Logout */}
             <div className="border-t border-sidebar-border p-4">
-              <Button
-                variant="ghost"
-                onClick={handleLogout}
-                className="w-full justify-start gap-3 h-14 text-base text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive"
-              >
-                <LogOut className="h-6 w-6 shrink-0" />
-                <span>Sair</span>
+              <Button variant="ghost" onClick={handleLogout}
+                className="w-full justify-start gap-3 h-14 text-base text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive">
+                <LogOut className="h-6 w-6 shrink-0" /><span>Sair</span>
               </Button>
             </div>
           </div>
         )}
 
-        {/* Mobile Bottom Tab Bar */}
         <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-sidebar border-t border-sidebar-border flex items-center justify-center gap-1 px-4 safe-area-inset-bottom">
-          {menuItems.map((item) => (
-            <Button
-              key={item.path}
-              variant="ghost"
-              onClick={() => handleNavigate(item.path)}
-              className={cn(
-                'flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
-                isActive(item.path) && 'text-sidebar-primary'
-              )}
-            >
-              <item.icon className={cn(
-                'h-5 w-5',
-                isActive(item.path) && 'text-primary'
-              )} />
+          {menuItems.slice(0, 3).map((item) => (
+            <Button key={item.path} variant="ghost" onClick={() => handleNavigate(item.path)}
+              className={cn('flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent', isActive(item.path) && 'text-sidebar-primary')}>
+              <item.icon className={cn('h-5 w-5', isActive(item.path) && 'text-primary')} />
               <span className="text-[10px]">{item.title}</span>
             </Button>
           ))}
-          <Button
-            variant="ghost"
-            onClick={() => handleNavigate('/dashboard/usuarios/lista')}
-            className={cn(
-              'flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
-              location.pathname.startsWith('/dashboard/usuarios') && 'text-sidebar-primary'
-            )}
-          >
-            <Users className={cn(
-              'h-5 w-5',
-              location.pathname.startsWith('/dashboard/usuarios') && 'text-primary'
-            )} />
-            <span className="text-[10px]">Usuários</span>
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => handleNavigate('/dashboard/partners')}
-            className={cn(
-              'flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
-              location.pathname.startsWith('/dashboard/partners') && 'text-sidebar-primary'
-            )}
-          >
-            <Handshake className={cn(
-              'h-5 w-5',
-              location.pathname.startsWith('/dashboard/partners') && 'text-primary'
-            )} />
+          {showUsersMenu && (
+            <Button variant="ghost" onClick={() => handleNavigate('/dashboard/usuarios/lista')}
+              className={cn('flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
+                location.pathname.startsWith('/dashboard/usuarios') && 'text-sidebar-primary')}>
+              <Users className={cn('h-5 w-5', location.pathname.startsWith('/dashboard/usuarios') && 'text-primary')} />
+              <span className="text-[10px]">Usuários</span>
+            </Button>
+          )}
+          <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners')}
+            className={cn('flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
+              location.pathname.startsWith('/dashboard/partners') && 'text-sidebar-primary')}>
+            <Handshake className={cn('h-5 w-5', location.pathname.startsWith('/dashboard/partners') && 'text-primary')} />
             <span className="text-[10px]">Partners</span>
           </Button>
         </nav>
@@ -317,207 +193,93 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   // Desktop Sidebar
   return (
-    <aside
-      className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
-      )}
-    >
-      {/* Header */}
+    <aside className={cn('fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300', collapsed ? 'w-16' : 'w-64')}>
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-        {!collapsed && (
-          <h1 className="text-xl font-bold text-sidebar-foreground">Help Ude</h1>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="text-sidebar-foreground hover:bg-sidebar-accent"
-        >
+        {!collapsed && <h1 className="text-xl font-bold text-sidebar-foreground">Help Ude</h1>}
+        <Button variant="ghost" size="icon" onClick={onToggle} className="text-sidebar-foreground hover:bg-sidebar-accent">
           <Menu className="h-5 w-5" />
         </Button>
       </div>
 
-      {/* User Info */}
-      <div className={cn(
-        'border-b border-sidebar-border p-4',
-        collapsed && 'flex justify-center'
-      )}>
+      <div className={cn('border-b border-sidebar-border p-4', collapsed && 'flex justify-center')}>
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary">
-            {isMaster ? (
-              <Shield className="h-5 w-5 text-white" />
-            ) : (
-              <User className="h-5 w-5 text-white" />
-            )}
+            {isAdmin ? <Shield className="h-5 w-5 text-white" /> : <User className="h-5 w-5 text-white" />}
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="truncate text-sm font-medium text-sidebar-foreground">
-                {user?.email?.split('@')[0]}
-              </p>
-              <p className="text-xs text-sidebar-foreground/60">
-                {isMaster ? 'Master' : 'Usuário'}
-              </p>
+              <p className="truncate text-sm font-medium text-sidebar-foreground">{user?.email?.split('@')[0]}</p>
+              <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 p-2">
         {menuItems.map((item) => (
-          <Button
-            key={item.path}
-            variant="ghost"
-            onClick={() => navigate(item.path)}
-            className={cn(
-              'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-              isActive(item.path) && 'bg-sidebar-accent text-sidebar-primary',
-              collapsed && 'justify-center px-2'
-            )}
-          >
+          <Button key={item.path} variant="ghost" onClick={() => navigate(item.path)}
+            className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+              isActive(item.path) && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
             <item.icon className="h-5 w-5 shrink-0" />
             {!collapsed && <span>{item.title}</span>}
           </Button>
         ))}
 
-        {/* Users Menu with Hierarchy */}
-        <Collapsible open={usersOpen} onOpenChange={setUsersOpen}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              className={cn(
-                'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                location.pathname.startsWith('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary',
-                collapsed && 'justify-center px-2'
-              )}
-            >
-              <Users className="h-5 w-5 shrink-0" />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left">Gestão de Usuários</span>
-                  <ChevronDown className={cn(
-                    'h-4 w-4 transition-transform duration-200',
-                    usersOpen && 'rotate-180'
-                  )} />
-                </>
-              )}
-            </Button>
-          </CollapsibleTrigger>
-          {!collapsed && (
-            <CollapsibleContent className="space-y-1 pt-1">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/dashboard/usuarios/permissoes')}
-                className={cn(
-                  'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/usuarios/permissoes') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                )}
-              >
-                <Key className="h-4 w-4 shrink-0" />
-                <span>Permissões</span>
+        {/* Users Menu - admin only */}
+        {showUsersMenu && (
+          <Collapsible open={usersOpen} onOpenChange={setUsersOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                location.pathname.startsWith('/dashboard/usuarios') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
+                <Users className="h-5 w-5 shrink-0" />
+                {!collapsed && (<><span className="flex-1 text-left">Gestão de Usuários</span><ChevronDown className={cn('h-4 w-4 transition-transform duration-200', usersOpen && 'rotate-180')} /></>)}
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/dashboard/usuarios/hierarquias')}
-                className={cn(
-                  'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/usuarios/hierarquias') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                )}
-              >
-                <GitBranch className="h-4 w-4 shrink-0" />
-                <span>Hierarquias</span>
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/dashboard/usuarios/lista')}
-                className={cn(
-                  'w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/usuarios/lista') && 'bg-sidebar-accent text-sidebar-primary font-medium'
-                )}
-              >
-                <UserCircle className="h-4 w-4 shrink-0" />
-                <span>Usuários</span>
-              </Button>
-            </CollapsibleContent>
-          )}
-        </Collapsible>
+            </CollapsibleTrigger>
+            {!collapsed && (
+              <CollapsibleContent className="space-y-1 pt-1">
+                {[
+                  { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
+                  { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
+                  { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
+                ].map(sub => (
+                  <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
+                    className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                      isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                    <sub.icon className="h-4 w-4 shrink-0" /><span>{sub.title}</span>
+                  </Button>
+                ))}
+              </CollapsibleContent>
+            )}
+          </Collapsible>
+        )}
 
         {/* Partners Menu */}
         <Collapsible open={partnersOpen} onOpenChange={setPartnersOpen}>
           <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              className={cn(
-                'w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary',
-                collapsed && 'justify-center px-2'
-              )}
-            >
+            <Button variant="ghost" className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+              location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
               <Handshake className="h-5 w-5 shrink-0" />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left">Partners</span>
-                  <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', partnersOpen && 'rotate-180')} />
-                </>
-              )}
+              {!collapsed && (<><span className="flex-1 text-left">Partners</span><ChevronDown className={cn('h-4 w-4 transition-transform duration-200', partnersOpen && 'rotate-180')} /></>)}
             </Button>
           </CollapsibleTrigger>
           {!collapsed && (
             <CollapsibleContent className="space-y-1 pt-1">
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <LayoutDashboard className="h-4 w-4 shrink-0" /><span>Dashboard</span>
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/cadastro')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners/cadastro') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <UserPlus className="h-4 w-4 shrink-0" /><span>Cadastro</span>
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/rede')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners/rede') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <Network className="h-4 w-4 shrink-0" /><span>Rede</span>
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/bonificacoes')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners/bonificacoes') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <DollarSign className="h-4 w-4 shrink-0" /><span>Bonificações</span>
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/config')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners/config') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <Settings className="h-4 w-4 shrink-0" /><span>Configurações</span>
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/simulador')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners/simulador') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <Calculator className="h-4 w-4 shrink-0" /><span>Simulador</span>
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard/partners/monitoramento')}
-                className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive('/dashboard/partners/monitoramento') && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                <Activity className="h-4 w-4 shrink-0" /><span>Monitoramento</span>
-              </Button>
+              {partnerSubItems.map(sub => (
+                <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
+                  className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                  <sub.icon className="h-4 w-4 shrink-0" /><span>{sub.title}</span>
+                </Button>
+              ))}
             </CollapsibleContent>
           )}
         </Collapsible>
       </nav>
 
-      {/* Logout */}
       <div className="border-t border-sidebar-border p-2">
-        <Button
-          variant="ghost"
-          onClick={handleLogout}
-          className={cn(
-            'w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive',
-            collapsed && 'justify-center px-2'
-          )}
-        >
-          <LogOut className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Sair</span>}
+        <Button variant="ghost" onClick={handleLogout}
+          className={cn('w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive', collapsed && 'justify-center px-2')}>
+          <LogOut className="h-5 w-5 shrink-0" />{!collapsed && <span>Sair</span>}
         </Button>
       </div>
     </aside>
