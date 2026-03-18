@@ -116,6 +116,64 @@ const PartnersManagement = () => {
     }
   };
 
+  const openEditDialog = (partner: any) => {
+    setEditingPartner(partner);
+    setEditForm({
+      person_type: partner.person_type || 'CPF',
+      document_number: partner.document_number || '',
+      legal_name: partner.legal_name || '',
+      email: partner.email || '',
+      phone: partner.phone || '',
+      region_state: partner.region_state || '',
+      region_city: partner.region_city || '',
+      years_in_health_market: partner.years_in_health_market || 0,
+      monthly_relationship_clinics: partner.monthly_relationship_clinics || 0,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingPartner) return;
+    const { error } = await supabase.from('partners').update({
+      person_type: editForm.person_type,
+      document_number: editForm.document_number,
+      legal_name: editForm.legal_name,
+      email: editForm.email,
+      phone: editForm.phone,
+      region_state: editForm.region_state,
+      region_city: editForm.region_city,
+      years_in_health_market: editForm.years_in_health_market,
+      monthly_relationship_clinics: editForm.monthly_relationship_clinics,
+    }).eq('id', editingPartner.id);
+
+    if (error) {
+      toast({ title: 'Erro ao atualizar partner', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Partner atualizado com sucesso!' });
+      setEditDialogOpen(false);
+      setEditingPartner(null);
+      fetchData();
+    }
+  };
+
+  const togglePartnerStatus = async (partner: any) => {
+    const newStatus = partner.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    const updates: any = { status: newStatus };
+    if (newStatus === 'ACTIVE') {
+      updates.activated_at = new Date().toISOString();
+      updates.suspended_at = null;
+    } else {
+      updates.suspended_at = new Date().toISOString();
+    }
+    const { error } = await supabase.from('partners').update(updates).eq('id', partner.id);
+    if (error) {
+      toast({ title: 'Erro ao alterar status', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `Partner ${newStatus === 'ACTIVE' ? 'ativado' : 'desativado'} com sucesso!` });
+      fetchData();
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: 'Link copiado!' });
