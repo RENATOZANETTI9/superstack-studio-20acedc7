@@ -20,6 +20,7 @@ import PartnersBonificacoes from "./pages/partners/PartnersBonificacoes";
 import PartnersConfig from "./pages/partners/PartnersConfig";
 import PartnersSimulator from "./pages/partners/PartnersSimulator";
 import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
+import PartnersMarketing from "./pages/partners/PartnersMarketing";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
