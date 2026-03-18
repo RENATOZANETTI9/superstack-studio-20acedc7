@@ -81,8 +81,10 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
     // Fetch partners for names
     const { data: partnersData } = await supabase.from('partners').select('id, legal_name');
 
-    // Fetch metrics (last 60 days)
-    let metricsQuery = supabase.from('partner_metrics_daily').select('*').order('metric_date', { ascending: true }).limit(1000);
+    // Fetch metrics filtered by period
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - Number(period));
+    let metricsQuery = supabase.from('partner_metrics_daily').select('*').gte('metric_date', sinceDate.toISOString().split('T')[0]).order('metric_date', { ascending: true }).limit(1000);
     if (relevantPartnerIds.length > 0) {
       metricsQuery = metricsQuery.in('partner_id', relevantPartnerIds);
     }
