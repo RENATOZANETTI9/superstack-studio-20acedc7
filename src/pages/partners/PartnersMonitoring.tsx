@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,17 +7,26 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { canAccessMonitoring } from '@/lib/partner-rules';
 import {
   Activity, AlertTriangle, CheckCircle, Clock, Download,
   RefreshCw, Shield, TrendingUp, XCircle
 } from 'lucide-react';
 
 const PartnersMonitoring = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, role, isLoading: authLoading } = useAuth();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [configHistory, setConfigHistory] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!authLoading && role && !canAccessMonitoring(role as any)) {
+      navigate('/dashboard/partners');
+    }
+  }, [role, authLoading, navigate]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -32,6 +42,9 @@ const PartnersMonitoring = () => {
     setCommissions(commsRes.data || []);
     setLoading(false);
   };
+
+  // Don't render if not authorized
+  if (!authLoading && role && !canAccessMonitoring(role as any)) return null;
 
   const unresolvedAlerts = alerts.filter(a => !a.resolved_at).length;
   const criticalAlerts = alerts.filter(a => a.severity === 'CRITICAL' && !a.resolved_at).length;
