@@ -543,6 +543,56 @@ const PartnersManagement = () => {
             })
           )}
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Partner</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tipo de Pessoa</Label>
+                  <Select value={editForm.person_type} onValueChange={v => setEditForm({...editForm, person_type: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                      <SelectItem value="CNPJ">CNPJ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Documento</Label>
+                  <Input value={editForm.document_number} onChange={e => setEditForm({...editForm, document_number: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <Label>Nome / Razão Social</Label>
+                <Input value={editForm.legal_name} onChange={e => setEditForm({...editForm, legal_name: e.target.value})} />
+              </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+              </div>
+              <div>
+                <Label>Telefone</Label>
+                <Input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Estado</Label><Input value={editForm.region_state} onChange={e => setEditForm({...editForm, region_state: e.target.value})} /></div>
+                <div><Label>Cidade</Label><Input value={editForm.region_city} onChange={e => setEditForm({...editForm, region_city: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Anos no mercado</Label><Input type="number" value={editForm.years_in_health_market} onChange={e => setEditForm({...editForm, years_in_health_market: Number(e.target.value)})} /></div>
+                <div><Label>Clínicas/mês</Label><Input type="number" value={editForm.monthly_relationship_clinics} onChange={e => setEditForm({...editForm, monthly_relationship_clinics: Number(e.target.value)})} /></div>
+              </div>
+              <Button onClick={handleEdit} className="w-full">
+                <Pencil className="h-4 w-4 mr-2" /> Salvar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
