@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, DollarSign, Target, Zap, Gift, Flag, Pencil, History, Info, Lock } from 'lucide-react';
-import { isAdminRole } from '@/lib/partner-rules';
+import { isAdminRole, canAccessConfig } from '@/lib/partner-rules';
 import JsonEditor from '@/components/partners/JsonEditor';
 
 const categoryLabels: Record<string, string> = {
@@ -49,6 +50,7 @@ const categoryIcons: Record<string, any> = {
 };
 
 const PartnersConfig = () => {
+  const navigate = useNavigate();
   const [configs, setConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -62,10 +64,17 @@ const PartnersConfig = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const { role, user } = useAuth();
+  const { role, user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const isAdmin = isAdminRole(role as any);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!authLoading && role && !canAccessConfig(role as any)) {
+      navigate('/dashboard/partners');
+    }
+  }, [role, authLoading, navigate]);
 
   useEffect(() => { fetchConfigs(); }, []);
 
@@ -142,6 +151,9 @@ const PartnersConfig = () => {
 
   const categories = [...new Set(configs.map(c => c.category))];
 
+  // Don't render if not authorized
+  if (!authLoading && role && !canAccessConfig(role as any)) return null;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -198,7 +210,6 @@ const PartnersConfig = () => {
               
               return (
                 <TabsContent key={cat} value={cat} className="space-y-4">
-                  {/* Category description */}
                   <p className="text-sm text-muted-foreground px-1">
                     {categoryDescriptions[cat] || 'Configurações desta categoria.'}
                   </p>
