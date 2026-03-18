@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, UserPlus, Link2, Copy, ChevronDown, ChevronUp, Filter, Calendar } from 'lucide-react';
+import { Plus, Search, UserPlus, Link2, Copy, ChevronDown, ChevronUp, Filter, Calendar, Pencil, Power, PowerOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -47,8 +47,21 @@ const PartnersManagement = () => {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<any>(null);
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [form, setForm] = useState({
+    person_type: 'CPF',
+    document_number: '',
+    legal_name: '',
+    email: '',
+    phone: '',
+    region_state: '',
+    region_city: '',
+    years_in_health_market: 0,
+    monthly_relationship_clinics: 0,
+  });
+  const [editForm, setEditForm] = useState({
     person_type: 'CPF',
     document_number: '',
     legal_name: '',
@@ -99,6 +112,64 @@ const PartnersManagement = () => {
       toast({ title: 'Partner criado com sucesso!' });
       setDialogOpen(false);
       setForm({ person_type: 'CPF', document_number: '', legal_name: '', email: '', phone: '', region_state: '', region_city: '', years_in_health_market: 0, monthly_relationship_clinics: 0 });
+      fetchData();
+    }
+  };
+
+  const openEditDialog = (partner: any) => {
+    setEditingPartner(partner);
+    setEditForm({
+      person_type: partner.person_type || 'CPF',
+      document_number: partner.document_number || '',
+      legal_name: partner.legal_name || '',
+      email: partner.email || '',
+      phone: partner.phone || '',
+      region_state: partner.region_state || '',
+      region_city: partner.region_city || '',
+      years_in_health_market: partner.years_in_health_market || 0,
+      monthly_relationship_clinics: partner.monthly_relationship_clinics || 0,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingPartner) return;
+    const { error } = await supabase.from('partners').update({
+      person_type: editForm.person_type,
+      document_number: editForm.document_number,
+      legal_name: editForm.legal_name,
+      email: editForm.email,
+      phone: editForm.phone,
+      region_state: editForm.region_state,
+      region_city: editForm.region_city,
+      years_in_health_market: editForm.years_in_health_market,
+      monthly_relationship_clinics: editForm.monthly_relationship_clinics,
+    }).eq('id', editingPartner.id);
+
+    if (error) {
+      toast({ title: 'Erro ao atualizar partner', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Partner atualizado com sucesso!' });
+      setEditDialogOpen(false);
+      setEditingPartner(null);
+      fetchData();
+    }
+  };
+
+  const togglePartnerStatus = async (partner: any) => {
+    const newStatus = partner.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    const updates: any = { status: newStatus };
+    if (newStatus === 'ACTIVE') {
+      updates.activated_at = new Date().toISOString();
+      updates.suspended_at = null;
+    } else {
+      updates.suspended_at = new Date().toISOString();
+    }
+    const { error } = await supabase.from('partners').update(updates).eq('id', partner.id);
+    if (error) {
+      toast({ title: 'Erro ao alterar status', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `Partner ${newStatus === 'ACTIVE' ? 'ativado' : 'desativado'} com sucesso!` });
       fetchData();
     }
   };
@@ -328,6 +399,21 @@ const PartnersManagement = () => {
 
                   {isExpanded && (
                     <div className="border-t p-4 space-y-4">
+                      {/* Action buttons */}
+                      {isMaster && (
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openEditDialog(p); }}>
+                            <Pencil className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={p.status === 'ACTIVE' ? 'destructive' : 'default'}
+                            onClick={(e) => { e.stopPropagation(); togglePartnerStatus(p); }}
+                          >
+                            {p.status === 'ACTIVE' ? <><PowerOff className="h-3 w-3 mr-1" /> Desativar</> : <><Power className="h-3 w-3 mr-1" /> Ativar</>}
+                          </Button>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                         <div className="p-3 rounded-lg bg-muted/50 text-center">
                           <p className="text-lg font-bold">{pClinics.length}</p>
@@ -457,6 +543,56 @@ const PartnersManagement = () => {
             })
           )}
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Partner</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tipo de Pessoa</Label>
+                  <Select value={editForm.person_type} onValueChange={v => setEditForm({...editForm, person_type: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                      <SelectItem value="CNPJ">CNPJ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Documento</Label>
+                  <Input value={editForm.document_number} onChange={e => setEditForm({...editForm, document_number: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <Label>Nome / Razão Social</Label>
+                <Input value={editForm.legal_name} onChange={e => setEditForm({...editForm, legal_name: e.target.value})} />
+              </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+              </div>
+              <div>
+                <Label>Telefone</Label>
+                <Input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Estado</Label><Input value={editForm.region_state} onChange={e => setEditForm({...editForm, region_state: e.target.value})} /></div>
+                <div><Label>Cidade</Label><Input value={editForm.region_city} onChange={e => setEditForm({...editForm, region_city: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Anos no mercado</Label><Input type="number" value={editForm.years_in_health_market} onChange={e => setEditForm({...editForm, years_in_health_market: Number(e.target.value)})} /></div>
+                <div><Label>Clínicas/mês</Label><Input type="number" value={editForm.monthly_relationship_clinics} onChange={e => setEditForm({...editForm, monthly_relationship_clinics: Number(e.target.value)})} /></div>
+              </div>
+              <Button onClick={handleEdit} className="w-full">
+                <Pencil className="h-4 w-4 mr-2" /> Salvar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
