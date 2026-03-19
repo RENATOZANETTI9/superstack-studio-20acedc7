@@ -2,17 +2,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  TrendingUp, TrendingDown, Minus, Search, RefreshCw,
-  Building2, Activity, BarChart3
+  TrendingUp, TrendingDown, Minus,
+  Building2, BarChart3
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, BarChart, Bar
 } from 'recharts';
+import ClinicFilters from './ClinicFilters';
 
 interface Props {
   /** If set, only show clinics belonging to this partner */
@@ -51,15 +51,33 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
   const [search, setSearch] = useState('');
   const [trendFilter, setTrendFilter] = useState<Trend | 'all'>('all');
   const [period, setPeriod] = useState<'7' | '30' | '90'>('30');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [selectedPartnerId, setSelectedPartnerId] = useState('all');
 
-  useEffect(() => { fetchData(); }, [partnerId, masterPartnerId, period]);
+  useEffect(() => { fetchData(); }, [partnerId, masterPartnerId, period, dateFrom, dateTo, selectedPartnerId]);
 
   const fetchData = async () => {
     setLoading(true);
 
-    // If masterPartnerId, get network partner ids first
+    // Determine relevant partner IDs
     let relevantPartnerIds: string[] = [];
-    if (masterPartnerId) {
+    
+    // UI filter takes precedence when not in partner-scoped mode
+    if (!partnerId && !masterPartnerId && selectedPartnerId !== 'all') {
+      // Check if selected is a master partner to include their network
+      const selectedPartner = (await supabase.from('partners').select('id, type').eq('id', selectedPartnerId).maybeSingle()).data;
+      if (selectedPartner?.type === 'MASTER') {
+        const { data: network } = await supabase
+          .from('partner_network')
+          .select('child_partner_id')
+          .eq('parent_partner_id', selectedPartnerId)
+          .eq('is_active', true);
+        relevantPartnerIds = [selectedPartnerId, ...(network || []).map(n => n.child_partner_id)];
+      } else {
+        relevantPartnerIds = [selectedPartnerId];
+      }
+    } else if (masterPartnerId) {
       const { data: network } = await supabase
         .from('partner_network')
         .select('child_partner_id')
@@ -78,13 +96,25 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
     }
     const { data: clinicsData } = await clinicsQuery;
 
-    // Fetch partners for names
-    const { data: partnersData } = await supabase.from('partners').select('id, legal_name');
+    // Fetch partners for names + filter dropdown
+    const { data: partnersData } = await supabase.from('partners').select('id, legal_name, type');
 
-    // Fetch metrics filtered by period
-    const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - Number(period));
-    let metricsQuery = supabase.from('partner_metrics_daily').select('*').gte('metric_date', sinceDate.toISOString().split('T')[0]).order('metric_date', { ascending: true }).limit(1000);
+    // Fetch metrics filtered by date range or period
+    let sinceDate: string;
+    let untilDate: string | undefined;
+    if (dateFrom) {
+      sinceDate = dateFrom.toISOString().split('T')[0];
+      untilDate = dateTo ? dateTo.toISOString().split('T')[0] : undefined;
+    } else {
+      const d = new Date();
+      d.setDate(d.getDate() - Number(period));
+      sinceDate = d.toISOString().split('T')[0];
+    }
+    
+    let metricsQuery = supabase.from('partner_metrics_daily').select('*').gte('metric_date', sinceDate).order('metric_date', { ascending: true }).limit(1000);
+    if (untilDate) {
+      metricsQuery = metricsQuery.lte('metric_date', untilDate);
+    }
     if (relevantPartnerIds.length > 0) {
       metricsQuery = metricsQuery.in('partner_id', relevantPartnerIds);
     }
@@ -254,14 +284,20 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
         </CardContent>
       </Card>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar clínica ou partner..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</Button>
-      </div>
+      {/* Filters */}
+      <ClinicFilters
+        search={search}
+        onSearchChange={setSearch}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        partners={partners}
+        selectedPartnerId={selectedPartnerId}
+        onPartnerChange={setSelectedPartnerId}
+        hidePartnerFilter={!!partnerId || !!masterPartnerId}
+        onRefresh={fetchData}
+      />
 
       {trendFilter !== 'all' && (
         <div className="flex items-center gap-2">
