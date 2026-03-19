@@ -60,9 +60,24 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
   const fetchData = async () => {
     setLoading(true);
 
-    // If masterPartnerId, get network partner ids first
+    // Determine relevant partner IDs
     let relevantPartnerIds: string[] = [];
-    if (masterPartnerId) {
+    
+    // UI filter takes precedence when not in partner-scoped mode
+    if (!partnerId && !masterPartnerId && selectedPartnerId !== 'all') {
+      // Check if selected is a master partner to include their network
+      const selectedPartner = (await supabase.from('partners').select('id, type').eq('id', selectedPartnerId).maybeSingle()).data;
+      if (selectedPartner?.type === 'MASTER') {
+        const { data: network } = await supabase
+          .from('partner_network')
+          .select('child_partner_id')
+          .eq('parent_partner_id', selectedPartnerId)
+          .eq('is_active', true);
+        relevantPartnerIds = [selectedPartnerId, ...(network || []).map(n => n.child_partner_id)];
+      } else {
+        relevantPartnerIds = [selectedPartnerId];
+      }
+    } else if (masterPartnerId) {
       const { data: network } = await supabase
         .from('partner_network')
         .select('child_partner_id')
@@ -81,13 +96,25 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
     }
     const { data: clinicsData } = await clinicsQuery;
 
-    // Fetch partners for names
-    const { data: partnersData } = await supabase.from('partners').select('id, legal_name');
+    // Fetch partners for names + filter dropdown
+    const { data: partnersData } = await supabase.from('partners').select('id, legal_name, type');
 
-    // Fetch metrics filtered by period
-    const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - Number(period));
-    let metricsQuery = supabase.from('partner_metrics_daily').select('*').gte('metric_date', sinceDate.toISOString().split('T')[0]).order('metric_date', { ascending: true }).limit(1000);
+    // Fetch metrics filtered by date range or period
+    let sinceDate: string;
+    let untilDate: string | undefined;
+    if (dateFrom) {
+      sinceDate = dateFrom.toISOString().split('T')[0];
+      untilDate = dateTo ? dateTo.toISOString().split('T')[0] : undefined;
+    } else {
+      const d = new Date();
+      d.setDate(d.getDate() - Number(period));
+      sinceDate = d.toISOString().split('T')[0];
+    }
+    
+    let metricsQuery = supabase.from('partner_metrics_daily').select('*').gte('metric_date', sinceDate).order('metric_date', { ascending: true }).limit(1000);
+    if (untilDate) {
+      metricsQuery = metricsQuery.lte('metric_date', untilDate);
+    }
     if (relevantPartnerIds.length > 0) {
       metricsQuery = metricsQuery.in('partner_id', relevantPartnerIds);
     }
