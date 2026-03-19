@@ -192,10 +192,13 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
     });
   }, [clinics, metrics, partnerNameMap]);
 
+  const trendOrder: Record<Trend, number> = { down: 0, stable: 1, up: 2 };
+
   const filtered = useMemo(() => {
     return clinicAnalyses
       .filter(c => trendFilter === 'all' || c.trend === trendFilter)
-      .filter(c => !search || c.clinic_name.toLowerCase().includes(search.toLowerCase()) || c.partner_name?.toLowerCase().includes(search.toLowerCase()));
+      .filter(c => !search || c.clinic_name.toLowerCase().includes(search.toLowerCase()) || c.partner_name?.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => trendOrder[a.trend] - trendOrder[b.trend] || b.trendPercent - a.trendPercent);
   }, [clinicAnalyses, search, trendFilter]);
 
   // Aggregated weekly chart
