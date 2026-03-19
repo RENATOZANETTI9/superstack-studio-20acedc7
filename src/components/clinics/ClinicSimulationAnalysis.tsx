@@ -192,10 +192,13 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
     });
   }, [clinics, metrics, partnerNameMap]);
 
+  const trendOrder: Record<Trend, number> = { down: 0, stable: 1, up: 2 };
+
   const filtered = useMemo(() => {
     return clinicAnalyses
       .filter(c => trendFilter === 'all' || c.trend === trendFilter)
-      .filter(c => !search || c.clinic_name.toLowerCase().includes(search.toLowerCase()) || c.partner_name?.toLowerCase().includes(search.toLowerCase()));
+      .filter(c => !search || c.clinic_name.toLowerCase().includes(search.toLowerCase()) || c.partner_name?.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => trendOrder[a.trend] - trendOrder[b.trend] || b.trendPercent - a.trendPercent);
   }, [clinicAnalyses, search, trendFilter]);
 
   // Aggregated weekly chart
@@ -299,12 +302,28 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
         onRefresh={fetchData}
       />
 
-      {trendFilter !== 'all' && (
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">Filtro: {trendConfig[trendFilter].label}</Badge>
-          <Button variant="ghost" size="sm" onClick={() => setTrendFilter('all')}>Limpar filtro</Button>
-        </div>
-      )}
+      {/* Trend Filter Buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground mr-1">Tendência:</span>
+        {(['all', 'down', 'stable', 'up'] as const).map(t => {
+          const isActive = trendFilter === t;
+          const label = t === 'all' ? 'Todas' : trendConfig[t].label;
+          const count = t === 'all' ? clinicAnalyses.length : trendCounts[t];
+          const Icon = t !== 'all' ? trendConfig[t].icon : null;
+          return (
+            <Button
+              key={t}
+              variant={isActive ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTrendFilter(t)}
+              className="gap-1"
+            >
+              {Icon && <Icon className="h-3.5 w-3.5" />}
+              {label} ({count})
+            </Button>
+          );
+        })}
+      </div>
 
       {/* Clinic Cards */}
       <div className="space-y-4">
