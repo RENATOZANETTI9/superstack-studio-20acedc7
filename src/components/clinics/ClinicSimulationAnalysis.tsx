@@ -284,14 +284,20 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
         </CardContent>
       </Card>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar clínica ou partner..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</Button>
-      </div>
+      {/* Filters */}
+      <ClinicFilters
+        search={search}
+        onSearchChange={setSearch}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        partners={partners}
+        selectedPartnerId={selectedPartnerId}
+        onPartnerChange={setSelectedPartnerId}
+        hidePartnerFilter={!!partnerId || !!masterPartnerId}
+        onRefresh={fetchData}
+      />
 
       {trendFilter !== 'all' && (
         <div className="flex items-center gap-2">
