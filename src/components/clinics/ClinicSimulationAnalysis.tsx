@@ -2,17 +2,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  TrendingUp, TrendingDown, Minus, Search, RefreshCw,
-  Building2, Activity, BarChart3
+  TrendingUp, TrendingDown, Minus,
+  Building2, BarChart3
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, BarChart, Bar
 } from 'recharts';
+import ClinicFilters from './ClinicFilters';
 
 interface Props {
   /** If set, only show clinics belonging to this partner */
