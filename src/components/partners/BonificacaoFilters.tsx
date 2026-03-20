@@ -28,7 +28,7 @@ interface BonificacaoFiltersProps {
 
 const BonificacaoFilters = ({
   dateFrom, dateTo, filterClinic, filterAttendant, filterStatus,
-  clinicIds, attendantIds,
+  clinicIds, attendantIds, clinicNameMap,
   onDateFromChange, onDateToChange, onFilterClinicChange, onFilterAttendantChange, onFilterStatusChange,
   onClearFilters, hasActiveFilters,
 }: BonificacaoFiltersProps) => (
