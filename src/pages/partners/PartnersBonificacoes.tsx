@@ -1,16 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, Gift } from 'lucide-react';
-import { COMMISSION_STATUS_LABELS, COMMISSION_STATUS_COLORS, formatCurrency } from '@/lib/partner-rules';
+import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/partner-rules';
 import BonificacaoFilters from '@/components/partners/BonificacaoFilters';
 import BonificacaoSummaryCards from '@/components/partners/BonificacaoSummaryCards';
 import BonificacaoTiersInfo from '@/components/partners/BonificacaoTiersInfo';
+import BonificacaoMimosTab from '@/components/partners/BonificacaoMimosTab';
+import BonificacaoPixTab from '@/components/partners/BonificacaoPixTab';
+import BonificacaoCommissionsTab from '@/components/partners/BonificacaoCommissionsTab';
 
 const PartnersBonificacoes = () => {
+  const { role, user } = useAuth();
   const [commissions, setCommissions] = useState<any[]>([]);
   const [incentives, setIncentives] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,17 +22,88 @@ const PartnersBonificacoes = () => {
   const [filterAttendant, setFilterAttendant] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
 
-  useEffect(() => { fetchData(); }, []);
+  // Clinic relations for name display + ownership check
+  const [clinicRelations, setClinicRelations] = useState<any[]>([]);
+  const [myPartner, setMyPartner] = useState<any>(null);
 
-  const fetchData = async () => {
-    const [comRes, incRes] = await Promise.all([
+  const isAdmin = isAdminRole(role);
+  const isMasterPartner = role === 'master_partner';
+  const isPartner = role === 'partner';
+  // Partners and master_partners can mark mimos as delivered (they pay them)
+  const canMarkMimoDelivered = isPartner || isMasterPartner || isAdmin;
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+
+    // Fetch partner record for current user
+    const partnerPromise = user
+      ? supabase.from('partners').select('id, type').eq('user_id', user.id).maybeSingle()
+      : Promise.resolve({ data: null });
+
+    const [comRes, incRes, partnerRes, clinicRes] = await Promise.all([
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }),
       supabase.from('attendant_incentives').select('*').order('created_at', { ascending: false }),
+      partnerPromise,
+      supabase.from('partner_clinic_relations').select('clinic_external_id, clinic_name, partner_id'),
     ]);
+
     setCommissions(comRes.data || []);
     setIncentives(incRes.data || []);
+    setMyPartner(partnerRes.data);
+    setClinicRelations(clinicRes.data || []);
     setLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Build a map: clinic_external_id -> { name, partner_id }
+  const clinicMap = useMemo(() => {
+    const map: Record<string, { name: string; partnerId: string }> = {};
+    for (const rel of clinicRelations) {
+      if (rel.clinic_external_id) {
+        map[rel.clinic_external_id] = { name: rel.clinic_name, partnerId: rel.partner_id };
+      }
+    }
+    return map;
+  }, [clinicRelations]);
+
+  // Network partner IDs (partners in my network if I'm master_partner)
+  const [networkPartnerIds, setNetworkPartnerIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!myPartner || !isMasterPartner) return;
+    supabase
+      .from('partner_network')
+      .select('child_partner_id')
+      .eq('parent_partner_id', myPartner.id)
+      .eq('is_active', true)
+      .then(({ data }) => {
+        setNetworkPartnerIds(new Set((data || []).map(d => d.child_partner_id)));
+      });
+  }, [myPartner, isMasterPartner]);
+
+  /**
+   * Clinic name display rules:
+   * - Admin: full name always
+   * - Partner: full name (all their clinics)
+   * - Master Partner: full name for own clinics, abbreviated for network partner clinics
+   */
+  const getClinicDisplay = useCallback((clinicId: string | null): string => {
+    if (!clinicId) return '—';
+    const info = clinicMap[clinicId];
+    if (!info) return clinicId;
+
+    // Admin sees everything
+    if (isAdmin) return info.name;
+
+    // If master_partner and clinic belongs to a network partner → abbreviate
+    if (isMasterPartner && myPartner && info.partnerId !== myPartner.id && networkPartnerIds.has(info.partnerId)) {
+      const words = info.name.split(' ');
+      if (words.length <= 1) return info.name.substring(0, 3) + '...';
+      return words[0] + ' ' + words.slice(1).map(w => w[0] + '.').join(' ');
+    }
+
+    return info.name;
+  }, [clinicMap, isAdmin, isMasterPartner, myPartner, networkPartnerIds]);
 
   const clinicIds = useMemo(() => [...new Set([
     ...incentives.map(i => i.clinic_external_id),
@@ -75,17 +148,6 @@ const PartnersBonificacoes = () => {
     setFilterClinic('ALL'); setFilterAttendant('ALL'); setFilterStatus('ALL');
   };
 
-  const renderTable = (headers: string[], rows: React.ReactNode) => (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead><tr className="border-b text-left">
-          {headers.map(h => <th key={h} className="pb-3 whitespace-nowrap pr-4">{h}</th>)}
-        </tr></thead>
-        <tbody>{rows}</tbody>
-      </table>
-    </div>
-  );
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -119,109 +181,34 @@ const PartnersBonificacoes = () => {
           </TabsList>
 
           <TabsContent value="mimos">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">Mimos Semanais por Simulação</CardTitle>
-                    <CardDescription>Pago pelo partner · Avaliação semanal</CardDescription>
-                  </div>
-                  <Badge variant="outline" className="text-xs w-fit">🕐 Semanal · {mimoIncentives.length} registros</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" /></div>
-                ) : mimoIncentives.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Gift className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhum mimo registrado {hasActiveFilters ? 'com os filtros aplicados' : ''}</p>
-                  </div>
-                ) : renderTable(
-                  ['Mês Ref.', 'Semana', 'Clínica', 'Simulações', 'Produção', 'Faixa Mimo', 'Status'],
-                  mimoIncentives.map(i => (
-                    <tr key={i.id} className="border-b hover:bg-accent/30">
-                      <td className="py-3">{i.reference_month}</td>
-                      <td className="py-3">Semana {i.reference_week}</td>
-                      <td className="py-3 text-xs">{i.clinic_external_id || '—'}</td>
-                      <td className="py-3 font-medium">{i.cpfs_generated}</td>
-                      <td className="py-3">{i.consultations_generated} consultas</td>
-                      <td className="py-3"><Badge variant="secondary" className="font-medium">{i.pix_tier || '—'}</Badge></td>
-                      <td className="py-3"><Badge className={COMMISSION_STATUS_COLORS[i.status] || ''}>{COMMISSION_STATUS_LABELS[i.status] || i.status}</Badge></td>
-                    </tr>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+            <BonificacaoMimosTab
+              items={mimoIncentives}
+              loading={loading}
+              hasActiveFilters={hasActiveFilters}
+              canMarkDelivered={canMarkMimoDelivered}
+              getClinicDisplay={getClinicDisplay}
+              onRefresh={fetchData}
+            />
           </TabsContent>
 
           <TabsContent value="pix">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">PIX por Contrato Pago</CardTitle>
-                    <CardDescription>Pago pela Help Ude · Avaliação mensal</CardDescription>
-                  </div>
-                  <Badge variant="outline" className="text-xs w-fit">📅 Mensal · {pixIncentives.length} registros</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {pixIncentives.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhum incentivo PIX registrado {hasActiveFilters ? 'com os filtros aplicados' : ''}</p>
-                  </div>
-                ) : renderTable(
-                  ['Mês Ref.', 'Clínica', 'Produção Paga', 'Faixa', 'Valor PIX', 'Status'],
-                  pixIncentives.map(i => (
-                    <tr key={i.id} className="border-b hover:bg-accent/30">
-                      <td className="py-3">{i.reference_month}</td>
-                      <td className="py-3 text-xs">{i.clinic_external_id || '—'}</td>
-                      <td className="py-3">R$ {formatCurrency(Number(i.paid_amount_generated || 0))}</td>
-                      <td className="py-3"><Badge variant="secondary">{i.pix_tier || '—'}</Badge></td>
-                      <td className="py-3 font-bold text-green-600">R$ {formatCurrency(Number(i.incentive_amount || 0))}</td>
-                      <td className="py-3"><Badge className={COMMISSION_STATUS_COLORS[i.status] || ''}>{COMMISSION_STATUS_LABELS[i.status] || i.status}</Badge></td>
-                    </tr>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+            <BonificacaoPixTab
+              items={pixIncentives}
+              hasActiveFilters={hasActiveFilters}
+              isAdmin={isAdmin}
+              getClinicDisplay={getClinicDisplay}
+              onRefresh={fetchData}
+            />
           </TabsContent>
 
           <TabsContent value="bonificacoes">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">Bonificações do Partner</CardTitle>
-                    <CardDescription>Bonificação direta (1,6%) e de rede/override (0,2%)</CardDescription>
-                  </div>
-                  <Badge variant="outline" className="text-xs w-fit">{filteredCommissions.length} registros</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {filteredCommissions.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhuma bonificação registrada {hasActiveFilters ? 'com os filtros aplicados' : ''}</p>
-                  </div>
-                ) : renderTable(
-                  ['Tipo', 'Mês Ref.', 'Clínica', 'Valor Base', 'Taxa', 'Bonificação', 'Status'],
-                  filteredCommissions.map(c => (
-                    <tr key={c.id} className="border-b hover:bg-accent/30">
-                      <td className="py-3"><Badge variant="outline">{c.commission_type === 'DIRECT' ? 'Direta' : 'Rede'}</Badge></td>
-                      <td className="py-3">{c.reference_month}</td>
-                      <td className="py-3 text-xs">{c.clinic_external_id || '—'}</td>
-                      <td className="py-3">R$ {formatCurrency(Number(c.net_paid_amount))}</td>
-                      <td className="py-3">{(Number(c.commission_rate) * 100).toFixed(2)}%</td>
-                      <td className="py-3 font-bold text-green-600">R$ {formatCurrency(Number(c.commission_amount))}</td>
-                      <td className="py-3"><Badge className={COMMISSION_STATUS_COLORS[c.status] || ''}>{COMMISSION_STATUS_LABELS[c.status] || c.status}</Badge></td>
-                    </tr>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+            <BonificacaoCommissionsTab
+              items={filteredCommissions}
+              hasActiveFilters={hasActiveFilters}
+              isAdmin={isAdmin}
+              getClinicDisplay={getClinicDisplay}
+              onRefresh={fetchData}
+            />
           </TabsContent>
         </Tabs>
       </div>
