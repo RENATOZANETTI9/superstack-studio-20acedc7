@@ -16,6 +16,7 @@ interface BonificacaoFiltersProps {
   filterStatus: string;
   clinicIds: string[];
   attendantIds: string[];
+  clinicNameMap?: Record<string, string>;
   onDateFromChange: (d: Date | undefined) => void;
   onDateToChange: (d: Date | undefined) => void;
   onFilterClinicChange: (v: string) => void;
