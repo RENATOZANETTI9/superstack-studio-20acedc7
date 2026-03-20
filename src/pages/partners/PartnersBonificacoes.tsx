@@ -141,6 +141,14 @@ const PartnersBonificacoes = () => {
   const totalOverride = filteredCommissions.filter(c => c.commission_type === 'OVERRIDE').reduce((s, c) => s + Number(c.commission_amount), 0);
   const totalPix = pixIncentives.reduce((s, i) => s + Number(i.incentive_amount || 0), 0);
 
+  const clinicNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const [id, info] of Object.entries(clinicMap)) {
+      map[id] = info.name;
+    }
+    return map;
+  }, [clinicMap]);
+
   const hasActiveFilters = filterClinic !== 'ALL' || filterAttendant !== 'ALL' || filterStatus !== 'ALL' || !!dateFrom || !!dateTo;
 
   const clearFilters = () => {
