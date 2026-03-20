@@ -16,6 +16,7 @@ interface BonificacaoFiltersProps {
   filterStatus: string;
   clinicIds: string[];
   attendantIds: string[];
+  clinicNameMap?: Record<string, string>;
   onDateFromChange: (d: Date | undefined) => void;
   onDateToChange: (d: Date | undefined) => void;
   onFilterClinicChange: (v: string) => void;
@@ -27,7 +28,7 @@ interface BonificacaoFiltersProps {
 
 const BonificacaoFilters = ({
   dateFrom, dateTo, filterClinic, filterAttendant, filterStatus,
-  clinicIds, attendantIds,
+  clinicIds, attendantIds, clinicNameMap,
   onDateFromChange, onDateToChange, onFilterClinicChange, onFilterAttendantChange, onFilterStatusChange,
   onClearFilters, hasActiveFilters,
 }: BonificacaoFiltersProps) => (
@@ -64,7 +65,7 @@ const BonificacaoFilters = ({
           <SelectTrigger><SelectValue placeholder="Clínica" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Todas as Clínicas</SelectItem>
-            {clinicIds.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+            {clinicIds.map(id => <SelectItem key={id} value={id}>{clinicNameMap?.[id] || id}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterAttendant} onValueChange={onFilterAttendantChange}>
