@@ -65,7 +65,7 @@ const BonificacaoFilters = ({
           <SelectTrigger><SelectValue placeholder="Clínica" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Todas as Clínicas</SelectItem>
-            {clinicIds.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+            {clinicIds.map(id => <SelectItem key={id} value={id}>{clinicNameMap?.[id] || id}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterAttendant} onValueChange={onFilterAttendantChange}>
