@@ -167,7 +167,7 @@ const PartnersBonificacoes = () => {
         <BonificacaoFilters
           dateFrom={dateFrom} dateTo={dateTo}
           filterClinic={filterClinic} filterAttendant={filterAttendant} filterStatus={filterStatus}
-          clinicIds={clinicIds} attendantIds={attendantIds}
+          clinicIds={clinicIds} attendantIds={attendantIds} clinicNameMap={clinicNameMap}
           onDateFromChange={setDateFrom} onDateToChange={setDateTo}
           onFilterClinicChange={setFilterClinic} onFilterAttendantChange={setFilterAttendant}
           onFilterStatusChange={setFilterStatus}
