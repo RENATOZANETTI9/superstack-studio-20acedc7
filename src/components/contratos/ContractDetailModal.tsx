@@ -40,6 +40,18 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
   const [marketingEmail, setMarketingEmail] = useState('');
   const [marketingActivated, setMarketingActivated] = useState(false);
 
+  // Check if marketing triggers already activated from history
+  useEffect(() => {
+    if (!contract || !history.length) {
+      setMarketingActivated(false);
+      return;
+    }
+    const hasSms = history.some(h => h.type === 'Mensagem' || h.type === 'SMS');
+    const hasEmail = history.some(h => h.type === 'E-mail');
+    const hasCall = history.some(h => h.type === 'Ligação');
+    setMarketingActivated(hasSms && hasEmail && hasCall);
+  }, [contract?.id, history]);
+
   if (!contract) return null;
 
   const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
