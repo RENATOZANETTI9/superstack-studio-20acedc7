@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ExternalLink, Copy, AlertTriangle, RefreshCw, Plus, Check, Calendar, Clock, X,
+  ExternalLink, Copy, AlertTriangle, RefreshCw, Plus, Check, Calendar, Clock, X, Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
