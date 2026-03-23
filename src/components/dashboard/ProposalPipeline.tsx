@@ -104,24 +104,37 @@ const PipelineColumn = ({
             <motion.div
               key={proposal.id}
               initial={{ opacity: 0, y: 10 }}
-              animate={shouldPulse ? { 
-                opacity: 1, y: 0,
-                boxShadow: [
-                  '0 0 0 0 hsla(var(--success), 0)',
-                  '0 0 12px 4px hsla(var(--success), 0.3)',
-                  '0 0 0 0 hsla(var(--success), 0)',
-                ],
-              } : { opacity: 1, y: 0 }}
-              transition={shouldPulse ? { 
-                boxShadow: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
-                opacity: { duration: 0.3 },
-                y: { duration: 0.3 },
-              } : { duration: 0.3 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
               className={cn(
-                "glass-card rounded-lg sm:rounded-xl p-3 sm:p-4",
-                shouldPulse && "border-success/40"
+                "relative rounded-lg sm:rounded-xl p-3 sm:p-4 overflow-hidden transition-colors duration-500",
+                shouldPulse 
+                  ? "bg-success/[0.06] border border-success/30 shadow-[0_0_16px_-4px_hsl(var(--success)/0.2)]" 
+                  : "glass-card"
               )}
             >
+              {/* Subtle animated accent bar on left edge */}
+              {shouldPulse && (
+                <motion.div
+                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-success"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+                />
+              )}
+
+              {/* "Ação necessária" micro-badge */}
+              {shouldPulse && (
+                <div className="mb-2 flex items-center gap-1.5">
+                  <motion.div
+                    className="h-1.5 w-1.5 rounded-full bg-success"
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-success">
+                    Ação necessária
+                  </span>
+                </div>
+              )}
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm sm:text-base text-foreground truncate">{proposal.name}</p>
