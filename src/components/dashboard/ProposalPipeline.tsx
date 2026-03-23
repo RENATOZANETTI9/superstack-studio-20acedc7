@@ -176,10 +176,10 @@ const PipelineColumn = ({
               {/* Marketing Actions for Approved */}
               {status === 'aprovada' && (
                 <div className="border-t border-border/50 pt-2 sm:pt-3">
-                  {allTriggersActive ? (
-                    <div className="flex items-center gap-1.5 text-success">
+                  {triggersDone ? (
+                    <div className="flex items-center gap-1.5 text-warning">
                       <CheckCircle className="h-3.5 w-3.5" />
-                      <span className="text-[10px] sm:text-xs font-semibold">Gatilhos Ativados</span>
+                      <span className="text-[10px] sm:text-xs font-semibold">Gatilhos de marketing ativados</span>
                     </div>
                   ) : (
                     <Button
