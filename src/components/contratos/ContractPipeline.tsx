@@ -35,7 +35,7 @@ interface ContractPipelineProps {
   marketingStatusMap?: Record<string, ContractMarketingStatus>;
 }
 
-const ContractPipeline = ({ contracts, onRegenerate, onRefresh }: ContractPipelineProps) => {
+const ContractPipeline = ({ contracts, onRegenerate, onRefresh, marketingStatusMap = {} }: ContractPipelineProps) => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(true);
