@@ -132,6 +132,7 @@ const Contratos = () => {
                 contracts={filteredContracts}
                 onRegenerate={regenerateContract}
                 onRefresh={fetchContracts}
+                marketingStatusMap={marketingStatusMap}
               />
             )}
           </div>
