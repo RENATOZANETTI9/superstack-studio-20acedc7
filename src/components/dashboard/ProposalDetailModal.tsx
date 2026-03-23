@@ -162,7 +162,12 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivate
                 />
               </div>
             </div>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => console.log('Ativar gatilho de marketing', { telefone, email })}>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => {
+              console.log('Ativar gatilho de marketing', { telefone, email });
+              if (proposal) {
+                onMarketingActivated?.(proposal.id);
+              }
+            }}>
               <Send className="h-4 w-4" />
               Ativar gatilho de marketing
             </Button>
