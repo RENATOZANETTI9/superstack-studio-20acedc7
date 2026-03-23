@@ -57,7 +57,7 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
   linkContrato: proposal.status === 'aprovada' ? 'https://exemplo.com/contrato' : undefined,
 });
 
-const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailModalProps) => {
+const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated }: ProposalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
   const [newValue, setNewValue] = useState('');
