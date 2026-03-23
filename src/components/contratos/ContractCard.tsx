@@ -1,17 +1,19 @@
 import { motion } from 'framer-motion';
-import { Eye, FileText, Clock, AlertTriangle } from 'lucide-react';
+import { Eye, FileText, Clock, AlertTriangle, CheckCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
+import type { ContractMarketingStatus } from '@/hooks/useContracts';
 
 interface ContractCardProps {
   contract: Contract;
   onViewDetails: (contract: Contract) => void;
   isMobile?: boolean;
+  marketingStatus?: ContractMarketingStatus;
 }
 
-const ContractCard = ({ contract, onViewDetails, isMobile }: ContractCardProps) => {
+const ContractCard = ({ contract, onViewDetails, isMobile, marketingStatus }: ContractCardProps) => {
   const formatCurrency = (value: number) =>
     `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
@@ -27,6 +29,8 @@ const ContractCard = ({ contract, onViewDetails, isMobile }: ContractCardProps) 
   };
 
   const expiresIn = getExpiresIn();
+  const allTriggersActive = marketingStatus?.sms && marketingStatus?.email && marketingStatus?.call;
+  const hasAnyTrigger = marketingStatus?.sms || marketingStatus?.email || marketingStatus?.call;
 
   return (
     <motion.div
@@ -83,6 +87,31 @@ const ContractCard = ({ contract, onViewDetails, isMobile }: ContractCardProps) 
       <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
         Link: {new Date(contract.link_generated_at).toLocaleDateString('pt-BR')}
       </p>
+
+      {/* Marketing Trigger Status */}
+      <div className="mt-2 pt-2 border-t border-border/50">
+        {allTriggersActive ? (
+          <div className="flex items-center gap-1.5 text-success">
+            <CheckCircle className="h-3.5 w-3.5" />
+            <span className="text-[10px] sm:text-xs font-semibold">Gatilhos Ativados</span>
+          </div>
+        ) : hasAnyTrigger ? (
+          <div className="flex items-center gap-1.5 text-warning">
+            <Send className="h-3 w-3" />
+            <span className="text-[10px] sm:text-xs font-medium">Gatilhos Parciais</span>
+            <div className="flex gap-1 ml-auto">
+              {marketingStatus?.sms && <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-success/50 text-success">SMS</Badge>}
+              {marketingStatus?.email && <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-success/50 text-success">Email</Badge>}
+              {marketingStatus?.call && <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-success/50 text-success">IA</Badge>}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Send className="h-3 w-3" />
+            <span className="text-[10px] sm:text-xs font-medium">Gatilhos Pendentes</span>
+          </div>
+        )}
+      </div>
 
       {/* Status-specific extras */}
       {expiresIn && (

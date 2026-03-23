@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Contract, ContractStatus } from '@/types/contracts';
+import type { ContractMarketingStatus } from '@/hooks/useContracts';
 import ContractCard from './ContractCard';
 import ContractDetailModal from './ContractDetailModal';
 
@@ -31,9 +32,10 @@ interface ContractPipelineProps {
   contracts: Contract[];
   onRegenerate: (contractId: string) => Promise<boolean>;
   onRefresh: () => Promise<void>;
+  marketingStatusMap?: Record<string, ContractMarketingStatus>;
 }
 
-const ContractPipeline = ({ contracts, onRegenerate, onRefresh }: ContractPipelineProps) => {
+const ContractPipeline = ({ contracts, onRegenerate, onRefresh, marketingStatusMap = {} }: ContractPipelineProps) => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(true);
@@ -87,7 +89,7 @@ const ContractPipeline = ({ contracts, onRegenerate, onRefresh }: ContractPipeli
                 <ScrollArea className="flex-1">
                   <div className="space-y-2 sm:space-y-3 pr-2">
                     {filtered.map((contract) => (
-                      <ContractCard key={contract.id} contract={contract} onViewDetails={handleViewDetails} isMobile={isMobile} />
+                      <ContractCard key={contract.id} contract={contract} onViewDetails={handleViewDetails} isMobile={isMobile} marketingStatus={marketingStatusMap[contract.id]} />
                     ))}
                     {filtered.length === 0 && (
                       <div className="flex h-24 sm:h-32 items-center justify-center text-center">

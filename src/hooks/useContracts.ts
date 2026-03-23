@@ -4,28 +4,48 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Contract, ContractHistoryItem, ScheduledReturn, ContractStatus } from '@/types/contracts';
 
+export interface ContractMarketingStatus {
+  sms: boolean;
+  email: boolean;
+  call: boolean;
+}
+
 export function useContracts() {
   const { user } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [marketingStatusMap, setMarketingStatusMap] = useState<Record<string, ContractMarketingStatus>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchContracts = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('contracts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [contractsRes, historyRes] = await Promise.all([
+      supabase.from('contracts').select('*').order('created_at', { ascending: false }),
+      supabase.from('contract_history').select('contract_id, type'),
+    ]);
 
-    if (error) {
+    if (contractsRes.error) {
       toast.error('Erro ao carregar contratos');
-      console.error(error);
+      console.error(contractsRes.error);
     } else {
-      setContracts((data || []).map(row => ({
+      setContracts((contractsRes.data || []).map(row => ({
         ...row,
         contract_status: row.contract_status as ContractStatus,
       })));
     }
+
+    // Build marketing status map from history
+    if (historyRes.data) {
+      const map: Record<string, ContractMarketingStatus> = {};
+      historyRes.data.forEach(h => {
+        if (!map[h.contract_id]) map[h.contract_id] = { sms: false, email: false, call: false };
+        if (h.type === 'SMS' || h.type === 'Mensagem') map[h.contract_id].sms = true;
+        if (h.type === 'E-mail') map[h.contract_id].email = true;
+        if (h.type === 'Ligação') map[h.contract_id].call = true;
+      });
+      setMarketingStatusMap(map);
+    }
+
     setLoading(false);
   }, [user]);
 
@@ -56,7 +76,7 @@ export function useContracts() {
     return success;
   };
 
-  return { contracts, loading, fetchContracts, updateContract, regenerateContract, setContracts };
+  return { contracts, loading, fetchContracts, updateContract, regenerateContract, setContracts, marketingStatusMap };
 }
 
 export function useContractHistory(contractId: string | undefined) {

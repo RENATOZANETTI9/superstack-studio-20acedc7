@@ -14,7 +14,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/dashboard/PullToRefreshIndicator';
 
 const Contratos = () => {
-  const { contracts, loading, regenerateContract, fetchContracts } = useContracts();
+  const { contracts, loading, regenerateContract, fetchContracts, marketingStatusMap } = useContracts();
   const isMobile = useIsMobile();
   const [search, setSearch] = useState('');
 
@@ -132,6 +132,7 @@ const Contratos = () => {
                 contracts={filteredContracts}
                 onRegenerate={regenerateContract}
                 onRefresh={fetchContracts}
+                marketingStatusMap={marketingStatusMap}
               />
             )}
           </div>
