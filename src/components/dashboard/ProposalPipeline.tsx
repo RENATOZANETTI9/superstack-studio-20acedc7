@@ -4,16 +4,12 @@ import {
   CheckCircle, 
   XCircle, 
   AlertTriangle, 
-  MessageSquare, 
-  Mail, 
-  Phone,
+  Send,
   Eye,
   FileText,
-  Send,
   Info,
   ChevronRight
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -100,12 +96,31 @@ const PipelineColumn = ({
       {/* Proposals */}
       <ScrollArea className="flex-1">
         <div className="space-y-2 sm:space-y-3 pr-2">
-          {filteredProposals.map((proposal) => (
+          {filteredProposals.map((proposal) => {
+            const allTriggersActive = proposal.marketingActions?.sms && proposal.marketingActions?.email && proposal.marketingActions?.call;
+            const shouldPulse = status === 'aprovada' && !allTriggersActive;
+
+            return (
             <motion.div
               key={proposal.id}
               initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-lg sm:rounded-xl p-3 sm:p-4"
+              animate={shouldPulse ? { 
+                opacity: 1, y: 0,
+                boxShadow: [
+                  '0 0 0 0 hsla(var(--success), 0)',
+                  '0 0 12px 4px hsla(var(--success), 0.3)',
+                  '0 0 0 0 hsla(var(--success), 0)',
+                ],
+              } : { opacity: 1, y: 0 }}
+              transition={shouldPulse ? { 
+                boxShadow: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
+                opacity: { duration: 0.3 },
+                y: { duration: 0.3 },
+              } : { duration: 0.3 }}
+              className={cn(
+                "glass-card rounded-lg sm:rounded-xl p-3 sm:p-4",
+                shouldPulse && "border-success/40"
+              )}
             >
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
@@ -138,75 +153,31 @@ const PipelineColumn = ({
               {/* Marketing Actions for Approved */}
               {status === 'aprovada' && (
                 <div className="border-t border-border/50 pt-2 sm:pt-3">
-                  <p className="mb-1.5 sm:mb-2 text-[10px] sm:text-xs font-semibold uppercase text-muted-foreground">
-                    Gatilhos de Marketing
-                  </p>
-                  <div className="flex gap-1 sm:gap-2">
-                    <Button
-                      variant={proposal.marketingActions?.sms ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.sms && 'bg-success hover:bg-success/90'
-                      )}
-                      onClick={() => onAction?.(proposal.id, 'sms')}
-                    >
-                      <MessageSquare className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      SMS
-                    </Button>
-                    <Button
-                      variant={proposal.marketingActions?.email ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.email && 'bg-success hover:bg-success/90'
-                      )}
-                      onClick={() => onAction?.(proposal.id, 'email')}
-                    >
-                      <Mail className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      Email
-                    </Button>
-                    <Button
-                      variant={proposal.marketingActions?.call ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.call && 'bg-success hover:bg-success/90'
-                      )}
-                      onClick={() => onAction?.(proposal.id, 'call')}
-                    >
-                      <Phone className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      IA
-                    </Button>
-                  </div>
-
-                  {/* Status dos gatilhos */}
-                  {(proposal.marketingActions?.sms || proposal.marketingActions?.email || proposal.marketingActions?.call) && (
-                    <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
-                      {proposal.marketingActions.sms && (
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
-                          <Send className="mr-0.5 h-2 w-2" />
-                          SMS
-                        </Badge>
-                      )}
-                      {proposal.marketingActions.email && (
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
-                          <Send className="mr-0.5 h-2 w-2" />
-                          Email
-                        </Badge>
-                      )}
-                      {proposal.marketingActions.call && (
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
-                          <Send className="mr-0.5 h-2 w-2" />
-                          Ligação
-                        </Badge>
-                      )}
+                  {allTriggersActive ? (
+                    <div className="flex items-center gap-1.5 text-success">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span className="text-[10px] sm:text-xs font-semibold">Gatilhos Ativados</span>
                     </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-success/50 text-success hover:bg-success hover:text-success-foreground transition-colors"
+                      onClick={() => {
+                        onAction?.(proposal.id, 'sms');
+                        onAction?.(proposal.id, 'email');
+                        onAction?.(proposal.id, 'call');
+                      }}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Ativar Gatilho de Marketing
+                    </Button>
                   )}
                 </div>
               )}
             </motion.div>
-          ))}
+            );
+          })}
 
           {filteredProposals.length === 0 && (
             <div className="flex h-24 sm:h-32 items-center justify-center text-center">
