@@ -76,7 +76,7 @@ export function useContracts() {
     return success;
   };
 
-  return { contracts, loading, fetchContracts, updateContract, regenerateContract, setContracts };
+  return { contracts, loading, fetchContracts, updateContract, regenerateContract, setContracts, marketingStatusMap };
 }
 
 export function useContractHistory(contractId: string | undefined) {
