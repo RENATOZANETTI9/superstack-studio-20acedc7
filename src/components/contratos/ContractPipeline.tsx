@@ -32,6 +32,7 @@ interface ContractPipelineProps {
   contracts: Contract[];
   onRegenerate: (contractId: string) => Promise<boolean>;
   onRefresh: () => Promise<void>;
+  marketingStatusMap?: Record<string, ContractMarketingStatus>;
 }
 
 const ContractPipeline = ({ contracts, onRegenerate, onRefresh }: ContractPipelineProps) => {
