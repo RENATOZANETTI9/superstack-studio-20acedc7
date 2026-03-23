@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
 import RegisterPartner from "./pages/RegisterPartner";
+import CadastroClinica from "./pages/CadastroClinica";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/dashboard/partners/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
             <Route path="/dashboard/clinicas" element={<Clinicas />} />
             <Route path="/register/partner" element={<RegisterPartner />} />
+            <Route path="/cadastroclinica" element={<CadastroClinica />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
