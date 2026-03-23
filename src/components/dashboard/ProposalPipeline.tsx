@@ -176,11 +176,7 @@ const PipelineColumn = ({
                       variant="outline"
                       size="sm"
                       className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-success/50 text-success hover:bg-success hover:text-success-foreground transition-colors"
-                      onClick={() => {
-                        onAction?.(proposal.id, 'sms');
-                        onAction?.(proposal.id, 'email');
-                        onAction?.(proposal.id, 'call');
-                      }}
+                      onClick={() => onViewDetails?.(proposal)}
                     >
                       <Send className="h-3.5 w-3.5" />
                       Ativar Gatilho de Marketing
