@@ -332,6 +332,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         proposal={selectedProposal}
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
+        onMarketingActivated={handleMarketingActivated}
       />
     </>
   );
