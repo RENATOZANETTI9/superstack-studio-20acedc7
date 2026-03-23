@@ -179,7 +179,7 @@ const PipelineColumn = ({
               {status === 'aprovada' && (
                 <div className="border-t border-border/50 pt-2 sm:pt-3">
                   {triggersDone ? (
-                    <div className="flex items-center gap-1.5 text-warning">
+                    <div className="flex items-center gap-1.5 text-success">
                       <CheckCircle className="h-3.5 w-3.5" />
                       <span className="text-[10px] sm:text-xs font-semibold">Gatilhos de marketing ativados</span>
                     </div>
@@ -187,7 +187,7 @@ const PipelineColumn = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-success/50 text-success hover:bg-success hover:text-success-foreground transition-colors"
+                      className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-warning/50 text-warning hover:bg-warning hover:text-warning-foreground transition-colors"
                       onClick={() => onViewDetails?.(proposal)}
                     >
                       <Send className="h-3.5 w-3.5" />
