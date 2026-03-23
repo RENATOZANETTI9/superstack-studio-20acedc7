@@ -5,11 +5,8 @@ import {
   XCircle, 
   AlertTriangle, 
   Send,
-  Mail, 
-  Phone,
   Eye,
   FileText,
-  Send,
   Info,
   ChevronRight
 } from 'lucide-react';
