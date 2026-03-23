@@ -89,7 +89,7 @@ const ContractPipeline = ({ contracts, onRegenerate, onRefresh, marketingStatusM
                 <ScrollArea className="flex-1">
                   <div className="space-y-2 sm:space-y-3 pr-2">
                     {filtered.map((contract) => (
-                      <ContractCard key={contract.id} contract={contract} onViewDetails={handleViewDetails} isMobile={isMobile} />
+                      <ContractCard key={contract.id} contract={contract} onViewDetails={handleViewDetails} isMobile={isMobile} marketingStatus={marketingStatusMap[contract.id]} />
                     ))}
                     {filtered.length === 0 && (
                       <div className="flex h-24 sm:h-32 items-center justify-center text-center">
