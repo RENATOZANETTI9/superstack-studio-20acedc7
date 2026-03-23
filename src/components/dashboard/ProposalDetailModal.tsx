@@ -25,6 +25,7 @@ interface ProposalDetailModalProps {
   proposal: Proposal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onMarketingActivated?: (proposalId: string) => void;
 }
 
 interface BankStatus {
