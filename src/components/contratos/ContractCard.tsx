@@ -89,7 +89,10 @@ const ContractCard = ({ contract, onViewDetails, isMobile, marketingStatus }: Co
       </p>
 
       {/* Marketing Trigger Status */}
-      <div className="mt-2 pt-2 border-t border-border/50">
+      <div
+        className="mt-2 pt-2 border-t border-border/50 cursor-pointer rounded-md transition-colors hover:bg-muted/50 -mx-1 px-1 py-1"
+        onClick={() => onViewDetails(contract)}
+      >
         {allTriggersActive ? (
           <div className="flex items-center gap-1.5 text-success">
             <CheckCircle className="h-3.5 w-3.5" />
