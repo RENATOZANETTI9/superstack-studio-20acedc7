@@ -157,75 +157,31 @@ const PipelineColumn = ({
               {/* Marketing Actions for Approved */}
               {status === 'aprovada' && (
                 <div className="border-t border-border/50 pt-2 sm:pt-3">
-                  <p className="mb-1.5 sm:mb-2 text-[10px] sm:text-xs font-semibold uppercase text-muted-foreground">
-                    Gatilhos de Marketing
-                  </p>
-                  <div className="flex gap-1 sm:gap-2">
-                    <Button
-                      variant={proposal.marketingActions?.sms ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.sms && 'bg-success hover:bg-success/90'
-                      )}
-                      onClick={() => onAction?.(proposal.id, 'sms')}
-                    >
-                      <MessageSquare className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      SMS
-                    </Button>
-                    <Button
-                      variant={proposal.marketingActions?.email ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.email && 'bg-success hover:bg-success/90'
-                      )}
-                      onClick={() => onAction?.(proposal.id, 'email')}
-                    >
-                      <Mail className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      Email
-                    </Button>
-                    <Button
-                      variant={proposal.marketingActions?.call ? 'default' : 'outline'}
-                      size="sm"
-                      className={cn(
-                        'h-7 sm:h-8 flex-1 text-[10px] sm:text-xs px-1 sm:px-2',
-                        proposal.marketingActions?.call && 'bg-success hover:bg-success/90'
-                      )}
-                      onClick={() => onAction?.(proposal.id, 'call')}
-                    >
-                      <Phone className="mr-0.5 sm:mr-1 h-3 w-3" />
-                      IA
-                    </Button>
-                  </div>
-
-                  {/* Status dos gatilhos */}
-                  {(proposal.marketingActions?.sms || proposal.marketingActions?.email || proposal.marketingActions?.call) && (
-                    <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
-                      {proposal.marketingActions.sms && (
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
-                          <Send className="mr-0.5 h-2 w-2" />
-                          SMS
-                        </Badge>
-                      )}
-                      {proposal.marketingActions.email && (
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
-                          <Send className="mr-0.5 h-2 w-2" />
-                          Email
-                        </Badge>
-                      )}
-                      {proposal.marketingActions.call && (
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
-                          <Send className="mr-0.5 h-2 w-2" />
-                          Ligação
-                        </Badge>
-                      )}
+                  {allTriggersActive ? (
+                    <div className="flex items-center gap-1.5 text-success">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span className="text-[10px] sm:text-xs font-semibold">Gatilhos Ativados</span>
                     </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-success/50 text-success hover:bg-success hover:text-success-foreground transition-colors"
+                      onClick={() => {
+                        onAction?.(proposal.id, 'sms');
+                        onAction?.(proposal.id, 'email');
+                        onAction?.(proposal.id, 'call');
+                      }}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Ativar Gatilho de Marketing
+                    </Button>
                   )}
                 </div>
               )}
             </motion.div>
-          ))}
+            );
+          })}
 
           {filteredProposals.length === 0 && (
             <div className="flex h-24 sm:h-32 items-center justify-center text-center">
