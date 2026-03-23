@@ -46,6 +46,7 @@ interface PipelineColumnProps {
   onAction?: (proposalId: string, action: 'sms' | 'email' | 'call') => void;
   onViewDetails?: (proposal: Proposal) => void;
   isMobile?: boolean;
+  activatedProposals?: Set<string>;
 }
 
 const PipelineColumn = ({ 
@@ -57,7 +58,8 @@ const PipelineColumn = ({
   tooltip,
   onAction,
   onViewDetails,
-  isMobile
+  isMobile,
+  activatedProposals = new Set()
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
 
