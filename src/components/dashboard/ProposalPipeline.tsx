@@ -46,6 +46,7 @@ interface PipelineColumnProps {
   onAction?: (proposalId: string, action: 'sms' | 'email' | 'call') => void;
   onViewDetails?: (proposal: Proposal) => void;
   isMobile?: boolean;
+  activatedProposals?: Set<string>;
 }
 
 const PipelineColumn = ({ 
@@ -57,7 +58,8 @@ const PipelineColumn = ({
   tooltip,
   onAction,
   onViewDetails,
-  isMobile
+  isMobile,
+  activatedProposals = new Set()
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
 
@@ -98,7 +100,10 @@ const PipelineColumn = ({
         <div className="space-y-2 sm:space-y-3 pr-2">
           {filteredProposals.map((proposal) => {
             const allTriggersActive = proposal.marketingActions?.sms && proposal.marketingActions?.email && proposal.marketingActions?.call;
-            const shouldPulse = status === 'aprovada' && !allTriggersActive;
+            const manuallyActivated = activatedProposals.has(proposal.id);
+            const triggersDone = allTriggersActive || manuallyActivated;
+            const shouldPulse = status === 'aprovada' && !triggersDone;
+            const showActivatedState = status === 'aprovada' && triggersDone;
 
             return (
             <motion.div
@@ -110,7 +115,9 @@ const PipelineColumn = ({
                 "relative rounded-lg sm:rounded-xl p-3 sm:p-4 overflow-hidden transition-colors duration-500",
                 shouldPulse 
                   ? "bg-success/[0.06] border border-success/30 shadow-[0_0_16px_-4px_hsl(var(--success)/0.2)]" 
-                  : "glass-card"
+                  : showActivatedState
+                    ? "bg-warning/[0.08] border border-warning/30"
+                    : "glass-card"
               )}
             >
               {/* Subtle animated accent bar on left edge */}
@@ -120,6 +127,11 @@ const PipelineColumn = ({
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                 />
+              )}
+
+              {/* Yellow accent bar for activated */}
+              {showActivatedState && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-warning" />
               )}
 
               {/* "Ação necessária" micro-badge */}
@@ -166,10 +178,10 @@ const PipelineColumn = ({
               {/* Marketing Actions for Approved */}
               {status === 'aprovada' && (
                 <div className="border-t border-border/50 pt-2 sm:pt-3">
-                  {allTriggersActive ? (
-                    <div className="flex items-center gap-1.5 text-success">
+                  {triggersDone ? (
+                    <div className="flex items-center gap-1.5 text-warning">
                       <CheckCircle className="h-3.5 w-3.5" />
-                      <span className="text-[10px] sm:text-xs font-semibold">Gatilhos Ativados</span>
+                      <span className="text-[10px] sm:text-xs font-semibold">Gatilhos de marketing ativados</span>
                     </div>
                   ) : (
                     <Button
@@ -209,6 +221,7 @@ export interface ProposalPipelineProps {
 const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProps) => {
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [activatedProposals, setActivatedProposals] = useState<Set<string>>(new Set());
   const [showScrollHint, setShowScrollHint] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -216,6 +229,10 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const handleViewDetails = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setDetailModalOpen(true);
+  };
+
+  const handleMarketingActivated = (proposalId: string) => {
+    setActivatedProposals(prev => new Set(prev).add(proposalId));
   };
 
   // Hide scroll hint after user scrolls
@@ -271,6 +288,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
             onAction={onMarketingAction}
             onViewDetails={handleViewDetails}
             isMobile={isMobile}
+            activatedProposals={activatedProposals}
           />
           <PipelineColumn
             title="Declinados"
@@ -317,6 +335,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         proposal={selectedProposal}
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
+        onMarketingActivated={handleMarketingActivated}
       />
     </>
   );

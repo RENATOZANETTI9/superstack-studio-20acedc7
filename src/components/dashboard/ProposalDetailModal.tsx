@@ -25,6 +25,7 @@ interface ProposalDetailModalProps {
   proposal: Proposal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onMarketingActivated?: (proposalId: string) => void;
 }
 
 interface BankStatus {
@@ -56,7 +57,7 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
   linkContrato: proposal.status === 'aprovada' ? 'https://exemplo.com/contrato' : undefined,
 });
 
-const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailModalProps) => {
+const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated }: ProposalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
   const [newValue, setNewValue] = useState('');
@@ -161,7 +162,12 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange }: ProposalDetailMod
                 />
               </div>
             </div>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => console.log('Ativar gatilho de marketing', { telefone, email })}>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => {
+              console.log('Ativar gatilho de marketing', { telefone, email });
+              if (proposal) {
+                onMarketingActivated?.(proposal.id);
+              }
+            }}>
               <Send className="h-4 w-4" />
               Ativar gatilho de marketing
             </Button>
