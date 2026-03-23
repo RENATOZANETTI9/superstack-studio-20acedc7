@@ -36,6 +36,8 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
   const [newObservation, setNewObservation] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [returnTime, setReturnTime] = useState('');
+  const [marketingTelefone, setMarketingTelefone] = useState('');
+  const [marketingEmail, setMarketingEmail] = useState('');
 
   if (!contract) return null;
 
