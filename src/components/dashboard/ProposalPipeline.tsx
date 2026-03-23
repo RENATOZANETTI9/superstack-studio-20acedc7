@@ -288,6 +288,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
             onAction={onMarketingAction}
             onViewDetails={handleViewDetails}
             isMobile={isMobile}
+            activatedProposals={activatedProposals}
           />
           <PipelineColumn
             title="Declinados"
