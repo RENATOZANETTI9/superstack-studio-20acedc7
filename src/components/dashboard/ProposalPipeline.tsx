@@ -100,12 +100,31 @@ const PipelineColumn = ({
       {/* Proposals */}
       <ScrollArea className="flex-1">
         <div className="space-y-2 sm:space-y-3 pr-2">
-          {filteredProposals.map((proposal) => (
+          {filteredProposals.map((proposal) => {
+            const allTriggersActive = proposal.marketingActions?.sms && proposal.marketingActions?.email && proposal.marketingActions?.call;
+            const shouldPulse = status === 'aprovada' && !allTriggersActive;
+
+            return (
             <motion.div
               key={proposal.id}
               initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-lg sm:rounded-xl p-3 sm:p-4"
+              animate={shouldPulse ? { 
+                opacity: 1, y: 0,
+                boxShadow: [
+                  '0 0 0 0 hsla(var(--success), 0)',
+                  '0 0 12px 4px hsla(var(--success), 0.3)',
+                  '0 0 0 0 hsla(var(--success), 0)',
+                ],
+              } : { opacity: 1, y: 0 }}
+              transition={shouldPulse ? { 
+                boxShadow: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
+                opacity: { duration: 0.3 },
+                y: { duration: 0.3 },
+              } : { duration: 0.3 }}
+              className={cn(
+                "glass-card rounded-lg sm:rounded-xl p-3 sm:p-4",
+                shouldPulse && "border-success/40"
+              )}
             >
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
