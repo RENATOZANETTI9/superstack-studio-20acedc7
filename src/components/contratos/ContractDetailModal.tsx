@@ -176,6 +176,40 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">Gerado em: {formatDate(contract.link_generated_at)}</p>
               </div>
+
+              {/* Dados para gatilhos de marketing */}
+              <div className="border-t border-border/50 pt-4 space-y-4">
+                <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Dados para gatilhos de marketing</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Telefone</Label>
+                    <Input
+                      type="tel"
+                      value={marketingTelefone}
+                      onChange={(e) => setMarketingTelefone(e.target.value)}
+                      placeholder="(00) 00000-0000"
+                      className="bg-background/50"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Email</Label>
+                    <Input
+                      type="email"
+                      value={marketingEmail}
+                      onChange={(e) => setMarketingEmail(e.target.value)}
+                      placeholder="email@exemplo.com"
+                      className="bg-background/50"
+                    />
+                  </div>
+                </div>
+                <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => {
+                  console.log('Ativar gatilho de marketing (crédito)', { marketingTelefone, marketingEmail, contractId: contract.id });
+                  toast.success('Gatilhos de marketing ativados!');
+                }}>
+                  <Send className="h-4 w-4" />
+                  Ativar gatilho de marketing
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="auditoria" className="p-4 sm:p-6 pt-4 space-y-3 m-0">
