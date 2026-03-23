@@ -38,6 +38,7 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
   const [returnTime, setReturnTime] = useState('');
   const [marketingTelefone, setMarketingTelefone] = useState('');
   const [marketingEmail, setMarketingEmail] = useState('');
+  const [marketingActivated, setMarketingActivated] = useState(false);
 
   if (!contract) return null;
 
