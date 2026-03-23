@@ -219,6 +219,7 @@ export interface ProposalPipelineProps {
 const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProps) => {
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [activatedProposals, setActivatedProposals] = useState<Set<string>>(new Set());
   const [showScrollHint, setShowScrollHint] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -226,6 +227,10 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const handleViewDetails = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setDetailModalOpen(true);
+  };
+
+  const handleMarketingActivated = (proposalId: string) => {
+    setActivatedProposals(prev => new Set(prev).add(proposalId));
   };
 
   // Hide scroll hint after user scrolls
