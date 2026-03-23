@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Contract, ContractStatus } from '@/types/contracts';
+import type { ContractMarketingStatus } from '@/hooks/useContracts';
 import ContractCard from './ContractCard';
 import ContractDetailModal from './ContractDetailModal';
 
