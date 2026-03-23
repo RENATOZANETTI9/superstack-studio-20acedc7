@@ -203,13 +203,37 @@ const ContractDetailModal = ({ contract, open, onOpenChange, onRegenerate }: Con
                     />
                   </div>
                 </div>
-                <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={() => {
-                  console.log('Ativar gatilho de marketing (crédito)', { marketingTelefone, marketingEmail, contractId: contract.id });
-                  toast.success('Gatilhos de marketing ativados!');
-                }}>
-                  <Send className="h-4 w-4" />
-                  Ativar gatilho de marketing
-                </Button>
+                {marketingActivated ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/30">
+                    <Check className="h-5 w-5 text-success" />
+                    <span className="text-sm font-semibold text-success">Gatilhos de marketing ativados com sucesso!</span>
+                  </div>
+                ) : (
+                  <Button className="gap-2 bg-primary hover:bg-primary/90 w-full" onClick={async () => {
+                    if (!user) return;
+                    // Insert history records for SMS, Email, and Call triggers
+                    const items = [
+                      { type: 'Mensagem', status: 'Enviado' },
+                      { type: 'E-mail', status: 'Enviado' },
+                      { type: 'Ligação', status: 'Enviado' },
+                    ];
+                    for (const item of items) {
+                      await addHistoryItem({
+                        contract_id: contract.id,
+                        date: new Date().toISOString(),
+                        user_name: user.email || 'Usuário',
+                        type: item.type,
+                        status: item.status,
+                        observation: `Gatilho de marketing ativado. Tel: ${marketingTelefone || '—'}, Email: ${marketingEmail || '—'}`,
+                      });
+                    }
+                    setMarketingActivated(true);
+                    toast.success('Gatilhos de marketing ativados!');
+                  }}>
+                    <Send className="h-4 w-4" />
+                    Ativar gatilho de marketing
+                  </Button>
+                )}
               </div>
             </TabsContent>
 
