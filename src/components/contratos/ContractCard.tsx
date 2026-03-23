@@ -109,10 +109,18 @@ const ContractCard = ({ contract, onViewDetails, isMobile, marketingStatus }: Co
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Send className="h-3 w-3" />
-            <span className="text-[10px] sm:text-xs font-medium">Gatilhos Pendentes</span>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-warning/50 text-warning hover:bg-warning hover:text-warning-foreground transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails(contract);
+            }}
+          >
+            <Send className="h-3.5 w-3.5" />
+            Gatilhos Pendentes
+          </Button>
         )}
       </div>
 
