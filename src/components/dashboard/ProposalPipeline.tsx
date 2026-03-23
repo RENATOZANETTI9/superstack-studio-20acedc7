@@ -114,35 +114,35 @@ const PipelineColumn = ({
               className={cn(
                 "relative rounded-lg sm:rounded-xl p-3 sm:p-4 overflow-hidden transition-colors duration-500",
                 shouldPulse 
-                  ? "bg-success/[0.06] border border-success/30 shadow-[0_0_16px_-4px_hsl(var(--success)/0.2)]" 
+                  ? "bg-warning/[0.08] border border-warning/30 shadow-[0_0_16px_-4px_hsl(var(--warning)/0.2)]" 
                   : showActivatedState
-                    ? "bg-warning/[0.08] border border-warning/30"
+                    ? "bg-success/[0.06] border border-success/30"
                     : "glass-card"
               )}
             >
-              {/* Subtle animated accent bar on left edge */}
+              {/* Animated accent bar for pending */}
               {shouldPulse && (
                 <motion.div
-                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-success"
+                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-warning"
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                 />
               )}
 
-              {/* Yellow accent bar for activated */}
+              {/* Green accent bar for activated */}
               {showActivatedState && (
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-warning" />
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-success" />
               )}
 
               {/* "Ação necessária" micro-badge */}
               {shouldPulse && (
                 <div className="mb-2 flex items-center gap-1.5">
                   <motion.div
-                    className="h-1.5 w-1.5 rounded-full bg-success"
+                    className="h-1.5 w-1.5 rounded-full bg-warning"
                     animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
                     transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
                   />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-success">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-warning">
                     Ação necessária
                   </span>
                 </div>
@@ -179,7 +179,7 @@ const PipelineColumn = ({
               {status === 'aprovada' && (
                 <div className="border-t border-border/50 pt-2 sm:pt-3">
                   {triggersDone ? (
-                    <div className="flex items-center gap-1.5 text-warning">
+                    <div className="flex items-center gap-1.5 text-success">
                       <CheckCircle className="h-3.5 w-3.5" />
                       <span className="text-[10px] sm:text-xs font-semibold">Gatilhos de marketing ativados</span>
                     </div>
@@ -187,7 +187,7 @@ const PipelineColumn = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-success/50 text-success hover:bg-success hover:text-success-foreground transition-colors"
+                      className="w-full h-8 sm:h-9 text-xs sm:text-sm gap-1.5 border-warning/50 text-warning hover:bg-warning hover:text-warning-foreground transition-colors"
                       onClick={() => onViewDetails?.(proposal)}
                     >
                       <Send className="h-3.5 w-3.5" />
