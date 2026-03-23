@@ -98,7 +98,10 @@ const PipelineColumn = ({
         <div className="space-y-2 sm:space-y-3 pr-2">
           {filteredProposals.map((proposal) => {
             const allTriggersActive = proposal.marketingActions?.sms && proposal.marketingActions?.email && proposal.marketingActions?.call;
-            const shouldPulse = status === 'aprovada' && !allTriggersActive;
+            const manuallyActivated = activatedProposals.has(proposal.id);
+            const triggersDone = allTriggersActive || manuallyActivated;
+            const shouldPulse = status === 'aprovada' && !triggersDone;
+            const showActivatedState = status === 'aprovada' && triggersDone;
 
             return (
             <motion.div
@@ -110,7 +113,9 @@ const PipelineColumn = ({
                 "relative rounded-lg sm:rounded-xl p-3 sm:p-4 overflow-hidden transition-colors duration-500",
                 shouldPulse 
                   ? "bg-success/[0.06] border border-success/30 shadow-[0_0_16px_-4px_hsl(var(--success)/0.2)]" 
-                  : "glass-card"
+                  : showActivatedState
+                    ? "bg-warning/[0.08] border border-warning/30"
+                    : "glass-card"
               )}
             >
               {/* Subtle animated accent bar on left edge */}
@@ -120,6 +125,11 @@ const PipelineColumn = ({
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                 />
+              )}
+
+              {/* Yellow accent bar for activated */}
+              {showActivatedState && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-warning" />
               )}
 
               {/* "Ação necessária" micro-badge */}
