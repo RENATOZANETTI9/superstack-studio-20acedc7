@@ -38,7 +38,19 @@ Deno.serve(async (req) => {
     const secondaryCnaes = (data.cnaes_secundarios || []).map((c: any) => c.codigo?.toString() || '');
     const allCnaes = [mainCnae, ...secondaryCnaes];
     
-    const healthPrefixes = ['86', '325', '477']; // 86=saude, 325=equipamentos medicos, 477=farmacia
+    const healthPrefixes = [
+      '86',   // Saúde humana (clínicas, hospitais, consultórios)
+      '75',   // Atividades veterinárias
+      '325',  // Equipamentos médicos e odontológicos
+      '477',  // Farmácias e perfumarias
+      '8650', // Atividades de profissionais da saúde (fisioterapia, psicologia, fonoaudiologia)
+      '8690', // Atividades de atenção à saúde humana (laboratórios, diagnóstico por imagem)
+      '8630', // Atenção ambulatorial (policlínicas)
+      '8640', // Serviços de complementação diagnóstica/terapêutica
+      '3250', // Fabricação de instrumentos e materiais médico-odontológicos
+      '4773', // Comércio de artigos médicos e ortopédicos
+      '4771', // Comércio de produtos farmacêuticos
+    ];
     const isHealthArea = allCnaes.some((cnae: string) => 
       healthPrefixes.some(prefix => cnae.startsWith(prefix))
     );
