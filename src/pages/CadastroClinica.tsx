@@ -13,10 +13,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const ESPECIALIDADES = [
-{ id: "saude", label: "Outras área da saúde", icon: Stethoscope },
 { id: "odontologia", label: "Odontologia", icon: Stethoscope },
+{ id: "estetica", label: "Estética", icon: Sparkles },
 { id: "ortopedia", label: "Ortopedia", icon: Stethoscope },
-{ id: "estetica", label: "Estética", icon: Sparkles }];
+{ id: "psiquiatria", label: "Psiquiatria", icon: Stethoscope },
+{ id: "dermatologia", label: "Dermatologia", icon: Stethoscope },
+{ id: "saude", label: "Outras áreas da Saúde", icon: Stethoscope }];
 
 
 function formatCNPJ(value: string) {
