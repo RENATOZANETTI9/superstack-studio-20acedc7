@@ -20,7 +20,6 @@ const Header = () => {
     { name: 'Níveis', href: '#pricing' },
     { name: 'Sobre', href: '#hero' },
     { name: 'Contato', href: '#contact' },
-    { name: 'Cadastro Clínica', href: '/cadastroclinica', isRoute: true },
   ];
 
   return (
@@ -47,25 +46,15 @@ const Header = () => {
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center gap-8">
-                {navLinks.map((link) =>
-                  link.isRoute ? (
-                    <Link
-                      key={link.name}
-                      to={link.href}
-                      className="text-white/80 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      {link.name}
-                    </Link>
-                  ) : (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      className="text-white/80 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      {link.name}
-                    </a>
-                  )
-                )}
+                {navLinks.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-white/80 hover:text-white transition-colors text-sm font-medium"
+                  >
+                    {link.name}
+                  </a>
+                ))}
               </nav>
 
               {/* Desktop CTA */}
@@ -107,27 +96,16 @@ const Header = () => {
                 className="md:hidden pt-4 pb-2"
               >
                 <nav className="flex flex-col gap-2">
-                  {navLinks.map((link) =>
-                    link.isRoute ? (
-                      <Link
-                        key={link.name}
-                        to={link.href}
-                        className="text-white/80 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {link.name}
-                      </Link>
-                    ) : (
-                      <a
-                        key={link.name}
-                        href={link.href}
-                        className="text-white/80 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {link.name}
-                      </a>
-                    )
-                  )}
+                  {navLinks.map((link) => (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      className="text-white/80 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.name}
+                    </a>
+                  ))}
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
                     <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="hero" className="w-full">
