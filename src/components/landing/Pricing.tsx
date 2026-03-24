@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Check, FileText, Lock, Star, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 interface PlanFeature {
@@ -183,13 +184,15 @@ const Pricing = () => {
                 </div>
               )}
 
-              <Button
-                variant="heroOutline"
-                className="w-full"
-                size="lg"
-              >
-                {plan.name === 'Nível Básico' ? 'Começar Grátis' : plan.name === 'Nível Profissional' ? 'Evoluir para Profissional' : 'Falar com Consultor'}
-              </Button>
+              <Link to="/cadastroclinica">
+                <Button
+                  variant="heroOutline"
+                  className="w-full"
+                  size="lg"
+                >
+                  {plan.name === 'Nível Básico' ? 'Começar Grátis' : plan.name === 'Nível Profissional' ? 'Evoluir para Profissional' : 'Falar com Consultor'}
+                </Button>
+              </Link>
             </motion.div>
           ))}
         </div>
