@@ -376,7 +376,7 @@ export default function CadastroClinica() {
                 }
                   <Button
                   onClick={handleSubmitEmail}
-                  disabled={!email}
+                  disabled={!email || !isValidPhone(whatsapp)}
                   className="w-full h-12"
                   variant="hero">
                   
