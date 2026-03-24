@@ -70,9 +70,9 @@ const Header = () => {
 
               {/* Desktop CTA */}
               <div className="hidden md:flex items-center gap-3">
-                <Link to="/auth">
+                <Link to="/cadastroclinica">
                   <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
-                    Entrar
+                    Cadastro da Clínica
                   </Button>
                 </Link>
                 <Link to="/auth">
