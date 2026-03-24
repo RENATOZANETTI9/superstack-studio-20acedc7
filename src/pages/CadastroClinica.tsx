@@ -47,7 +47,7 @@ function isValidCNPJ(cnpj: string) {
 }
 
 const StepIndicator = ({ currentStep, totalSteps }: {currentStep: number;totalSteps: number;}) =>
-<div className="flex w-full items-center justify-center gap-2 mb-8">
+<div className="flex w-fit items-center justify-center gap-2 mb-8 mx-auto">
     {Array.from({ length: totalSteps }, (_, i) =>
   <div key={i} className="flex items-center gap-2">
         <div
