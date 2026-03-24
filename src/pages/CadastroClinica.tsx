@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const ESPECIALIDADES = [
-{ id: "saude", label: "Área da saúde", icon: Stethoscope },
+{ id: "saude", label: "Outras área da saúde", icon: Stethoscope },
 { id: "odontologia", label: "Odontologia", icon: Stethoscope },
 { id: "ortopedia", label: "Ortopedia", icon: Stethoscope },
 { id: "estetica", label: "Estética", icon: Sparkles }];
