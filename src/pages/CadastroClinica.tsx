@@ -220,6 +220,12 @@ export default function CadastroClinica() {
                   <Building2 className="w-4 h-4" />
                   <span className="text-sm font-semibold">Cadastro de Clínica</span>
                 </motion.div>
+                <button
+                  onClick={() => window.history.back()}
+                  className="absolute top-0 left-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Voltar
+                </button>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">O Banco da sua clínica
 
               </h2>
