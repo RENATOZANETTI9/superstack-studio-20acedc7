@@ -339,7 +339,7 @@ export default function CadastroClinica() {
                     </motion.div>
                 }
                   <label className="text-sm font-semibold text-foreground">
-                    Informe seu e-mail para acesso
+                    Informe seu e-mail e WhatsApp
                   </label>
                   <Input
                   type="email"
@@ -351,6 +351,18 @@ export default function CadastroClinica() {
                   }}
                   className="h-12"
                   autoFocus />
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={whatsapp}
+                    onChange={(e) => {
+                      setWhatsapp(formatPhone(e.target.value));
+                      setError(null);
+                    }}
+                    className="h-12 pl-10" />
+                  </div>
                 
                   {error &&
                 <motion.div
