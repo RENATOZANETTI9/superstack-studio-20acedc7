@@ -20,7 +20,6 @@ const Header = () => {
     { name: 'Níveis', href: '#pricing' },
     { name: 'Sobre', href: '#hero' },
     { name: 'Contato', href: '#contact' },
-    { name: 'Cadastro Clínica', href: '/cadastroclinica', isRoute: true },
   ];
 
   return (
