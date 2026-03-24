@@ -141,6 +141,7 @@ export default function CadastroClinica() {
         body: {
           cnpj: cnpj.replace(/\D/g, ""),
           email,
+          whatsapp: whatsapp.replace(/\D/g, ""),
           especialidade,
           razao_social: razaoSocial
         }
