@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Stethoscope, Building2, Mail, Loader2, CheckCircle2,
   ArrowRight, Sparkles, TrendingUp, Bot, MessageSquare,
-  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle } from
+  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle, Phone } from
 "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -25,6 +25,17 @@ function formatCNPJ(value: string) {
   replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").
   replace(/\.(\d{3})(\d)/, ".$1/$2").
   replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+function formatPhone(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function isValidPhone(phone: string) {
+  return phone.replace(/\D/g, "").length >= 10;
 }
 
 function isValidEmail(email: string) {
@@ -71,6 +82,7 @@ export default function CadastroClinica() {
   const [cnpjValido, setCnpjValido] = useState(false);
   const [razaoSocial, setRazaoSocial] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validatingCnpj, setValidatingCnpj] = useState(false);
@@ -116,6 +128,10 @@ export default function CadastroClinica() {
       setError("O e-mail informado não parece válido. Por favor, revise para continuar.");
       return;
     }
+    if (!isValidPhone(whatsapp)) {
+      setError("Informe um número de WhatsApp válido com DDD.");
+      return;
+    }
     setError(null);
     setStep(4);
     setLoading(true);
@@ -125,6 +141,7 @@ export default function CadastroClinica() {
         body: {
           cnpj: cnpj.replace(/\D/g, ""),
           email,
+          whatsapp: whatsapp.replace(/\D/g, ""),
           especialidade,
           razao_social: razaoSocial
         }
@@ -322,7 +339,7 @@ export default function CadastroClinica() {
                     </motion.div>
                 }
                   <label className="text-sm font-semibold text-foreground">
-                    Informe seu e-mail para acesso
+                    Informe seu e-mail e WhatsApp
                   </label>
                   <Input
                   type="email"
@@ -334,6 +351,18 @@ export default function CadastroClinica() {
                   }}
                   className="h-12"
                   autoFocus />
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={whatsapp}
+                    onChange={(e) => {
+                      setWhatsapp(formatPhone(e.target.value));
+                      setError(null);
+                    }}
+                    className="h-12 pl-10" />
+                  </div>
                 
                   {error &&
                 <motion.div
@@ -347,7 +376,7 @@ export default function CadastroClinica() {
                 }
                   <Button
                   onClick={handleSubmitEmail}
-                  disabled={!email}
+                  disabled={!email || !isValidPhone(whatsapp)}
                   className="w-full h-12"
                   variant="hero">
                   
