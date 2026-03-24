@@ -46,25 +46,15 @@ const Header = () => {
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center gap-8">
-                {navLinks.map((link) =>
-                  link.isRoute ? (
-                    <Link
-                      key={link.name}
-                      to={link.href}
-                      className="text-white/80 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      {link.name}
-                    </Link>
-                  ) : (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      className="text-white/80 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      {link.name}
-                    </a>
-                  )
-                )}
+                {navLinks.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-white/80 hover:text-white transition-colors text-sm font-medium"
+                  >
+                    {link.name}
+                  </a>
+                ))}
               </nav>
 
               {/* Desktop CTA */}
