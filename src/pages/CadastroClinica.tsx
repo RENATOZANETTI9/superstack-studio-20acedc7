@@ -204,7 +204,7 @@ export default function CadastroClinica() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center mb-6">
+              className="text-center mb-6 relative">
               
                 <motion.div
                 animate={{
