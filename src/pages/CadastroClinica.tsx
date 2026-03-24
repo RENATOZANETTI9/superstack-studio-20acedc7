@@ -82,6 +82,7 @@ export default function CadastroClinica() {
   const [cnpjValido, setCnpjValido] = useState(false);
   const [razaoSocial, setRazaoSocial] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validatingCnpj, setValidatingCnpj] = useState(false);
