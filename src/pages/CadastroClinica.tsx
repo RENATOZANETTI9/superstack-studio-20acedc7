@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Stethoscope, Building2, Mail, Loader2, CheckCircle2,
   ArrowRight, Sparkles, TrendingUp, Bot, MessageSquare,
-  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle, Phone } from
+  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle, Phone, ArrowLeft } from
 "lucide-react";
+import logoHelpude from "@/assets/logo-helpude.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -174,11 +175,11 @@ export default function CadastroClinica() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--helpude-purple-dark))] via-[hsl(259,51%,20%)] to-[hsl(var(--helpude-teal-dark))] flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Background effects */}
+      {/* Background logo pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+        <img src={logoHelpude} alt="" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-auto opacity-[0.04]" />
+        <img src={logoHelpude} alt="" className="absolute top-10 left-10 w-40 h-auto opacity-[0.03] rotate-[-15deg]" />
+        <img src={logoHelpude} alt="" className="absolute bottom-10 right-10 w-48 h-auto opacity-[0.03] rotate-[15deg]" />
       </div>
 
       {/* Logo */}
@@ -186,10 +187,7 @@ export default function CadastroClinica() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6 z-10">
-        
-        <h1 className="text-2xl font-bold text-primary-foreground tracking-tight">
-          Help<span className="text-secondary">Ude</span>
-        </h1>
+        <img src={logoHelpude} alt="HelpUde" className="h-10 md:h-12 w-auto" />
       </motion.div>
 
       {/* Main Card */}
@@ -206,7 +204,7 @@ export default function CadastroClinica() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center mb-6">
+              className="text-center mb-6 relative">
               
                 <motion.div
                 animate={{
@@ -222,6 +220,12 @@ export default function CadastroClinica() {
                   <Building2 className="w-4 h-4" />
                   <span className="text-sm font-semibold">Cadastro de Clínica</span>
                 </motion.div>
+                <button
+                  onClick={() => window.history.back()}
+                  className="absolute top-0 left-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Voltar
+                </button>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">O Banco da sua clínica
 
               </h2>
@@ -239,7 +243,7 @@ export default function CadastroClinica() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
 className="text-xs text-muted-foreground text-center mb-6 bg-muted/50 rounded-lg p-3">
-  Para começar, precisamos de 3 informações: sua especialidade, seu CNPJ e seu e-mail. Se o CNPJ for da área da saúde, você já recebe acesso automático ao sistema..
+  Para começar, precisamos de 3 informações: <strong>sua especialidade</strong>, <strong>seu CNPJ</strong> e <strong>seu e-mail</strong>. Se o CNPJ for da área da saúde, você já recebe <strong>acesso automático</strong> ao sistema.
 </motion.p>
             }
 
