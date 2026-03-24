@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Stethoscope, Building2, Mail, Loader2, CheckCircle2,
   ArrowRight, Sparkles, TrendingUp, Bot, MessageSquare,
-  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle, Phone } from
+  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle, Phone, ArrowLeft } from
 "lucide-react";
+import logoHelpude from "@/assets/logo-helpude.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
