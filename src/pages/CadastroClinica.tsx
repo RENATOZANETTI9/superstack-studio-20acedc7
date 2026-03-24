@@ -128,6 +128,10 @@ export default function CadastroClinica() {
       setError("O e-mail informado não parece válido. Por favor, revise para continuar.");
       return;
     }
+    if (!isValidPhone(whatsapp)) {
+      setError("Informe um número de WhatsApp válido com DDD.");
+      return;
+    }
     setError(null);
     setStep(4);
     setLoading(true);
