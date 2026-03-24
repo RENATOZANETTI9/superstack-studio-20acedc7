@@ -187,10 +187,7 @@ export default function CadastroClinica() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6 z-10">
-        
-        <h1 className="text-2xl font-bold text-primary-foreground tracking-tight">
-          Help<span className="text-secondary">Ude</span>
-        </h1>
+        <img src={logoHelpude} alt="HelpUde" className="h-10 md:h-12 w-auto" />
       </motion.div>
 
       {/* Main Card */}
