@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Stethoscope, Building2, Mail, Loader2, CheckCircle2,
   ArrowRight, Sparkles, TrendingUp, Bot, MessageSquare,
-  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle } from
+  RotateCcw, ChevronRight, Shield, Zap, AlertTriangle, Phone } from
 "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
