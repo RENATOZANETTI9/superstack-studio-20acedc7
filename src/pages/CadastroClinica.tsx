@@ -237,11 +237,9 @@ export default function CadastroClinica() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-xs text-muted-foreground text-center mb-6 bg-muted/50 rounded-lg p-3">Para começar, precisamos de 3 informações: sua especialidade, seu CNPJ e seu e-mail. Se o CNPJ for da área da saúde, você já recebe acesso automático ao sistema..
-
-              <strong>sua especialidade</strong>, <strong>seu CNPJ</strong> e <strong>seu e-mail</strong>.
-                Se sua clínica for da área da saúde, você já recebe acesso automático ao sistema.
-              </motion.p>
+className="text-xs text-muted-foreground text-center mb-6 bg-muted/50 rounded-lg p-3">
+  Para começar, precisamos de 3 informações: sua especialidade, seu CNPJ e seu e-mail. Se o CNPJ for da área da saúde, você já recebe acesso automático ao sistema..
+</motion.p>
             }
 
             <AnimatePresence mode="wait">
