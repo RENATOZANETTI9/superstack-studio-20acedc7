@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const ESPECIALIDADES = [
-{ id: "saude", label: "Qualquer área da saúde", icon: Stethoscope },
+{ id: "saude", label: "Área da saúde", icon: Stethoscope },
 { id: "odontologia", label: "Odontologia", icon: Stethoscope },
 { id: "ortopedia", label: "Ortopedia", icon: Stethoscope },
 { id: "estetica", label: "Estética", icon: Sparkles }];
@@ -36,7 +36,7 @@ function isValidCNPJ(cnpj: string) {
 }
 
 const StepIndicator = ({ currentStep, totalSteps }: {currentStep: number;totalSteps: number;}) =>
-<div className="flex items-center justify-center gap-2 mb-8">
+<div className="flex items-center gap-2 mb-8">
     {Array.from({ length: totalSteps }, (_, i) =>
   <div key={i} className="flex items-center gap-2">
         <div
@@ -220,7 +220,7 @@ export default function CadastroClinica() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-xs text-muted-foreground text-center mb-6 bg-muted/50 rounded-lg p-3">Para começar, precisamos de 3 informações: sua especialidade, seu CNPJ e seu e-mail. Se o CNPJ for da área da saúde, você já recebe acesso automático ao sistema.
+              className="text-xs text-muted-foreground text-center mb-6 bg-muted/50 rounded-lg p-3">Para começar, precisamos de 3 informações: sua especialidade, seu CNPJ e seu e-mail. Se o CNPJ for da área da saúde, você já recebe acesso automático ao sistema..
 
               <strong>sua especialidade</strong>, <strong>seu CNPJ</strong> e <strong>seu e-mail</strong>.
                 Se sua clínica for da área da saúde, você já recebe acesso automático ao sistema.
