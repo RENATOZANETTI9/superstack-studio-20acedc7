@@ -6,7 +6,9 @@ import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipel
 import ComboCardMini from '@/components/dashboard/ComboCardMini';
 
 import { toast } from 'sonner';
-import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone } from 'lucide-react';
+import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone, Zap } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +31,7 @@ const Consultas = () => {
   const [consultasRestantes, setConsultasRestantes] = useState(50);
   const [gatilhosRestantes, setGatilhosRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [autoGatilhos, setAutoGatilhos] = useState(true);
   const isMobile = useIsMobile();
 
   const handlePullRefresh = useCallback(async () => {
@@ -331,19 +334,42 @@ const Consultas = () => {
                     </div>
                     <div className="border-t border-border/50 pt-3">
                       <p className="text-xs font-semibold text-foreground mb-2">Se aprovado, enviamos automaticamente:</p>
-                      <div className="flex justify-center gap-3">
-                        <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                          <MessageSquare className="h-4 w-4 text-primary mb-1" />
+                      <div className="flex justify-center gap-3 mb-4">
+                        <div className={cn("flex flex-col items-center p-2 rounded-lg transition-all duration-300", autoGatilhos ? "bg-primary/15" : "bg-muted/30 opacity-50")}>
+                          <MessageSquare className={cn("h-4 w-4 mb-1 transition-colors", autoGatilhos ? "text-primary" : "text-muted-foreground")} />
                           <span className="text-xs font-medium text-foreground">SMS</span>
                         </div>
-                        <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                          <Mail className="h-4 w-4 text-primary mb-1" />
+                        <div className={cn("flex flex-col items-center p-2 rounded-lg transition-all duration-300", autoGatilhos ? "bg-primary/15" : "bg-muted/30 opacity-50")}>
+                          <Mail className={cn("h-4 w-4 mb-1 transition-colors", autoGatilhos ? "text-primary" : "text-muted-foreground")} />
                           <span className="text-xs font-medium text-foreground">Email</span>
                         </div>
-                        <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                          <Phone className="h-4 w-4 text-primary mb-1" />
+                        <div className={cn("flex flex-col items-center p-2 rounded-lg transition-all duration-300", autoGatilhos ? "bg-primary/15" : "bg-muted/30 opacity-50")}>
+                          <Phone className={cn("h-4 w-4 mb-1 transition-colors", autoGatilhos ? "text-primary" : "text-muted-foreground")} />
                           <span className="text-xs font-medium text-foreground">IA</span>
                         </div>
+                      </div>
+
+                      {/* Toggle automático */}
+                      <div className={cn(
+                        "flex items-center justify-between rounded-xl p-3 transition-all duration-300 border",
+                        autoGatilhos 
+                          ? "bg-primary/10 border-primary/30" 
+                          : "bg-muted/20 border-border/50"
+                      )}>
+                        <div className="flex items-center gap-2">
+                          <Zap className={cn("h-4 w-4 transition-colors", autoGatilhos ? "text-primary" : "text-muted-foreground")} />
+                          <Label htmlFor="auto-gatilhos" className="text-xs font-medium cursor-pointer select-none">
+                            Gatilhos automáticos
+                          </Label>
+                        </div>
+                        <Switch
+                          id="auto-gatilhos"
+                          checked={autoGatilhos}
+                          onCheckedChange={(checked) => {
+                            setAutoGatilhos(checked);
+                            toast.success(checked ? '⚡ Gatilhos automáticos ativados!' : '⏸️ Gatilhos automáticos desativados');
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
