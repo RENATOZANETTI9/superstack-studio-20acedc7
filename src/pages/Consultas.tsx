@@ -29,6 +29,7 @@ const Consultas = () => {
   const [consultasRestantes, setConsultasRestantes] = useState(50);
   const [gatilhosRestantes, setGatilhosRestantes] = useState(50);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [autoGatilhos, setAutoGatilhos] = useState(true);
   const isMobile = useIsMobile();
 
   const handlePullRefresh = useCallback(async () => {
