@@ -6,7 +6,9 @@ import ProposalPipeline, { Proposal } from '@/components/dashboard/ProposalPipel
 import ComboCardMini from '@/components/dashboard/ComboCardMini';
 
 import { toast } from 'sonner';
-import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone } from 'lucide-react';
+import { CreditCard, FileText, RefreshCw, Check, Clock, MessageSquare, Mail, Phone, Zap } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
