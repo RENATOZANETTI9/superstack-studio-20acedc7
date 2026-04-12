@@ -28,6 +28,7 @@ import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
 import RegisterPartner from "./pages/RegisterPartner";
 import CadastroClinica from "./pages/CadastroClinica";
+import CadastroPartner from "./pages/CadastroPartner";
 
 const queryClient = new QueryClient();
 
