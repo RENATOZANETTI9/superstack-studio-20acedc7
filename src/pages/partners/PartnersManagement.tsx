@@ -142,9 +142,16 @@ const PartnersManagement = () => {
       (filterClinicStatus === 'HAS_BOTH' && activeClinicsCount > 0 && inactiveClinicsCount > 0);
     const totalConsultas = pClinics.reduce((s, c) => s + (c.consultations_count || 0), 0);
     const matchMinConsultas = !filterMinConsultas || totalConsultas >= Number(filterMinConsultas);
+    const matchHasSimulations = filterHasSimulations === 'ALL' ||
+      (filterHasSimulations === 'WITH' && totalConsultas > 0) ||
+      (filterHasSimulations === 'WITHOUT' && totalConsultas === 0);
+    const totalPaidCount = pClinics.reduce((s, c) => s + (c.paid_count || 0), 0);
+    const matchHasPaidContracts = filterHasPaidContracts === 'ALL' ||
+      (filterHasPaidContracts === 'WITH' && totalPaidCount > 0) ||
+      (filterHasPaidContracts === 'WITHOUT' && totalPaidCount === 0);
     const matchDateFrom = !dateFrom || new Date(p.created_at) >= dateFrom;
     const matchDateTo = !dateTo || new Date(p.created_at) <= new Date(dateTo.getTime() + 86400000);
-    return matchSearch && matchType && matchStatus && matchMinClinics && matchClinicStatus && matchMinConsultas && matchDateFrom && matchDateTo;
+    return matchSearch && matchType && matchStatus && matchMinClinics && matchClinicStatus && matchMinConsultas && matchHasSimulations && matchHasPaidContracts && matchDateFrom && matchDateTo;
   });
 
   // Render Master Partner detail - focus on indicated partners, not clinics directly
