@@ -140,26 +140,28 @@ export default function CadastroPartner() {
     setLoading(true);
 
     try {
-      // Create auth user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: senha,
-        options: { emailRedirectTo: window.location.origin },
+      // Call edge function to create user + partner record
+      const { data, error: fnError } = await supabase.functions.invoke('register-partner-public', {
+        body: {
+          email,
+          password: senha,
+          legal_name: nomeCompleto.trim(),
+          document_number: cpf,
+          phone: whatsapp.replace(/\D/g, ''),
+          categoria,
+        },
       });
 
-      if (signUpError) throw signUpError;
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
 
-      const userId = signUpData.user?.id;
-      if (!userId) throw new Error("Erro ao criar usuário");
-
-      // Auto sign-in
+      // Auto sign-in after backend created the user
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
       });
 
       if (signInError) {
-        // If auto-confirm is off, user needs to verify email first
         setLoading(false);
         setStep(5);
         return;
@@ -174,9 +176,9 @@ export default function CadastroPartner() {
       }, 4000);
     } catch (err: any) {
       setLoading(false);
-      const msg = err?.message?.includes("already been registered")
+      const msg = err?.message?.includes("já está cadastrado")
         ? "Este email já está cadastrado no sistema."
-        : "Erro ao criar sua conta. Tente novamente.";
+        : err?.message || "Erro ao criar sua conta. Tente novamente.";
       setError(msg);
       setStep(3);
     }
