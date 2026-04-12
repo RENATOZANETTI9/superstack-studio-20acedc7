@@ -11,6 +11,7 @@ import BonificacaoTiersInfo from '@/components/partners/BonificacaoTiersInfo';
 import BonificacaoMimosTab from '@/components/partners/BonificacaoMimosTab';
 import BonificacaoPixTab from '@/components/partners/BonificacaoPixTab';
 import BonificacaoCommissionsTab from '@/components/partners/BonificacaoCommissionsTab';
+import BonificacaoEvolutionChart from '@/components/partners/BonificacaoEvolutionChart';
 
 const PartnersBonificacoes = () => {
   const { role, user } = useAuth();
@@ -181,6 +182,8 @@ const PartnersBonificacoes = () => {
         />
 
         <BonificacaoTiersInfo />
+
+        <BonificacaoEvolutionChart commissions={filteredCommissions} />
 
         <Tabs defaultValue="mimos">
           <TabsList className="flex-wrap h-auto gap-1">
