@@ -36,6 +36,8 @@ const PartnersManagement = () => {
   const [filterMinClinics, setFilterMinClinics] = useState('');
   const [filterClinicStatus, setFilterClinicStatus] = useState('ALL');
   const [filterMinConsultas, setFilterMinConsultas] = useState('');
+  const [filterHasSimulations, setFilterHasSimulations] = useState('ALL');
+  const [filterHasPaidContracts, setFilterHasPaidContracts] = useState('ALL');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -140,9 +142,16 @@ const PartnersManagement = () => {
       (filterClinicStatus === 'HAS_BOTH' && activeClinicsCount > 0 && inactiveClinicsCount > 0);
     const totalConsultas = pClinics.reduce((s, c) => s + (c.consultations_count || 0), 0);
     const matchMinConsultas = !filterMinConsultas || totalConsultas >= Number(filterMinConsultas);
+    const matchHasSimulations = filterHasSimulations === 'ALL' ||
+      (filterHasSimulations === 'WITH' && totalConsultas > 0) ||
+      (filterHasSimulations === 'WITHOUT' && totalConsultas === 0);
+    const totalPaidCount = pClinics.reduce((s, c) => s + (c.paid_count || 0), 0);
+    const matchHasPaidContracts = filterHasPaidContracts === 'ALL' ||
+      (filterHasPaidContracts === 'WITH' && totalPaidCount > 0) ||
+      (filterHasPaidContracts === 'WITHOUT' && totalPaidCount === 0);
     const matchDateFrom = !dateFrom || new Date(p.created_at) >= dateFrom;
     const matchDateTo = !dateTo || new Date(p.created_at) <= new Date(dateTo.getTime() + 86400000);
-    return matchSearch && matchType && matchStatus && matchMinClinics && matchClinicStatus && matchMinConsultas && matchDateFrom && matchDateTo;
+    return matchSearch && matchType && matchStatus && matchMinClinics && matchClinicStatus && matchMinConsultas && matchHasSimulations && matchHasPaidContracts && matchDateFrom && matchDateTo;
   });
 
   // Render Master Partner detail - focus on indicated partners, not clinics directly
@@ -490,6 +499,26 @@ const PartnersManagement = () => {
               </Select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+              <Select value={filterHasSimulations} onValueChange={setFilterHasSimulations}>
+                <SelectTrigger><SelectValue placeholder="Simulações" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas (Simulações)</SelectItem>
+                  <SelectItem value="WITH">Com Simulações</SelectItem>
+                  <SelectItem value="WITHOUT">Sem Simulações</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterHasPaidContracts} onValueChange={setFilterHasPaidContracts}>
+                <SelectTrigger><SelectValue placeholder="Contratos Pagos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos (Contratos Pagos)</SelectItem>
+                  <SelectItem value="WITH">Com Contratos Pagos</SelectItem>
+                  <SelectItem value="WITHOUT">Sem Contratos Pagos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input placeholder="Mín. clínicas vinculadas" type="number" value={filterMinClinics} onChange={e => setFilterMinClinics(e.target.value)} />
+              <Input placeholder="Mín. consultas no período" type="number" value={filterMinConsultas} onChange={e => setFilterMinConsultas(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
@@ -510,13 +539,12 @@ const PartnersManagement = () => {
                   <CalendarComponent mode="single" selected={dateTo} onSelect={setDateTo} className="p-3 pointer-events-auto" locale={ptBR} />
                 </PopoverContent>
               </Popover>
-              <Input placeholder="Mín. clínicas vinculadas" type="number" value={filterMinClinics} onChange={e => setFilterMinClinics(e.target.value)} />
-              <Input placeholder="Mín. consultas no período" type="number" value={filterMinConsultas} onChange={e => setFilterMinConsultas(e.target.value)} />
             </div>
-            {(search || filterType !== 'ALL' || filterStatus !== 'ALL' || filterClinicStatus !== 'ALL' || filterMinClinics || filterMinConsultas || dateFrom || dateTo) && (
+            {(search || filterType !== 'ALL' || filterStatus !== 'ALL' || filterClinicStatus !== 'ALL' || filterMinClinics || filterMinConsultas || filterHasSimulations !== 'ALL' || filterHasPaidContracts !== 'ALL' || dateFrom || dateTo) && (
               <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => {
                 setSearch(''); setFilterType('ALL'); setFilterStatus('ALL'); setFilterClinicStatus('ALL');
-                setFilterMinClinics(''); setFilterMinConsultas(''); setDateFrom(undefined); setDateTo(undefined);
+                setFilterMinClinics(''); setFilterMinConsultas(''); setFilterHasSimulations('ALL'); setFilterHasPaidContracts('ALL');
+                setDateFrom(undefined); setDateTo(undefined);
               }}>✕ Limpar filtros</Button>
             )}
           </CardContent>
