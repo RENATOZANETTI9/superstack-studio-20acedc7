@@ -84,6 +84,7 @@ const PartnersSimulator = () => {
 
   return (
     <DashboardLayout>
+      <PartnerOnboarding />
       <div className="space-y-4 sm:space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
