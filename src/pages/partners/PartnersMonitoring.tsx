@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MOCK_ALERTS, MOCK_COMMISSIONS, MOCK_CONFIG_HISTORY, withMockFallback } from '@/lib/mock-data';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,9 +38,9 @@ const PartnersMonitoring = () => {
       supabase.from('partner_config_history').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(100),
     ]);
-    setAlerts(alertsRes.data || []);
-    setConfigHistory(historyRes.data || []);
-    setCommissions(commsRes.data || []);
+    setAlerts(withMockFallback(alertsRes.data, MOCK_ALERTS));
+    setConfigHistory(withMockFallback(historyRes.data, MOCK_CONFIG_HISTORY));
+    setCommissions(withMockFallback(commsRes.data, MOCK_COMMISSIONS));
     setLoading(false);
   };
 

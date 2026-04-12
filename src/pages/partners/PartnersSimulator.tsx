@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, Target, DollarSign, Info, Lock, EyeOff } from 'lucide-react';
+import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
 
@@ -17,15 +17,14 @@ const PartnersSimulator = () => {
   const ref = PARTNER_RULES.SEH_REFERENCE;
   const [clinics, setClinics] = useState(5);
   const [consultationsMonth, setConsultationsMonth] = useState(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
-  const [approvalRate, setApprovalRate] = useState(ref.APPROVAL_RATE * 100); // 10%
-  const [paidRate, setPaidRate] = useState(ref.PAID_RATE * 100); // 10%
+  const [approvalRate, setApprovalRate] = useState(ref.APPROVAL_RATE * 100);
+  const [paidRate, setPaidRate] = useState(ref.PAID_RATE * 100);
   const [avgTicket, setAvgTicket] = useState(ref.AVG_TICKET);
   const [weights, setWeights] = useState(PARTNER_RULES.SEH_WEIGHTS);
   const [rates, setRates] = useState({ direct: PARTNER_RULES.COMMISSION_RATE_DIRECT, override: PARTNER_RULES.COMMISSION_RATE_OVERRIDE });
 
   useEffect(() => { loadConfig(); }, []);
 
-  // Recalculate consultations when clinics change
   useEffect(() => {
     setConsultationsMonth(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
   }, [clinics]);
@@ -53,8 +52,8 @@ const PartnersSimulator = () => {
     if (r.commission_rate_override) setRates(prev => ({ ...prev, override: r.commission_rate_override }));
   };
 
-  // SEH Calculation - only Volume + Conversion
-  const metaSimulacoes = clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS; // expected simulations
+  // SEH Calculation
+  const metaSimulacoes = clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS;
   const pilarVolume = metaSimulacoes > 0 ? Math.min((consultationsMonth / metaSimulacoes) * 100, 100) : 0;
   const pilarConversion = (approvalRate * 0.5 + paidRate * 0.5);
   const seh = (pilarVolume * weights.volume) + (pilarConversion * weights.conversion);
@@ -72,120 +71,127 @@ const PartnersSimulator = () => {
   const directCommission = totalPaidValue * rates.direct;
   const yearlyProjection = directCommission * 12;
 
+  // Funnel data
+  const funnelSteps = [
+    { label: 'Simulações/Mês', value: consultationsMonth, color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50' },
+    { label: 'Aprovados (10%)', value: approvedContracts, color: 'bg-amber-500', textColor: 'text-amber-700', bgLight: 'bg-amber-50' },
+    { label: 'Pagos (10%)', value: paidContracts, color: 'bg-green-500', textColor: 'text-green-700', bgLight: 'bg-green-50' },
+    { label: 'Valor Total', value: totalPaidValue, color: 'bg-emerald-600', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', isCurrency: true },
+  ];
+
+  const maxVal = Math.max(consultationsMonth, 1);
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Calculator className="h-6 w-6" /> Simulador de Projeção
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Calculator className="h-5 w-5 sm:h-6 sm:w-6" /> Simulador de Projeção
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Simule cenários de ganho e performance.
             {isPartner && (
               <span className="inline-flex items-center gap-1 ml-2 text-amber-600">
-                <Lock className="h-3 w-3" /> Alguns parâmetros estratégicos são ocultos para este perfil.
+                <Lock className="h-3 w-3" /> Alguns parâmetros estratégicos são ocultos.
               </span>
             )}
           </p>
         </div>
 
         <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-foreground">
-              <strong>💡 Como usar:</strong> Ajuste os parâmetros para simular diferentes cenários. 
-              O SEH considera <strong>Volume de Simulações ({(weights.volume * 100).toFixed(0)}%)</strong> e <strong>Conversão ({(weights.conversion * 100).toFixed(0)}%)</strong>.
-              {isPartner && ' Você pode editar: quantidade de clínicas, simulações/mês e ticket médio.'}
+          <CardContent className="pt-3 pb-3 sm:pt-4 sm:pb-4">
+            <p className="text-xs sm:text-sm text-foreground">
+              <strong>💡 Como usar:</strong> Ajuste os parâmetros para simular cenários. 
+              Volume ({(weights.volume * 100).toFixed(0)}%) e Conversão ({(weights.conversion * 100).toFixed(0)}%).
             </p>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Input Panel */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-primary" />
-                Parâmetros de Simulação
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Calculator className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                Parâmetros
               </CardTitle>
-              <CardDescription>
-                {isPartner 
-                  ? 'Ajuste os campos editáveis para simular cenários operacionais.'
-                  : 'Todos os parâmetros estão disponíveis para simulação completa.'}
+              <CardDescription className="text-xs sm:text-sm">
+                {isPartner ? 'Ajuste os campos editáveis.' : 'Todos os parâmetros disponíveis.'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    Clínicas Vinculadas
+                  <label className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    Clínicas
                     <Tooltip>
                       <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                      <TooltipContent>Quantidade total de clínicas vinculadas ao partner</TooltipContent>
+                      <TooltipContent>Clínicas vinculadas ao partner</TooltipContent>
                     </Tooltip>
                   </label>
-                  <Input type="number" value={clinics} onChange={e => setClinics(Number(e.target.value))} min={0} />
+                  <Input type="number" value={clinics} onChange={e => setClinics(Number(e.target.value))} min={0} className="h-9" />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <label className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
                     Simulações/Mês
                     <Tooltip>
                       <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                      <TooltipContent>Volume mensal de simulações (ref: {ref.SIMULATIONS_PER_DAY} por clínica/dia × {ref.WORKING_DAYS} dias úteis)</TooltipContent>
+                      <TooltipContent>Ref: {ref.SIMULATIONS_PER_DAY}/clínica/dia × {ref.WORKING_DAYS} dias</TooltipContent>
                     </Tooltip>
                   </label>
-                  <Input type="number" value={consultationsMonth} onChange={e => setConsultationsMonth(Number(e.target.value))} min={0} />
+                  <Input type="number" value={consultationsMonth} onChange={e => setConsultationsMonth(Number(e.target.value))} min={0} className="h-9" />
                 </div>
 
                 {!isPartner ? (
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                      Taxa Aprovação (%)
+                    <label className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Aprovação (%)
                       <Tooltip>
                         <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                        <TooltipContent>Percentual de simulações que viram propostas aprovadas (ref: {ref.APPROVAL_RATE * 100}%)</TooltipContent>
+                        <TooltipContent>Ref: {ref.APPROVAL_RATE * 100}%</TooltipContent>
                       </Tooltip>
                     </label>
-                    <Input type="number" value={approvalRate} onChange={e => setApprovalRate(Number(e.target.value))} min={0} max={100} />
+                    <Input type="number" value={approvalRate} onChange={e => setApprovalRate(Number(e.target.value))} min={0} max={100} className="h-9" />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50 text-muted-foreground text-xs">
-                    <EyeOff className="h-3 w-3 mr-1" /> Parâmetro restrito
+                  <div className="flex items-center justify-center p-2 rounded-lg bg-muted/50 text-muted-foreground text-xs">
+                    <EyeOff className="h-3 w-3 mr-1" /> Restrito
                   </div>
                 )}
 
                 {!isPartner ? (
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                      Taxa Pagamento (%)
+                    <label className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Pagamento (%)
                       <Tooltip>
                         <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                        <TooltipContent>Percentual de aprovados que se tornam pagos (ref: {ref.PAID_RATE * 100}%)</TooltipContent>
+                        <TooltipContent>Ref: {ref.PAID_RATE * 100}%</TooltipContent>
                       </Tooltip>
                     </label>
-                    <Input type="number" value={paidRate} onChange={e => setPaidRate(Number(e.target.value))} min={0} max={100} />
+                    <Input type="number" value={paidRate} onChange={e => setPaidRate(Number(e.target.value))} min={0} max={100} className="h-9" />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50 text-muted-foreground text-xs">
-                    <EyeOff className="h-3 w-3 mr-1" /> Parâmetro restrito
+                  <div className="flex items-center justify-center p-2 rounded-lg bg-muted/50 text-muted-foreground text-xs">
+                    <EyeOff className="h-3 w-3 mr-1" /> Restrito
                   </div>
                 )}
 
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
                     Ticket Médio (R$)
                     <Tooltip>
                       <TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger>
-                      <TooltipContent>Valor médio por contrato pago (ref: R$ {formatCurrency(ref.AVG_TICKET)})</TooltipContent>
+                      <TooltipContent>Ref: R$ {formatCurrency(ref.AVG_TICKET)}</TooltipContent>
                     </Tooltip>
                   </label>
-                  <Input type="number" value={avgTicket} onChange={e => setAvgTicket(Number(e.target.value))} min={0} />
+                  <Input type="number" value={avgTicket} onChange={e => setAvgTicket(Number(e.target.value))} min={0} className="h-9" />
                 </div>
               </div>
 
               {isPartner && (
-                <p className="text-xs text-muted-foreground p-2 bg-muted/50 rounded-lg">
-                  🔒 Os campos <strong>taxa de aprovação e pagamento</strong> são parâmetros estratégicos e não estão disponíveis para edição neste perfil. Valores padrão do sistema são utilizados.
+                <p className="text-[10px] sm:text-xs text-muted-foreground p-2 bg-muted/50 rounded-lg">
+                  🔒 Taxas de aprovação e pagamento são parâmetros estratégicos restritos.
                 </p>
               )}
             </CardContent>
@@ -193,74 +199,102 @@ const PartnersSimulator = () => {
 
           {/* Results Panel */}
           <div className="space-y-4">
+            {/* Funnel Chart */}
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10">
-                      <Target className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Score SEH Projetado</p>
-                      <p className="text-3xl font-bold">{sehScore.toFixed(1)}</p>
-                    </div>
-                  </div>
-                  <Badge className={TYPE_COLORS[level === 'ELITE' || level === 'OURO' ? 'MASTER' : 'PARTNER']}>{level}</Badge>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  Funil de Conversão
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <div className="space-y-1">
+                  {funnelSteps.map((step, i) => {
+                    const widthPercent = step.isCurrency
+                      ? 30
+                      : Math.max((step.value / maxVal) * 100, 8);
+                    return (
+                      <div key={step.label}>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-full">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[10px] sm:text-xs text-muted-foreground">{step.label}</span>
+                              <span className={`text-xs sm:text-sm font-bold ${step.textColor}`}>
+                                {step.isCurrency ? `R$ ${formatCurrency(step.value)}` : step.value.toLocaleString('pt-BR')}
+                              </span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-6 sm:h-8 flex items-center overflow-hidden">
+                              <div
+                                className={`${step.color} h-full rounded-full transition-all duration-500 flex items-center justify-center min-w-[2rem]`}
+                                style={{ width: `${widthPercent}%` }}
+                              >
+                                <span className="text-[9px] sm:text-[10px] text-white font-medium truncate px-1">
+                                  {step.isCurrency ? `R$ ${formatCurrency(step.value)}` : step.value}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {i < funnelSteps.length - 1 && (
+                          <div className="flex justify-center py-0.5">
+                            <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground/50" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      Pilar Volume ({(weights.volume * 100).toFixed(0)}%)
-                      <Tooltip><TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger><TooltipContent>Simulações realizadas vs meta ({metaSimulacoes}/mês)</TooltipContent></Tooltip>
-                    </span>
-                    <span className="font-medium">{pilarVolume.toFixed(1)}</span>
+              </CardContent>
+            </Card>
+
+            {/* Financial Results */}
+            <Card>
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      Pilar Conversão ({(weights.conversion * 100).toFixed(0)}%)
-                      <Tooltip><TooltipTrigger><Info className="h-3 w-3" /></TooltipTrigger><TooltipContent>Média entre taxa de aprovação e taxa de pagamento</TooltipContent></Tooltip>
-                    </span>
-                    <span className="font-medium">{pilarConversion.toFixed(1)}</span>
+                  <div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Projeção Financeira</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Taxa: {(rates.direct * 100).toFixed(1)}%</p>
+                  </div>
+                </div>
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <span className="text-xs sm:text-sm font-medium">Bonificação/Mês</span>
+                    <span className="font-bold text-green-600 text-sm sm:text-base">R$ {formatCurrency(directCommission)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <span className="text-xs sm:text-sm font-medium">Projeção Anual</span>
+                    <span className="font-bold text-green-600 text-base sm:text-lg">R$ {formatCurrency(yearlyProjection)}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* SEH Score */}
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <DollarSign className="h-5 w-5 text-green-500" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">SEH Projetado</p>
+                      <p className="text-2xl sm:text-3xl font-bold">{sehScore.toFixed(1)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Projeção Financeira</p>
-                    <p className="text-xs text-muted-foreground">Taxa de bonificação direta: {(rates.direct * 100).toFixed(1)}%</p>
-                  </div>
+                  <Badge className={TYPE_COLORS[level === 'ELITE' || level === 'OURO' ? 'MASTER' : 'PARTNER']}>{level}</Badge>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                    <span className="text-sm">Simulações/Mês</span>
-                    <span className="font-bold">{consultationsMonth}</span>
+                <div className="space-y-1 text-xs sm:text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Volume ({(weights.volume * 100).toFixed(0)}%)</span>
+                    <span className="font-medium">{pilarVolume.toFixed(1)}</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                    <span className="text-sm">Propostas Aprovadas</span>
-                    <span className="font-bold">{approvedContracts}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                    <span className="text-sm">Contratos Pagos/Mês</span>
-                    <span className="font-bold">{paidContracts}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                    <span className="text-sm">Valor Pago/Mês</span>
-                    <span className="font-bold">R$ {formatCurrency(totalPaidValue)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <span className="text-sm font-medium">Bonificação Direta/Mês</span>
-                    <span className="font-bold text-green-600">R$ {formatCurrency(directCommission)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <span className="text-sm font-medium">Projeção Anual</span>
-                    <span className="font-bold text-green-600 text-lg">R$ {formatCurrency(yearlyProjection)}</span>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Conversão ({(weights.conversion * 100).toFixed(0)}%)</span>
+                    <span className="font-medium">{pilarConversion.toFixed(1)}</span>
                   </div>
                 </div>
               </CardContent>

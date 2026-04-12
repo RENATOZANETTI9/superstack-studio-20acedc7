@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { MOCK_COMMISSIONS, MOCK_INCENTIVES, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,10 +48,10 @@ const PartnersBonificacoes = () => {
       supabase.from('partner_clinic_relations').select('clinic_external_id, clinic_name, partner_id'),
     ]);
 
-    setCommissions(comRes.data || []);
-    setIncentives(incRes.data || []);
+    setCommissions(withMockFallback(comRes.data, MOCK_COMMISSIONS));
+    setIncentives(withMockFallback(incRes.data, MOCK_INCENTIVES));
     setMyPartner(partnerRes.data);
-    setClinicRelations(clinicRes.data || []);
+    setClinicRelations(withMockFallback(clinicRes.data, MOCK_CLINICS.map(c => ({ clinic_external_id: c.clinic_external_id, clinic_name: c.clinic_name, partner_id: c.partner_id }))));
     setLoading(false);
   }, [user]);
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { MOCK_PARTNERS, MOCK_CLINICS, MOCK_NETWORK, withMockFallback } from '@/lib/mock-data';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,9 +58,9 @@ const PartnersNetwork = () => {
       supabase.from('partners').select('*'),
       supabase.from('partner_clinic_relations').select('*'),
     ]);
-    setNetwork(networkRes.data || []);
-    setPartners(partnersRes.data || []);
-    setClinics(clinicsRes.data || []);
+    setNetwork(withMockFallback(networkRes.data, MOCK_NETWORK));
+    setPartners(withMockFallback(partnersRes.data, MOCK_PARTNERS));
+    setClinics(withMockFallback(clinicsRes.data, MOCK_CLINICS));
     setLoading(false);
   };
 
