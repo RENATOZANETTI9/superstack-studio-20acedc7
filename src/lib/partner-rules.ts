@@ -41,9 +41,9 @@ export const PARTNER_RULES = {
     /** Working days per month */
     WORKING_DAYS: 20,
     /** Approval rate reference */
-    APPROVAL_RATE: 0.20,
-    /** Paid rate (of approved) reference */
-    PAID_RATE: 0.40,
+    APPROVAL_RATE: 0.10,
+    /** Paid rate (of total simulations) reference */
+    PAID_RATE: 0.10,
     /** Average ticket */
     AVG_TICKET: 3500,
   },

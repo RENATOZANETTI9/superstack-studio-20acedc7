@@ -17,8 +17,8 @@ const PartnersSimulator = () => {
   const ref = PARTNER_RULES.SEH_REFERENCE;
   const [clinics, setClinics] = useState(5);
   const [consultationsMonth, setConsultationsMonth] = useState(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
-  const [approvalRate, setApprovalRate] = useState(ref.APPROVAL_RATE * 100);
-  const [paidRate, setPaidRate] = useState(ref.PAID_RATE * 100);
+  const [approvalRate, setApprovalRate] = useState(ref.APPROVAL_RATE * 100); // 10%
+  const [paidRate, setPaidRate] = useState(ref.PAID_RATE * 100); // 10%
   const [avgTicket, setAvgTicket] = useState(ref.AVG_TICKET);
   const [weights, setWeights] = useState(PARTNER_RULES.SEH_WEIGHTS);
   const [rates, setRates] = useState({ direct: PARTNER_RULES.COMMISSION_RATE_DIRECT, override: PARTNER_RULES.COMMISSION_RATE_OVERRIDE });
