@@ -495,20 +495,12 @@ const PartnersManagement = () => {
               </Select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-              <Select value={filterHasSimulations} onValueChange={setFilterHasSimulations}>
-                <SelectTrigger><SelectValue placeholder="Simulações" /></SelectTrigger>
+              <Select value={filterClinicActivity} onValueChange={setFilterClinicActivity}>
+                <SelectTrigger><SelectValue placeholder="Clínicas por atividade" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">Todas (Simulações)</SelectItem>
-                  <SelectItem value="WITH">Com Simulações</SelectItem>
-                  <SelectItem value="WITHOUT">Sem Simulações</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterHasPaidContracts} onValueChange={setFilterHasPaidContracts}>
-                <SelectTrigger><SelectValue placeholder="Contratos Pagos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Todos (Contratos Pagos)</SelectItem>
-                  <SelectItem value="WITH">Com Contratos Pagos</SelectItem>
-                  <SelectItem value="WITHOUT">Sem Contratos Pagos</SelectItem>
+                  <SelectItem value="ALL">Todos</SelectItem>
+                  <SelectItem value="PAID">Pagos</SelectItem>
+                  <SelectItem value="SIMULATED">Simulados</SelectItem>
                 </SelectContent>
               </Select>
               <Input placeholder="Mín. clínicas vinculadas" type="number" value={filterMinClinics} onChange={e => setFilterMinClinics(e.target.value)} />
