@@ -14,19 +14,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import PartnerCharts from '@/components/partners/PartnerCharts';
 import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
 
-const levelColors: Record<string, string> = {
-  BRONZE: 'bg-amber-700 text-white',
-  PRATA: 'bg-gray-400 text-white',
-  OURO: 'bg-yellow-500 text-white',
-  ELITE: 'bg-purple-600 text-white',
+const typeColors: Record<string, string> = {
+  PARTNER: 'bg-primary text-white',
+  MASTER: 'bg-purple-600 text-white',
 };
-
-const levelRanges = [
-  { level: 'ELITE', min: 85, max: 100, color: 'bg-purple-600', desc: 'Acesso total, taxa máxima, mentoria exclusiva' },
-  { level: 'OURO', min: 70, max: 84.9, color: 'bg-yellow-500', desc: 'Dashboard premium, taxa preferencial' },
-  { level: 'PRATA', min: 50, max: 69.9, color: 'bg-gray-400', desc: 'Relatórios avançados, prioridade no suporte' },
-  { level: 'BRONZE', min: 0, max: 49.9, color: 'bg-amber-700', desc: 'Acesso básico, link de cadastro de clínicas' },
-];
 
 const sehPillars = [
   { name: 'Volume', weight: '50%', desc: 'Simulações realizadas vs meta mensal' },
@@ -72,8 +63,6 @@ const PartnersDashboard = () => {
     ? (partners.reduce((sum, p) => sum + Number(p.seh_score || 0), 0) / partners.length).toFixed(1) 
     : '0';
 
-  const levelDist = { ELITE: 0, OURO: 0, PRATA: 0, BRONZE: 0 };
-  partners.forEach(p => { if (levelDist[p.current_level as keyof typeof levelDist] !== undefined) levelDist[p.current_level as keyof typeof levelDist]++; });
 
   return (
     <DashboardLayout>
@@ -136,31 +125,17 @@ const PartnersDashboard = () => {
           </CardContent></Card>
         </div>
 
-        {/* SEH Level Guide + Distribution */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-4 w-4" /> Níveis de Partner (SEH)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {levelRanges.map(lr => (
-                <div key={lr.level} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                  <Badge className={`${lr.color} text-white min-w-[70px] justify-center`}>{lr.level}</Badge>
-                  <div className="flex-1"><p className="text-sm font-medium">SEH {lr.min}–{lr.max}</p><p className="text-xs text-muted-foreground">{lr.desc}</p></div>
-                  <span className="text-lg font-bold">{levelDist[lr.level as keyof typeof levelDist]}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Distribuição por Tipo</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+        {/* Distribution by Type */}
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Distribuição por Tipo</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10">
                 <span className="text-sm">Master Partners</span>
                 <span className="text-lg font-bold text-purple-600">{partners.filter(p => p.type === 'MASTER').length}</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <span className="text-sm">Partners Comuns</span>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10">
+                <span className="text-sm">Partners</span>
                 <span className="text-lg font-bold">{partners.filter(p => p.type === 'PARTNER').length}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10">
@@ -171,9 +146,12 @@ const PartnersDashboard = () => {
                 <span className="text-sm">Clínicas Inativas</span>
                 <span className="text-lg font-bold text-muted-foreground">{clinics.filter(c => !c.is_active).length}</span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3 p-2 bg-purple-50 rounded border border-purple-200">
+              💡 Para se tornar <strong>Master Partner</strong>, a rede do partner precisa atingir <strong>R$ 30.000,00</strong> em créditos pagos para procedimentos.
+            </p>
+          </CardContent>
+        </Card>
 
         <PartnerCharts metrics={metrics} commissions={commissions} />
 
@@ -209,7 +187,7 @@ const PartnersDashboard = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Badge className={levelColors[partner.current_level] || 'bg-muted'}>{partner.current_level}</Badge>
+                            <Badge className={typeColors[partner.type] || 'bg-muted'}>{partner.type === 'MASTER' ? 'Master Partner' : 'Partner'}</Badge>
                             <div className="text-right">
                               <p className="text-sm font-medium">SEH: {Number(partner.seh_score || 0).toFixed(1)}</p>
                               <Badge variant={partner.status === 'ACTIVE' ? 'default' : partner.status === 'SUSPENDED' ? 'destructive' : 'secondary'}>
