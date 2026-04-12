@@ -112,6 +112,11 @@ const Header = () => {
                     </a>
                   ))}
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
+                    <Link to="/cadastropartner" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="heroOutline" className="w-full text-white border-white/30">
+                        Help Partner
+                      </Button>
+                    </Link>
                     <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="hero" className="w-full">
                         Acessar Sistema
