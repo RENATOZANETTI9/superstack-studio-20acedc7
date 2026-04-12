@@ -535,7 +535,6 @@ const PartnersManagement = () => {
                 setDateFrom(undefined); setDateTo(undefined);
               }}>✕ Limpar filtros</Button>
             )}
-            )}
           </CardContent>
         </Card>
 
