@@ -528,12 +528,13 @@ const PartnersManagement = () => {
                 </PopoverContent>
               </Popover>
             </div>
-            {(search || filterType !== 'ALL' || filterStatus !== 'ALL' || filterClinicStatus !== 'ALL' || filterMinClinics || filterMinConsultas || filterHasSimulations !== 'ALL' || filterHasPaidContracts !== 'ALL' || dateFrom || dateTo) && (
+            {(search || filterType !== 'ALL' || filterStatus !== 'ALL' || filterClinicStatus !== 'ALL' || filterMinClinics || filterMinConsultas || filterClinicActivity !== 'ALL' || dateFrom || dateTo) && (
               <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => {
                 setSearch(''); setFilterType('ALL'); setFilterStatus('ALL'); setFilterClinicStatus('ALL');
-                setFilterMinClinics(''); setFilterMinConsultas(''); setFilterHasSimulations('ALL'); setFilterHasPaidContracts('ALL');
+                setFilterMinClinics(''); setFilterMinConsultas(''); setFilterClinicActivity('ALL');
                 setDateFrom(undefined); setDateTo(undefined);
               }}>✕ Limpar filtros</Button>
+            )}
             )}
           </CardContent>
         </Card>
