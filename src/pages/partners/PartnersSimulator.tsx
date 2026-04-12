@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
+import PartnerOnboarding from '@/components/partners/PartnerOnboarding';
 
 const PartnersSimulator = () => {
   const { role } = useAuth();
@@ -83,6 +84,7 @@ const PartnersSimulator = () => {
 
   return (
     <DashboardLayout>
+      <PartnerOnboarding />
       <div className="space-y-4 sm:space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
