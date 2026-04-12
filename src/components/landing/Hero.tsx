@@ -121,9 +121,9 @@ const Hero = () => {
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link to="/auth">
+            <Link to="/cadastropartner">
               <Button variant="heroOutline" size="xl">
-                Já tenho conta
+                Help Partner
               </Button>
             </Link>
           </motion.div>
