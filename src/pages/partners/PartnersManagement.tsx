@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { MOCK_PARTNERS, MOCK_CLINICS, MOCK_LINKS, MOCK_NETWORK, withMockFallback } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,10 +61,10 @@ const PartnersManagement = () => {
       supabase.from('partner_links').select('*'),
       supabase.from('partner_network').select('*'),
     ]);
-    setPartners(pRes.data || []);
-    setClinics(cRes.data || []);
-    setLinks(lRes.data || []);
-    setNetwork(nRes.data || []);
+    setPartners(withMockFallback(pRes.data, MOCK_PARTNERS));
+    setClinics(withMockFallback(cRes.data, MOCK_CLINICS));
+    setLinks(withMockFallback(lRes.data, MOCK_LINKS));
+    setNetwork(withMockFallback(nRes.data, MOCK_NETWORK));
     setLoading(false);
   };
 
