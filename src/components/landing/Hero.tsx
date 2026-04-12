@@ -123,7 +123,7 @@ const Hero = () => {
             </Link>
             <Link to="/auth">
               <Button variant="heroOutline" size="xl">
-                Acessar sistema como clínica
+                Acessar Sistema
               </Button>
             </Link>
           </motion.div>
