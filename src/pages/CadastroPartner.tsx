@@ -115,7 +115,7 @@ export default function CadastroPartner() {
       return;
     }
     if (!isValidCPF(cpf)) {
-      setError("CPF inválido. Verifique os dígitos.");
+      setError("CPF inválido. Verifique os dígitos, incluindo os dígitos verificadores.");
       return;
     }
     setError(null);
