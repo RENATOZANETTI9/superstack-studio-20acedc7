@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, Target, DollarSign, Info, Lock, EyeOff } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { isAdminRole, isPartnerRole, LEVEL_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
+import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
 
 const PartnersSimulator = () => {
   const { role } = useAuth();
@@ -205,7 +205,7 @@ const PartnersSimulator = () => {
                       <p className="text-3xl font-bold">{sehScore.toFixed(1)}</p>
                     </div>
                   </div>
-                  <Badge className={LEVEL_COLORS[level]}>{level}</Badge>
+                  <Badge className={TYPE_COLORS[level === 'ELITE' || level === 'OURO' ? 'MASTER' : 'PARTNER']}>{level}</Badge>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
