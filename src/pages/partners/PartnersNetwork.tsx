@@ -24,7 +24,7 @@ import {
   GitBranch, Users, Building2, ChevronDown, ChevronUp, Info,
   ArrowLeft, Network, TrendingUp, Eye, Search, Filter, CalendarIcon, X
 } from 'lucide-react';
-import { LEVEL_COLORS, STATUS_LABELS, isAdminRole, PARTNER_RULES } from '@/lib/partner-rules';
+import { TYPE_COLORS, STATUS_LABELS, isAdminRole, PARTNER_RULES } from '@/lib/partner-rules';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -181,7 +181,7 @@ const PartnersNetwork = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">Rede: {master.legal_name}</h1>
                 <Badge className="bg-purple-600 text-white shrink-0">Master Partner</Badge>
-                <Badge className={cn(LEVEL_COLORS[master.current_level], 'shrink-0')}>{master.current_level}</Badge>
+                <Badge className={cn(TYPE_COLORS[master.type], 'shrink-0')}>{master.type === 'MASTER' ? 'Master Partner' : 'Partner'}</Badge>
               </div>
               <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
                 {master.region_city}/{master.region_state} · SEH: {Number(master.seh_score || 0).toFixed(1)}
@@ -519,7 +519,7 @@ const PartnersNetwork = () => {
                                 <CardDescription className="text-xs truncate">{master.region_city}/{master.region_state} · SEH: {Number(master.seh_score || 0).toFixed(1)}</CardDescription>
                               </div>
                             </div>
-                            <Badge className={cn(LEVEL_COLORS[master.current_level], 'text-[10px] shrink-0')}>{master.current_level}</Badge>
+                            <Badge className={cn(TYPE_COLORS[master.type], 'text-[10px] shrink-0')}>{master.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -579,7 +579,7 @@ const PartnersNetwork = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className={cn(LEVEL_COLORS[p.current_level], 'text-[10px]')}>{p.current_level}</Badge>
+                            <Badge className={cn(TYPE_COLORS[p.type], 'text-[10px]')}>{p.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
                             <Badge variant={p.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-[10px]">
                               {STATUS_LABELS[p.status] || p.status}
                             </Badge>
@@ -634,7 +634,7 @@ function PartnerNetworkCard({ partner: cp, clinics: cpClinics, expanded, onToggl
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <p className="font-medium text-sm truncate">{cp.legal_name}</p>
-              <Badge className={cn(LEVEL_COLORS[cp.current_level], 'text-[10px] shrink-0')}>{cp.current_level}</Badge>
+              <Badge className={cn(TYPE_COLORS[cp.type], 'text-[10px] shrink-0')}>{cp.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
             </div>
             <p className="text-xs text-muted-foreground truncate">
               {cp.phone || cp.email} · {cpActive.length} clínicas ativas

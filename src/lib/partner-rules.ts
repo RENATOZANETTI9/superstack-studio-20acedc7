@@ -3,8 +3,8 @@
  */
 
 export const PARTNER_RULES = {
-  /** Minimum active clinics to be promoted to Master Partner */
-  MASTER_PROMOTION_THRESHOLD: 20,
+  /** Minimum paid amount (R$) in network to be promoted to Master Partner */
+  MASTER_PROMOTION_THRESHOLD_AMOUNT: 30000,
   
   /** Minimum consultations to qualify a clinic (configurable) */
   QUALIFICATION_THRESHOLD: 30,
@@ -48,20 +48,13 @@ export const PARTNER_RULES = {
     AVG_TICKET: 3500,
   },
   
-  /** Level thresholds */
-  LEVEL_THRESHOLDS: [
-    { level: 'ELITE', min: 85, max: 100 },
-    { level: 'OURO', min: 70, max: 84.9 },
-    { level: 'PRATA', min: 50, max: 69.9 },
-    { level: 'BRONZE', min: 0, max: 49.9 },
-  ],
+  /** Partner types */
+  PARTNER_TYPES: ['PARTNER', 'MASTER'] as const,
 };
 
-export const LEVEL_COLORS: Record<string, string> = {
-  BRONZE: 'bg-amber-700 text-white',
-  PRATA: 'bg-gray-400 text-white',
-  OURO: 'bg-yellow-500 text-white',
-  ELITE: 'bg-purple-600 text-white',
+export const TYPE_COLORS: Record<string, string> = {
+  PARTNER: 'bg-primary text-white',
+  MASTER: 'bg-purple-600 text-white',
 };
 
 export const STATUS_LABELS: Record<string, string> = {

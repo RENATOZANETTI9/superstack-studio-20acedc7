@@ -18,7 +18,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { LEVEL_COLORS, STATUS_LABELS, isAdminRole, canEditPartner, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
+import { TYPE_COLORS, STATUS_LABELS, isAdminRole, canEditPartner, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
 
 const PartnersManagement = () => {
   const { user, role } = useAuth();
@@ -417,7 +417,7 @@ const PartnersManagement = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-foreground">
-                    <p>💡 Todo partner é cadastrado como <strong>Partner Comum</strong>. A promoção a <strong>Master Partner</strong> é automática ao atingir <strong>{PARTNER_RULES.MASTER_PROMOTION_THRESHOLD} clínicas ativas</strong>. Ao se tornar Master, um link de recrutamento de partners é gerado automaticamente.</p>
+                    <p>💡 Todo partner é cadastrado como <strong>Partner</strong>. A promoção a <strong>Master Partner</strong> é automática quando sua rede atinge <strong>R$ {PARTNER_RULES.MASTER_PROMOTION_THRESHOLD_AMOUNT.toLocaleString('pt-BR')}</strong> em créditos pagos para procedimentos. Ao se tornar Master, um link de recrutamento de partners é gerado automaticamente.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -568,7 +568,7 @@ const PartnersManagement = () => {
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden sm:block">
                         <div className="flex items-center gap-2">
-                          <Badge className={LEVEL_COLORS[p.current_level] || 'bg-muted'}>{p.current_level}</Badge>
+                          <Badge className={TYPE_COLORS[p.type] || 'bg-muted'}>{p.type === 'MASTER' ? 'Master Partner' : 'Partner'}</Badge>
                           <Badge variant={p.status === 'ACTIVE' ? 'default' : p.status === 'SUSPENDED' ? 'destructive' : 'secondary'}>{STATUS_LABELS[p.status] || p.status}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -655,10 +655,10 @@ const PartnersManagement = () => {
                             </Badge>
                             <p className="text-[10px] text-muted-foreground">Status Atual</p>
                           </div>
-                          <div className="p-3 rounded-lg bg-muted/30 text-center">
-                            <Badge className={cn(LEVEL_COLORS[p.current_level], 'text-[10px] mb-1')}>{p.current_level}</Badge>
-                            <p className="text-[10px] text-muted-foreground">Nível</p>
-                          </div>
+                           <div className="p-3 rounded-lg bg-muted/30 text-center">
+                             <Badge className={cn(TYPE_COLORS[p.type], 'text-[10px] mb-1')}>{p.type === 'MASTER' ? 'Master' : 'Partner'}</Badge>
+                             <p className="text-[10px] text-muted-foreground">Tipo</p>
+                           </div>
                           <div className="p-3 rounded-lg bg-muted/30 text-center">
                             <p className="text-xs font-medium">{new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
                             <p className="text-[10px] text-muted-foreground">Data Cadastro</p>
@@ -701,7 +701,7 @@ const PartnersManagement = () => {
                                     : <Badge variant="outline" className="text-xs">Partner Comum</Badge>}
                                   {isMasterPartner && (
                                     <Tooltip><TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
-                                      <TooltipContent className="max-w-[220px]"><p className="text-xs">Promovido automaticamente ao atingir {PARTNER_RULES.MASTER_PROMOTION_THRESHOLD}+ clínicas ativas.</p></TooltipContent>
+                                      <TooltipContent className="max-w-[220px]"><p className="text-xs">Promovido automaticamente quando a rede atinge R$ {PARTNER_RULES.MASTER_PROMOTION_THRESHOLD_AMOUNT.toLocaleString('pt-BR')} em créditos pagos.</p></TooltipContent>
                                     </Tooltip>
                                   )}
                                 </div>
