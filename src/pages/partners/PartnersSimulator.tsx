@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
+import PartnerOnboarding from '@/components/partners/PartnerOnboarding';
 
 const PartnersSimulator = () => {
   const { role } = useAuth();
