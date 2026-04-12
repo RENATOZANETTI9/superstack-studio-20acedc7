@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
         document_number: cpfDigits,
         legal_name,
         phone: phone || null,
+        categoria: categoria || null,
         type: 'PARTNER',
         status: 'ACTIVE',
         activated_at: new Date().toISOString(),

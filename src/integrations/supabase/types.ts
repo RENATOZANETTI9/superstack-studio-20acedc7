@@ -702,6 +702,7 @@ export type Database = {
       partners: {
         Row: {
           activated_at: string | null
+          categoria: string | null
           created_at: string
           current_level: string
           document_number: string
@@ -725,6 +726,7 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
+          categoria?: string | null
           created_at?: string
           current_level?: string
           document_number: string
@@ -748,6 +750,7 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
+          categoria?: string | null
           created_at?: string
           current_level?: string
           document_number?: string
