@@ -36,6 +36,8 @@ const PartnersManagement = () => {
   const [filterMinClinics, setFilterMinClinics] = useState('');
   const [filterClinicStatus, setFilterClinicStatus] = useState('ALL');
   const [filterMinConsultas, setFilterMinConsultas] = useState('');
+  const [filterHasSimulations, setFilterHasSimulations] = useState('ALL');
+  const [filterHasPaidContracts, setFilterHasPaidContracts] = useState('ALL');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
