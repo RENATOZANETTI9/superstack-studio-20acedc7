@@ -23,6 +23,7 @@ import type { Proposal, PixKeyType } from './ProposalPipeline';
 import type { PixStateExtended } from '@/hooks/usePixStates';
 import { PixKeyForm, PixTypeChip } from './ProposalPipeline';
 import { motion as fmMotion } from 'framer-motion';
+import { PixAuditTimeline } from './PixAuditTimeline';
 
 interface ProposalDetailModalProps {
   proposal: Proposal | null;
@@ -271,6 +272,13 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivate
                   </fmMotion.div>
                 </div>
               )}
+
+              {/* Audit timeline + export */}
+              <PixAuditTimeline
+                proposalId={proposal.id}
+                showExport
+                refreshKey={pixState?.phase ? 1 : 0}
+              />
             </div>
           )}
 

@@ -38,6 +38,7 @@ import ProposalDetailModal from './ProposalDetailModal';
 import { toast } from 'sonner';
 import { applyMask, isValidPixKey, pixPlaceholder, pixTypeLabel } from '@/lib/pix-validation';
 import { usePixStates, type PixStateExtended } from '@/hooks/usePixStates';
+import { PixAuditTimeline } from './PixAuditTimeline';
 
 export interface Proposal {
   id: string;
@@ -356,6 +357,9 @@ const PipelineColumn = ({
                       </div>
                     )}
                   </div>
+
+                  {/* Per-card audit timeline disclosure */}
+                  <CardAuditDisclosure proposalId={proposal.id} phase={pixState.phase} />
                 </div>
               )}
             </motion.div>
@@ -532,6 +536,27 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
 };
 
 export default ProposalPipeline;
+
+// Collapsible audit history for each approved card
+const CardAuditDisclosure = ({ proposalId, phase }: { proposalId: string; phase: PixPhase }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+      >
+        {open ? 'Ocultar histórico' : 'Ver histórico de alterações'}
+      </button>
+      {open && (
+        <div className="mt-2">
+          <PixAuditTimeline proposalId={proposalId} compact showExport refreshKey={phase ? 1 : 0} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Visible indicator chip showing detected/persisted Pix key type
 export const PixTypeChip = ({
