@@ -8,7 +8,10 @@ import {
   Eye,
   FileText,
   Info,
-  ChevronRight
+  ChevronRight,
+  PenTool,
+  Loader2,
+  KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,9 +21,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ProposalDetailModal from './ProposalDetailModal';
+import { toast } from 'sonner';
 
 export interface Proposal {
   id: string;
@@ -36,6 +47,13 @@ export interface Proposal {
   };
 }
 
+export type PixKeyType = 'cpf' | 'telefone' | 'email';
+export type PixPhase = 'idle' | 'generating' | 'ready' | 'analyzing';
+export interface PixState {
+  type?: PixKeyType;
+  phase: PixPhase;
+}
+
 interface PipelineColumnProps {
   title: string;
   status: 'aprovada' | 'recusada' | 'erro';
@@ -47,6 +65,8 @@ interface PipelineColumnProps {
   onViewDetails?: (proposal: Proposal) => void;
   isMobile?: boolean;
   activatedProposals?: Set<string>;
+  pixStateMap?: Record<string, PixState>;
+  onPixSelect?: (proposalId: string, key: PixKeyType) => void;
 }
 
 const PipelineColumn = ({ 
@@ -59,7 +79,9 @@ const PipelineColumn = ({
   onAction,
   onViewDetails,
   isMobile,
-  activatedProposals = new Set()
+  activatedProposals = new Set(),
+  pixStateMap = {},
+  onPixSelect,
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
 
@@ -102,8 +124,17 @@ const PipelineColumn = ({
             const allTriggersActive = proposal.marketingActions?.sms && proposal.marketingActions?.email && proposal.marketingActions?.call;
             const manuallyActivated = activatedProposals.has(proposal.id);
             const triggersDone = allTriggersActive || manuallyActivated;
-            const shouldPulse = status === 'aprovada' && !triggersDone;
-            const showActivatedState = status === 'aprovada' && triggersDone;
+            const pixState = pixStateMap[proposal.id] || { phase: 'idle' as PixPhase };
+            const pixReady = status === 'aprovada' && pixState.phase === 'ready';
+            const shouldPulse = status === 'aprovada' && !pixReady;
+            const showActivatedState = status === 'aprovada' && pixReady;
+            const actionLabel = status === 'aprovada'
+              ? (pixReady
+                  ? 'Cliente pronto para assinatura/biometria'
+                  : pixState.phase === 'generating'
+                    ? 'Gerando link de biometria…'
+                    : 'Informar chave Pix para gerar link de contratação')
+              : null;
 
             return (
             <motion.div
@@ -135,15 +166,21 @@ const PipelineColumn = ({
               )}
 
               {/* "Ação necessária" micro-badge */}
-              {shouldPulse && (
+              {status === 'aprovada' && (
                 <div className="mb-2 flex items-center gap-1.5">
                   <motion.div
-                    className="h-1.5 w-1.5 rounded-full bg-warning"
-                    animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      pixReady ? 'bg-success' : 'bg-warning'
+                    )}
+                    animate={pixReady ? {} : { scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
                     transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
                   />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-warning">
-                    Ação necessária
+                  <span className={cn(
+                    'text-[10px] font-semibold uppercase tracking-wider',
+                    pixReady ? 'text-success' : 'text-warning'
+                  )}>
+                    {pixReady ? 'Pronto p/ assinatura' : 'Ação necessária'}
                   </span>
                 </div>
               )}
@@ -175,9 +212,20 @@ const PipelineColumn = ({
 
               <p className="mb-2 sm:mb-3 text-[10px] sm:text-xs text-muted-foreground">{proposal.date}</p>
 
+              {actionLabel && (
+                <div className={cn(
+                  'mb-2 sm:mb-3 rounded-md px-2 py-1.5 text-[10px] sm:text-xs font-medium',
+                  pixReady
+                    ? 'bg-success/10 text-success border border-success/30'
+                    : 'bg-warning/10 text-warning border border-warning/30'
+                )}>
+                  {actionLabel}
+                </div>
+              )}
+
               {/* Marketing Actions for Approved */}
               {status === 'aprovada' && (
-                <div className="border-t border-border/50 pt-2 sm:pt-3">
+                <div className="border-t border-border/50 pt-2 sm:pt-3 space-y-2">
                   {triggersDone ? (
                     <div className="flex items-center gap-1.5 text-success">
                       <CheckCircle className="h-3.5 w-3.5" />
@@ -194,6 +242,58 @@ const PipelineColumn = ({
                       Ativar Gatilho de Marketing
                     </Button>
                   )}
+
+                  {/* Finalizar contratação / Gerar link de biometria */}
+                  <div className="rounded-md border border-border/60 bg-background/40 p-2 sm:p-2.5">
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <KeyRound className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] sm:text-xs font-semibold text-foreground">
+                        Finalizar contratação / Gerar link de biometria
+                      </span>
+                    </div>
+
+                    {pixState.phase === 'idle' && (
+                      <>
+                        <p className="mb-1.5 text-[10px] text-muted-foreground leading-snug">
+                          Para gerar o link de contratação informe a chave Pix do cliente.
+                        </p>
+                        <Select onValueChange={(v) => onPixSelect?.(proposal.id, v as PixKeyType)}>
+                          <SelectTrigger className="h-8 text-xs bg-background/60">
+                            <SelectValue placeholder="Selecione a chave Pix" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cpf">CPF (gera link imediato)</SelectItem>
+                            <SelectItem value="telefone">Telefone</SelectItem>
+                            <SelectItem value="email">E-mail</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+
+                    {pixState.phase === 'generating' && (
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-1">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        Obrigado, aguarde. Estamos gerando o link de assinatura/biometria.
+                      </div>
+                    )}
+
+                    {pixState.phase === 'ready' && (
+                      <motion.div
+                        animate={{ boxShadow: ['0 0 0px hsl(var(--success)/0)', '0 0 18px hsl(var(--success)/0.55)', '0 0 0px hsl(var(--success)/0)'] }}
+                        transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                        className="rounded-md"
+                      >
+                        <Button
+                          size="sm"
+                          className="w-full h-10 text-xs sm:text-sm font-bold gap-2 bg-success hover:bg-success/90 text-white"
+                          onClick={() => toast.success('Abrindo link de biometria…')}
+                        >
+                          <PenTool className="h-4 w-4" />
+                          Link de biometria / Assinar contrato
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -222,6 +322,8 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [activatedProposals, setActivatedProposals] = useState<Set<string>>(new Set());
+  const [pixStateMap, setPixStateMap] = useState<Record<string, PixState>>({});
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, 'erro' | 'aprovada'>>({});
   const [showScrollHint, setShowScrollHint] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -234,6 +336,36 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const handleMarketingActivated = (proposalId: string) => {
     setActivatedProposals(prev => new Set(prev).add(proposalId));
   };
+
+  const handlePixSelect = (proposalId: string, key: PixKeyType) => {
+    if (key === 'cpf') {
+      setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'generating' } }));
+      toast.info('Obrigado, aguarde. Estamos gerando o link de assinatura/biometria.');
+      setTimeout(() => {
+        setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'ready' } }));
+        toast.success('Link de biometria pronto para assinatura.');
+      }, 1800);
+    } else {
+      setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'analyzing' } }));
+      setStatusOverrides(prev => ({ ...prev, [proposalId]: 'erro' }));
+      toast.info('Obrigado, aguarde. A proposta será enviada para análise e retornará automaticamente quando estiver pronta para assinatura.');
+      // Simulate análise → volta para aprovados com chave ready
+      setTimeout(() => {
+        setStatusOverrides(prev => {
+          const next = { ...prev };
+          delete next[proposalId];
+          return next;
+        });
+        setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'ready' } }));
+        toast.success('Proposta retornou da análise: pronta para assinatura.');
+      }, 5000);
+    }
+  };
+
+  // Apply status overrides to proposals
+  const effectiveProposals = proposals.map(p =>
+    statusOverrides[p.id] ? { ...p, status: statusOverrides[p.id] } : p
+  );
 
   // Hide scroll hint after user scrolls
   useEffect(() => {
@@ -271,7 +403,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
           <PipelineColumn
             title="Em Análise"
             status="erro"
-            proposals={proposals}
+            proposals={effectiveProposals}
             icon={<AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
             color="bg-warning"
             tooltip="A proposta está sendo analisada. O prazo de análise pode ser de até 24 horas."
@@ -281,7 +413,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
           <PipelineColumn
             title="Aprovados"
             status="aprovada"
-            proposals={proposals}
+            proposals={effectiveProposals}
             icon={<CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
             color="bg-success"
             tooltip="Pacientes liberados para contratação do crédito. Já receberam SMS, Email Marketing e ligação via IA."
@@ -289,11 +421,13 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
             onViewDetails={handleViewDetails}
             isMobile={isMobile}
             activatedProposals={activatedProposals}
+            pixStateMap={pixStateMap}
+            onPixSelect={handlePixSelect}
           />
           <PipelineColumn
             title="Declinados"
             status="recusada"
-            proposals={proposals}
+            proposals={effectiveProposals}
             icon={<XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />}
             color="bg-destructive"
             tooltip="Proposta declinada. Fique tranquilo, a cada 30 dias realizamos novas consultas."
@@ -336,6 +470,8 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
         onMarketingActivated={handleMarketingActivated}
+        pixState={selectedProposal ? pixStateMap[selectedProposal.id] : undefined}
+        onPixSelect={handlePixSelect}
       />
     </>
   );
