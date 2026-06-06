@@ -145,7 +145,13 @@ export function usePixStates(proposals: Proposal[]) {
               pix_key_value: value,
               biometric_link: link,
             });
-            toast.success('Link de biometria pronto para assinatura.');
+            toast.success('Link de biometria pronto para assinatura.', {
+              description: `Chave ${type.toUpperCase()} · ${proposal.name}`,
+              action: {
+                label: 'Abrir link',
+                onClick: () => window.open(link, '_blank'),
+              },
+            });
           } catch (e: any) {
             const msg = e?.message ?? 'Falha ao gerar o link de biometria.';
             setPixStateMap((prev) => ({
@@ -160,7 +166,13 @@ export function usePixStates(proposals: Proposal[]) {
               pix_key_value: value,
               error_message: msg,
             });
-            toast.error(msg);
+            toast.error('Falha ao gerar o link de biometria.', {
+              description: msg,
+              action: {
+                label: 'Tentar novamente',
+                onClick: () => submitPixKey(proposal, type, value),
+              },
+            });
           } finally {
             setLoadingMap((m) => ({ ...m, [proposal.id]: false }));
           }
@@ -204,7 +216,13 @@ export function usePixStates(proposals: Proposal[]) {
               pix_key_value: value,
               biometric_link: link,
             });
-            toast.success('Proposta retornou da análise: pronta para assinatura.');
+            toast.success('Proposta retornou da análise: pronta para assinatura.', {
+              description: `${proposal.name} · chave ${type}`,
+              action: {
+                label: 'Abrir link',
+                onClick: () => window.open(link, '_blank'),
+              },
+            });
           } catch (e: any) {
             const msg = e?.message ?? 'Falha ao concluir a análise.';
             setPixStateMap((prev) => ({
@@ -219,7 +237,13 @@ export function usePixStates(proposals: Proposal[]) {
               pix_key_value: value,
               error_message: msg,
             });
-            toast.error(msg);
+            toast.error('Falha durante a análise da proposta.', {
+              description: msg,
+              action: {
+                label: 'Tentar novamente',
+                onClick: () => submitPixKey(proposal, type, value),
+              },
+            });
           } finally {
             setLoadingMap((m) => ({ ...m, [proposal.id]: false }));
           }
