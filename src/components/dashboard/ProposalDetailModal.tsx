@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Proposal, PixState, PixKeyType } from './ProposalPipeline';
+import type { Proposal, PixKeyType } from './ProposalPipeline';
+import type { PixStateExtended } from '@/hooks/usePixStates';
+import { PixKeyForm } from './ProposalPipeline';
 import { motion as fmMotion } from 'framer-motion';
 
 interface ProposalDetailModalProps {
@@ -27,8 +29,9 @@ interface ProposalDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarketingActivated?: (proposalId: string) => void;
-  pixState?: PixState;
-  onPixSelect?: (proposalId: string, key: PixKeyType) => void;
+  pixState?: PixStateExtended;
+  onPixSubmit?: (proposal: Proposal, type: PixKeyType, value: string) => void;
+  isBusy?: boolean;
 }
 
 interface BankStatus {
@@ -60,7 +63,7 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
   linkContrato: proposal.status === 'aprovada' ? 'https://exemplo.com/contrato' : undefined,
 });
 
-const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated, pixState, onPixSelect }: ProposalDetailModalProps) => {
+const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated, pixState, onPixSubmit, isBusy }: ProposalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
   const [newValue, setNewValue] = useState('');
@@ -191,28 +194,23 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivate
               </p>
 
               {(!pixState || pixState.phase === 'idle') && (
-                <Select onValueChange={(v) => onPixSelect?.(proposal.id, v as PixKeyType)}>
-                  <SelectTrigger className="bg-background/50">
-                    <SelectValue placeholder="Selecione a chave Pix" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cpf">CPF (gera link imediato)</SelectItem>
-                    <SelectItem value="telefone">Telefone</SelectItem>
-                    <SelectItem value="email">E-mail</SelectItem>
-                  </SelectContent>
-                </Select>
+                <PixKeyForm
+                  disabled={!!isBusy}
+                  onSubmit={(type, value) => onPixSubmit?.(proposal, type, value)}
+                />
               )}
 
               {pixState?.phase === 'generating' && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  Obrigado, aguarde. Estamos gerando o link de assinatura/biometria.
+                  Gerando link de biometria, aguarde…
                 </div>
               )}
 
               {pixState?.phase === 'analyzing' && (
-                <div className="text-sm text-warning">
-                  Obrigado, aguarde. A proposta foi enviada para análise e retornará automaticamente quando estiver pronta para assinatura.
+                <div className="flex items-center gap-2 text-sm text-warning py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Aguardando análise — a proposta retornará automaticamente quando estiver pronta para assinatura.
                 </div>
               )}
 
@@ -222,7 +220,13 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivate
                   transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
                   className="rounded-md"
                 >
-                  <Button className="w-full h-12 text-base font-bold gap-2 bg-success hover:bg-success/90 text-white">
+                  <Button
+                    disabled={!!isBusy}
+                    onClick={() => {
+                      if (pixState.link) window.open(pixState.link, '_blank');
+                    }}
+                    className="w-full h-12 text-base font-bold gap-2 bg-success hover:bg-success/90 text-white"
+                  >
                     <PenTool className="h-5 w-5" />
                     Link de biometria / Assinar contrato
                   </Button>

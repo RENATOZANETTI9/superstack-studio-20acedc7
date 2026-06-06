@@ -14,6 +14,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
@@ -32,6 +33,8 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ProposalDetailModal from './ProposalDetailModal';
 import { toast } from 'sonner';
+import { applyMask, isValidPixKey, pixPlaceholder } from '@/lib/pix-validation';
+import { usePixStates, type PixStateExtended } from '@/hooks/usePixStates';
 
 export interface Proposal {
   id: string;
@@ -65,8 +68,9 @@ interface PipelineColumnProps {
   onViewDetails?: (proposal: Proposal) => void;
   isMobile?: boolean;
   activatedProposals?: Set<string>;
-  pixStateMap?: Record<string, PixState>;
-  onPixSelect?: (proposalId: string, key: PixKeyType) => void;
+  pixStateMap?: Record<string, PixStateExtended>;
+  onPixSubmit?: (proposal: Proposal, type: PixKeyType, value: string) => void;
+  loadingMap?: Record<string, boolean>;
 }
 
 const PipelineColumn = ({ 
@@ -81,7 +85,8 @@ const PipelineColumn = ({
   isMobile,
   activatedProposals = new Set(),
   pixStateMap = {},
-  onPixSelect,
+  onPixSubmit,
+  loadingMap = {},
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
 
@@ -124,7 +129,8 @@ const PipelineColumn = ({
             const allTriggersActive = proposal.marketingActions?.sms && proposal.marketingActions?.email && proposal.marketingActions?.call;
             const manuallyActivated = activatedProposals.has(proposal.id);
             const triggersDone = allTriggersActive || manuallyActivated;
-            const pixState = pixStateMap[proposal.id] || { phase: 'idle' as PixPhase };
+            const pixState: PixStateExtended = pixStateMap[proposal.id] || { phase: 'idle' as PixPhase };
+            const isBusy = !!loadingMap[proposal.id];
             const pixReady = status === 'aprovada' && pixState.phase === 'ready';
             const shouldPulse = status === 'aprovada' && !pixReady;
             const showActivatedState = status === 'aprovada' && pixReady;
@@ -253,27 +259,24 @@ const PipelineColumn = ({
                     </div>
 
                     {pixState.phase === 'idle' && (
-                      <>
-                        <p className="mb-1.5 text-[10px] text-muted-foreground leading-snug">
-                          Para gerar o link de contratação informe a chave Pix do cliente.
-                        </p>
-                        <Select onValueChange={(v) => onPixSelect?.(proposal.id, v as PixKeyType)}>
-                          <SelectTrigger className="h-8 text-xs bg-background/60">
-                            <SelectValue placeholder="Selecione a chave Pix" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="cpf">CPF (gera link imediato)</SelectItem>
-                            <SelectItem value="telefone">Telefone</SelectItem>
-                            <SelectItem value="email">E-mail</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </>
+                      <PixKeyForm
+                        compact
+                        disabled={isBusy}
+                        onSubmit={(type, value) => onPixSubmit?.(proposal, type, value)}
+                      />
                     )}
 
                     {pixState.phase === 'generating' && (
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-1">
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-1.5">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        Obrigado, aguarde. Estamos gerando o link de assinatura/biometria.
+                        Gerando link de biometria, aguarde…
+                      </div>
+                    )}
+
+                    {pixState.phase === 'analyzing' && (
+                      <div className="flex items-center gap-2 text-[11px] text-warning py-1.5">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Aguardando análise — retornará automaticamente quando pronto.
                       </div>
                     )}
 
@@ -285,8 +288,12 @@ const PipelineColumn = ({
                       >
                         <Button
                           size="sm"
+                          disabled={isBusy}
                           className="w-full h-10 text-xs sm:text-sm font-bold gap-2 bg-success hover:bg-success/90 text-white"
-                          onClick={() => toast.success('Abrindo link de biometria…')}
+                          onClick={() => {
+                            if (pixState.link) window.open(pixState.link, '_blank');
+                            toast.success('Abrindo link de biometria…');
+                          }}
                         >
                           <PenTool className="h-4 w-4" />
                           Link de biometria / Assinar contrato
@@ -322,8 +329,12 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [activatedProposals, setActivatedProposals] = useState<Set<string>>(new Set());
-  const [pixStateMap, setPixStateMap] = useState<Record<string, PixState>>({});
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, 'erro' | 'aprovada'>>({});
+  const { pixStateMap, loadingMap, submitPixKey } = usePixStates(proposals);
+  const statusOverrides: Record<string, 'erro' | 'aprovada'> = {};
+  // Reflect analyzing as "Em Análise" column
+  Object.entries(pixStateMap).forEach(([pid, st]) => {
+    if (st.phase === 'analyzing') statusOverrides[pid] = 'erro';
+  });
   const [showScrollHint, setShowScrollHint] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -337,29 +348,8 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
     setActivatedProposals(prev => new Set(prev).add(proposalId));
   };
 
-  const handlePixSelect = (proposalId: string, key: PixKeyType) => {
-    if (key === 'cpf') {
-      setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'generating' } }));
-      toast.info('Obrigado, aguarde. Estamos gerando o link de assinatura/biometria.');
-      setTimeout(() => {
-        setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'ready' } }));
-        toast.success('Link de biometria pronto para assinatura.');
-      }, 1800);
-    } else {
-      setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'analyzing' } }));
-      setStatusOverrides(prev => ({ ...prev, [proposalId]: 'erro' }));
-      toast.info('Obrigado, aguarde. A proposta será enviada para análise e retornará automaticamente quando estiver pronta para assinatura.');
-      // Simulate análise → volta para aprovados com chave ready
-      setTimeout(() => {
-        setStatusOverrides(prev => {
-          const next = { ...prev };
-          delete next[proposalId];
-          return next;
-        });
-        setPixStateMap(prev => ({ ...prev, [proposalId]: { type: key, phase: 'ready' } }));
-        toast.success('Proposta retornou da análise: pronta para assinatura.');
-      }, 5000);
-    }
+  const handlePixSubmit = (proposal: Proposal, type: PixKeyType, value: string) => {
+    submitPixKey(proposal, type, value);
   };
 
   // Apply status overrides to proposals
@@ -422,7 +412,8 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
             isMobile={isMobile}
             activatedProposals={activatedProposals}
             pixStateMap={pixStateMap}
-            onPixSelect={handlePixSelect}
+            onPixSubmit={handlePixSubmit}
+            loadingMap={loadingMap}
           />
           <PipelineColumn
             title="Declinados"
@@ -471,10 +462,75 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         onOpenChange={setDetailModalOpen}
         onMarketingActivated={handleMarketingActivated}
         pixState={selectedProposal ? pixStateMap[selectedProposal.id] : undefined}
-        onPixSelect={handlePixSelect}
+        onPixSubmit={handlePixSubmit}
+        isBusy={selectedProposal ? !!loadingMap[selectedProposal.id] : false}
       />
     </>
   );
 };
 
 export default ProposalPipeline;
+
+// Inline component for collecting + validating pix key
+interface PixKeyFormProps {
+  compact?: boolean;
+  disabled?: boolean;
+  onSubmit: (type: PixKeyType, value: string) => void;
+}
+
+export const PixKeyForm = ({ compact, disabled, onSubmit }: PixKeyFormProps) => {
+  const [type, setType] = useState<PixKeyType | ''>('');
+  const [value, setValue] = useState('');
+  const valid = type ? isValidPixKey(type, value) : false;
+
+  return (
+    <div className={cn('space-y-2', compact ? '' : 'space-y-3')}>
+      <p className={cn('text-muted-foreground leading-snug', compact ? 'text-[10px]' : 'text-xs')}>
+        Para gerar o link de contratação, selecione e informe a chave Pix do cliente.
+      </p>
+      <Select
+        value={type}
+        onValueChange={(v) => {
+          setType(v as PixKeyType);
+          setValue('');
+        }}
+        disabled={disabled}
+      >
+        <SelectTrigger className={cn('bg-background/60', compact ? 'h-8 text-xs' : '')}>
+          <SelectValue placeholder="Selecione a chave Pix" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="cpf">CPF (gera link imediato)</SelectItem>
+          <SelectItem value="telefone">Telefone</SelectItem>
+          <SelectItem value="email">E-mail</SelectItem>
+        </SelectContent>
+      </Select>
+      {type && (
+        <>
+          <Input
+            value={value}
+            disabled={disabled}
+            inputMode={type === 'email' ? 'email' : 'numeric'}
+            placeholder={pixPlaceholder(type)}
+            onChange={(e) => setValue(applyMask(type, e.target.value))}
+            className={cn('bg-background/60', compact ? 'h-8 text-xs' : '')}
+          />
+          {value && !valid && (
+            <p className={cn('text-destructive', compact ? 'text-[10px]' : 'text-xs')}>
+              {type === 'cpf' ? 'CPF inválido.' : type === 'telefone' ? 'Telefone inválido.' : 'E-mail inválido.'}
+            </p>
+          )}
+          <Button
+            size={compact ? 'sm' : 'default'}
+            disabled={!valid || disabled}
+            className={cn('w-full gap-1.5 bg-primary hover:bg-primary/90', compact ? 'h-8 text-xs' : '')}
+            onClick={() => type && onSubmit(type, value)}
+          >
+            {disabled ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+            Gerar link de biometria
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
