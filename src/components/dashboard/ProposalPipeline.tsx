@@ -51,7 +51,7 @@ export interface Proposal {
 }
 
 export type PixKeyType = 'cpf' | 'telefone' | 'email';
-export type PixPhase = 'idle' | 'generating' | 'ready' | 'analyzing';
+export type PixPhase = 'idle' | 'generating' | 'ready' | 'analyzing' | 'error';
 export interface PixState {
   type?: PixKeyType;
   phase: PixPhase;
