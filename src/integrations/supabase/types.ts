@@ -798,6 +798,51 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_pix_audit: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          biometric_link: string | null
+          created_at: string
+          error_message: string | null
+          from_phase: string | null
+          id: string
+          pix_key_type: string | null
+          pix_key_value: string | null
+          proposal_id: string
+          to_phase: string
+          user_id: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          biometric_link?: string | null
+          created_at?: string
+          error_message?: string | null
+          from_phase?: string | null
+          id?: string
+          pix_key_type?: string | null
+          pix_key_value?: string | null
+          proposal_id: string
+          to_phase: string
+          user_id: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          biometric_link?: string | null
+          created_at?: string
+          error_message?: string | null
+          from_phase?: string | null
+          id?: string
+          pix_key_type?: string | null
+          pix_key_value?: string | null
+          proposal_id?: string
+          to_phase?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       proposal_pix_states: {
         Row: {
           biometric_link: string | null

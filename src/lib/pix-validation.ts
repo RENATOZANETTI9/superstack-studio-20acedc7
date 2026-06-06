@@ -61,3 +61,25 @@ export const isValidPixKey = (type: PixKeyType, value: string): boolean => {
 
 export const pixPlaceholder = (type: PixKeyType) =>
   type === 'cpf' ? '000.000.000-00' : type === 'telefone' ? '(00) 00000-0000' : 'email@exemplo.com';
+
+export const pixTypeLabel = (type: PixKeyType): string =>
+  type === 'cpf' ? 'CPF' : type === 'telefone' ? 'Telefone' : 'E-mail';
+
+// Detect type from raw user input (used for auto-revalidation when user edits)
+export const detectPixKeyType = (raw: string): PixKeyType | null => {
+  const v = raw.trim();
+  if (!v) return null;
+  if (v.includes('@')) return 'email';
+  const digits = v.replace(/\D/g, '');
+  if (digits.length >= 10 && digits.length <= 11) {
+    // 11 digits could be CPF or mobile phone. Distinguish:
+    // - CPF formatted often contains "." or "-"
+    // - phone formatted often contains "(" or ")"
+    if (/[()]/.test(v)) return 'telefone';
+    if (/[.\-]/.test(v) && digits.length === 11) return 'cpf';
+    // Heuristic: a valid 11-digit CPF passes mod11; otherwise treat as phone
+    if (digits.length === 11 && isValidCPF(digits)) return 'cpf';
+    return 'telefone';
+  }
+  return null;
+};
