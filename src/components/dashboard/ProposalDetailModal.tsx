@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit, Send, FileSignature, PenTool } from 'lucide-react';
+import { Edit, Send, FileSignature, PenTool, KeyRound, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -19,13 +19,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Proposal } from './ProposalPipeline';
+import type { Proposal, PixState, PixKeyType } from './ProposalPipeline';
+import { motion as fmMotion } from 'framer-motion';
 
 interface ProposalDetailModalProps {
   proposal: Proposal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarketingActivated?: (proposalId: string) => void;
+  pixState?: PixState;
+  onPixSelect?: (proposalId: string, key: PixKeyType) => void;
 }
 
 interface BankStatus {
@@ -57,7 +60,7 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
   linkContrato: proposal.status === 'aprovada' ? 'https://exemplo.com/contrato' : undefined,
 });
 
-const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated }: ProposalDetailModalProps) => {
+const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated, pixState, onPixSelect }: ProposalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
   const [newValue, setNewValue] = useState('');
@@ -172,6 +175,61 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivate
               Ativar gatilho de marketing
             </Button>
           </div>
+
+          {/* Dados da chave Pix para gerar proposta/link de contratação */}
+          {proposal.status === 'aprovada' && (
+            <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Dados da chave Pix para gerar proposta/link de contratação
+                </h4>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Recomendamos usar o <strong className="text-foreground">CPF</strong> como chave Pix — assim o link de
+                biometria é liberado imediatamente, sem nova análise.
+              </p>
+
+              {(!pixState || pixState.phase === 'idle') && (
+                <Select onValueChange={(v) => onPixSelect?.(proposal.id, v as PixKeyType)}>
+                  <SelectTrigger className="bg-background/50">
+                    <SelectValue placeholder="Selecione a chave Pix" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cpf">CPF (gera link imediato)</SelectItem>
+                    <SelectItem value="telefone">Telefone</SelectItem>
+                    <SelectItem value="email">E-mail</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
+              {pixState?.phase === 'generating' && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Obrigado, aguarde. Estamos gerando o link de assinatura/biometria.
+                </div>
+              )}
+
+              {pixState?.phase === 'analyzing' && (
+                <div className="text-sm text-warning">
+                  Obrigado, aguarde. A proposta foi enviada para análise e retornará automaticamente quando estiver pronta para assinatura.
+                </div>
+              )}
+
+              {pixState?.phase === 'ready' && (
+                <fmMotion.div
+                  animate={{ boxShadow: ['0 0 0px hsl(var(--success)/0)', '0 0 22px hsl(var(--success)/0.6)', '0 0 0px hsl(var(--success)/0)'] }}
+                  transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                  className="rounded-md"
+                >
+                  <Button className="w-full h-12 text-base font-bold gap-2 bg-success hover:bg-success/90 text-white">
+                    <PenTool className="h-5 w-5" />
+                    Link de biometria / Assinar contrato
+                  </Button>
+                </fmMotion.div>
+              )}
+            </div>
+          )}
 
           <div className="border-t border-border/50 pt-4">
             <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Status dos Bancos</h4>
