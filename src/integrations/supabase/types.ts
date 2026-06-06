@@ -798,6 +798,57 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_pix_states: {
+        Row: {
+          biometric_link: string | null
+          cpf: string | null
+          created_at: string
+          id: string
+          link_generated_at: string | null
+          patient_name: string | null
+          pix_key_type: string | null
+          pix_key_value: string | null
+          pix_phase: string
+          proposal_id: string
+          proposal_status: string
+          updated_at: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          biometric_link?: string | null
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          link_generated_at?: string | null
+          patient_name?: string | null
+          pix_key_type?: string | null
+          pix_key_value?: string | null
+          pix_phase?: string
+          proposal_id: string
+          proposal_status?: string
+          updated_at?: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          biometric_link?: string | null
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          link_generated_at?: string | null
+          patient_name?: string | null
+          pix_key_type?: string | null
+          pix_key_value?: string | null
+          pix_phase?: string
+          proposal_id?: string
+          proposal_status?: string
+          updated_at?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       scheduled_returns: {
         Row: {
           completed: boolean
