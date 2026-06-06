@@ -11,7 +11,10 @@ import {
   ChevronRight,
   PenTool,
   Loader2,
-  KeyRound
+  KeyRound,
+  AlertCircle,
+  RefreshCw,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +36,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ProposalDetailModal from './ProposalDetailModal';
 import { toast } from 'sonner';
-import { applyMask, isValidPixKey, pixPlaceholder } from '@/lib/pix-validation';
+import { applyMask, isValidPixKey, pixPlaceholder, pixTypeLabel } from '@/lib/pix-validation';
 import { usePixStates, type PixStateExtended } from '@/hooks/usePixStates';
 
 export interface Proposal {
@@ -71,6 +74,8 @@ interface PipelineColumnProps {
   pixStateMap?: Record<string, PixStateExtended>;
   onPixSubmit?: (proposal: Proposal, type: PixKeyType, value: string) => void;
   loadingMap?: Record<string, boolean>;
+  onPixRetry?: (proposal: Proposal) => void;
+  onPixReset?: (proposal: Proposal) => void;
 }
 
 const PipelineColumn = ({ 
@@ -87,6 +92,8 @@ const PipelineColumn = ({
   pixStateMap = {},
   onPixSubmit,
   loadingMap = {},
+  onPixRetry,
+  onPixReset,
 }: PipelineColumnProps) => {
   const filteredProposals = proposals.filter(p => p.status === status);
 
@@ -267,38 +274,86 @@ const PipelineColumn = ({
                     )}
 
                     {pixState.phase === 'generating' && (
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-1.5">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        Gerando link de biometria, aguarde…
+                      <div className="space-y-1.5 py-1">
+                        {pixState.type && (
+                          <PixTypeChip type={pixState.type} value={pixState.value} />
+                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          Gerando link de biometria, aguarde…
+                        </div>
                       </div>
                     )}
 
                     {pixState.phase === 'analyzing' && (
-                      <div className="flex items-center gap-2 text-[11px] text-warning py-1.5">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Aguardando análise — retornará automaticamente quando pronto.
+                      <div className="space-y-1.5 py-1">
+                        {pixState.type && (
+                          <PixTypeChip type={pixState.type} value={pixState.value} />
+                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-warning">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Aguardando análise — retornará automaticamente quando pronto.
+                        </div>
+                      </div>
+                    )}
+
+                    {pixState.phase === 'error' && (
+                      <div className="space-y-2 py-1">
+                        {pixState.type && (
+                          <PixTypeChip type={pixState.type} value={pixState.value} />
+                        )}
+                        <div className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          <span>{pixState.error || 'Falha na operação. Tente novamente.'}</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isBusy}
+                            className="flex-1 h-8 text-[11px] gap-1.5"
+                            onClick={() => onPixRetry?.(proposal)}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Tentar novamente
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={isBusy}
+                            className="h-8 text-[11px]"
+                            onClick={() => onPixReset?.(proposal)}
+                          >
+                            Trocar chave
+                          </Button>
+                        </div>
                       </div>
                     )}
 
                     {pixState.phase === 'ready' && (
-                      <motion.div
-                        animate={{ boxShadow: ['0 0 0px hsl(var(--success)/0)', '0 0 18px hsl(var(--success)/0.55)', '0 0 0px hsl(var(--success)/0)'] }}
-                        transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
-                        className="rounded-md"
-                      >
-                        <Button
-                          size="sm"
-                          disabled={isBusy}
-                          className="w-full h-10 text-xs sm:text-sm font-bold gap-2 bg-success hover:bg-success/90 text-white"
-                          onClick={() => {
-                            if (pixState.link) window.open(pixState.link, '_blank');
-                            toast.success('Abrindo link de biometria…');
-                          }}
+                      <div className="space-y-1.5">
+                        {pixState.type && (
+                          <PixTypeChip type={pixState.type} value={pixState.value} success />
+                        )}
+                        <motion.div
+                          animate={{ boxShadow: ['0 0 0px hsl(var(--success)/0)', '0 0 18px hsl(var(--success)/0.55)', '0 0 0px hsl(var(--success)/0)'] }}
+                          transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                          className="rounded-md"
                         >
-                          <PenTool className="h-4 w-4" />
-                          Link de biometria / Assinar contrato
-                        </Button>
-                      </motion.div>
+                          <Button
+                            size="sm"
+                            disabled={isBusy}
+                            className="w-full h-10 text-xs sm:text-sm font-bold gap-2 bg-success hover:bg-success/90 text-white"
+                            onClick={() => {
+                              if (pixState.link) window.open(pixState.link, '_blank');
+                              toast.success('Abrindo link de biometria…');
+                            }}
+                          >
+                            <PenTool className="h-4 w-4" />
+                            Link de biometria / Assinar contrato
+                          </Button>
+                        </motion.div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -329,7 +384,7 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [activatedProposals, setActivatedProposals] = useState<Set<string>>(new Set());
-  const { pixStateMap, loadingMap, submitPixKey } = usePixStates(proposals);
+  const { pixStateMap, loadingMap, submitPixKey, retry, resetPix } = usePixStates(proposals);
   const statusOverrides: Record<string, 'erro' | 'aprovada'> = {};
   // Reflect analyzing as "Em Análise" column
   Object.entries(pixStateMap).forEach(([pid, st]) => {
@@ -351,6 +406,9 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
   const handlePixSubmit = (proposal: Proposal, type: PixKeyType, value: string) => {
     submitPixKey(proposal, type, value);
   };
+
+  const handlePixRetry = (proposal: Proposal) => retry(proposal);
+  const handlePixReset = (proposal: Proposal) => resetPix(proposal);
 
   // Apply status overrides to proposals
   const effectiveProposals = proposals.map(p =>
@@ -414,6 +472,8 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
             pixStateMap={pixStateMap}
             onPixSubmit={handlePixSubmit}
             loadingMap={loadingMap}
+            onPixRetry={handlePixRetry}
+            onPixReset={handlePixReset}
           />
           <PipelineColumn
             title="Declinados"
@@ -464,12 +524,47 @@ const ProposalPipeline = ({ proposals, onMarketingAction }: ProposalPipelineProp
         pixState={selectedProposal ? pixStateMap[selectedProposal.id] : undefined}
         onPixSubmit={handlePixSubmit}
         isBusy={selectedProposal ? !!loadingMap[selectedProposal.id] : false}
+        onPixRetry={handlePixRetry}
+        onPixReset={handlePixReset}
       />
     </>
   );
 };
 
 export default ProposalPipeline;
+
+// Visible indicator chip showing detected/persisted Pix key type
+export const PixTypeChip = ({
+  type,
+  value,
+  success,
+}: {
+  type: PixKeyType;
+  value?: string;
+  success?: boolean;
+}) => {
+  const masked = value
+    ? type === 'cpf'
+      ? value.replace(/(\d{3}\.\d{3})\.(\d{3})-(\d{2})/, '$1.***-**')
+      : type === 'email'
+        ? value.replace(/(.{2}).*(@.*)/, '$1***$2')
+        : value.replace(/(\(\d{2}\)\s\d{2})\d+(-\d{2})/, '$1****$2')
+    : null;
+  return (
+    <div
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+        success
+          ? 'border-success/40 bg-success/10 text-success'
+          : 'border-primary/30 bg-primary/10 text-primary'
+      )}
+    >
+      <KeyRound className="h-2.5 w-2.5" />
+      <span>Tipo: {pixTypeLabel(type)}</span>
+      {masked && <span className="font-normal normal-case opacity-80">· {masked}</span>}
+    </div>
+  );
+};
 
 // Inline component for collecting + validating pix key
 interface PixKeyFormProps {
@@ -482,6 +577,11 @@ export const PixKeyForm = ({ compact, disabled, onSubmit }: PixKeyFormProps) => 
   const [type, setType] = useState<PixKeyType | ''>('');
   const [value, setValue] = useState('');
   const valid = type ? isValidPixKey(type, value) : false;
+  // Auto re-mask + re-validate on every edit (controlled handler)
+  const handleChange = (raw: string) => {
+    if (!type) return;
+    setValue(applyMask(type, raw));
+  };
 
   return (
     <div className={cn('space-y-2', compact ? '' : 'space-y-3')}>
@@ -507,17 +607,31 @@ export const PixKeyForm = ({ compact, disabled, onSubmit }: PixKeyFormProps) => 
       </Select>
       {type && (
         <>
+          {/* Detected/selected type indicator — always visible to confirm before proceeding */}
+          <div className="flex items-center justify-between gap-2">
+            <PixTypeChip type={type} success={valid} />
+            {valid && (
+              <span className={cn('inline-flex items-center gap-1 text-success', compact ? 'text-[10px]' : 'text-xs')}>
+                <Check className="h-3 w-3" /> chave válida
+              </span>
+            )}
+          </div>
           <Input
             value={value}
             disabled={disabled}
             inputMode={type === 'email' ? 'email' : 'numeric'}
             placeholder={pixPlaceholder(type)}
-            onChange={(e) => setValue(applyMask(type, e.target.value))}
+            onChange={(e) => handleChange(e.target.value)}
             className={cn('bg-background/60', compact ? 'h-8 text-xs' : '')}
           />
           {value && !valid && (
-            <p className={cn('text-destructive', compact ? 'text-[10px]' : 'text-xs')}>
-              {type === 'cpf' ? 'CPF inválido.' : type === 'telefone' ? 'Telefone inválido.' : 'E-mail inválido.'}
+            <p className={cn('flex items-center gap-1 text-destructive', compact ? 'text-[10px]' : 'text-xs')}>
+              <AlertCircle className="h-3 w-3" />
+              {type === 'cpf'
+                ? 'CPF inválido. Confira os 11 dígitos.'
+                : type === 'telefone'
+                  ? 'Telefone inválido. Use DDD + número (10 ou 11 dígitos).'
+                  : 'E-mail inválido. Verifique o formato (nome@dominio.com).'}
             </p>
           )}
           <Button
