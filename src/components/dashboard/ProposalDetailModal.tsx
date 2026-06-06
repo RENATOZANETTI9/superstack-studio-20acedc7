@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit, Send, FileSignature, PenTool, KeyRound, Loader2 } from 'lucide-react';
+import { Edit, Send, FileSignature, PenTool, KeyRound, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import type { Proposal, PixKeyType } from './ProposalPipeline';
 import type { PixStateExtended } from '@/hooks/usePixStates';
-import { PixKeyForm } from './ProposalPipeline';
+import { PixKeyForm, PixTypeChip } from './ProposalPipeline';
 import { motion as fmMotion } from 'framer-motion';
 
 interface ProposalDetailModalProps {
@@ -32,6 +32,8 @@ interface ProposalDetailModalProps {
   pixState?: PixStateExtended;
   onPixSubmit?: (proposal: Proposal, type: PixKeyType, value: string) => void;
   isBusy?: boolean;
+  onPixRetry?: (proposal: Proposal) => void;
+  onPixReset?: (proposal: Proposal) => void;
 }
 
 interface BankStatus {
@@ -63,7 +65,7 @@ const getMockBankStatus = (proposal: Proposal): BankStatus => ({
   linkContrato: proposal.status === 'aprovada' ? 'https://exemplo.com/contrato' : undefined,
 });
 
-const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated, pixState, onPixSubmit, isBusy }: ProposalDetailModalProps) => {
+const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivated, pixState, onPixSubmit, isBusy, onPixRetry, onPixReset }: ProposalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [calculationType, setCalculationType] = useState<'liquido' | 'parcela'>('liquido');
   const [newValue, setNewValue] = useState('');
@@ -201,36 +203,73 @@ const ProposalDetailModal = ({ proposal, open, onOpenChange, onMarketingActivate
               )}
 
               {pixState?.phase === 'generating' && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  Gerando link de biometria, aguarde…
+                <div className="space-y-2 py-2">
+                  {pixState.type && <PixTypeChip type={pixState.type} value={pixState.value} />}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    Gerando link de biometria, aguarde…
+                  </div>
                 </div>
               )}
 
               {pixState?.phase === 'analyzing' && (
-                <div className="flex items-center gap-2 text-sm text-warning py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Aguardando análise — a proposta retornará automaticamente quando estiver pronta para assinatura.
+                <div className="space-y-2 py-2">
+                  {pixState.type && <PixTypeChip type={pixState.type} value={pixState.value} />}
+                  <div className="flex items-center gap-2 text-sm text-warning">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Aguardando análise — a proposta retornará automaticamente quando estiver pronta para assinatura.
+                  </div>
+                </div>
+              )}
+
+              {pixState?.phase === 'error' && (
+                <div className="space-y-2 py-2">
+                  {pixState.type && <PixTypeChip type={pixState.type} value={pixState.value} />}
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{pixState.error || 'Falha na operação. Tente novamente.'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      disabled={!!isBusy}
+                      onClick={() => proposal && onPixRetry?.(proposal)}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Tentar novamente
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      disabled={!!isBusy}
+                      onClick={() => proposal && onPixReset?.(proposal)}
+                    >
+                      Trocar chave
+                    </Button>
+                  </div>
                 </div>
               )}
 
               {pixState?.phase === 'ready' && (
-                <fmMotion.div
-                  animate={{ boxShadow: ['0 0 0px hsl(var(--success)/0)', '0 0 22px hsl(var(--success)/0.6)', '0 0 0px hsl(var(--success)/0)'] }}
-                  transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
-                  className="rounded-md"
-                >
-                  <Button
-                    disabled={!!isBusy}
-                    onClick={() => {
-                      if (pixState.link) window.open(pixState.link, '_blank');
-                    }}
-                    className="w-full h-12 text-base font-bold gap-2 bg-success hover:bg-success/90 text-white"
+                <div className="space-y-2">
+                  {pixState.type && <PixTypeChip type={pixState.type} value={pixState.value} success />}
+                  <fmMotion.div
+                    animate={{ boxShadow: ['0 0 0px hsl(var(--success)/0)', '0 0 22px hsl(var(--success)/0.6)', '0 0 0px hsl(var(--success)/0)'] }}
+                    transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                    className="rounded-md"
                   >
-                    <PenTool className="h-5 w-5" />
-                    Link de biometria / Assinar contrato
-                  </Button>
-                </fmMotion.div>
+                    <Button
+                      disabled={!!isBusy}
+                      onClick={() => {
+                        if (pixState.link) window.open(pixState.link, '_blank');
+                      }}
+                      className="w-full h-12 text-base font-bold gap-2 bg-success hover:bg-success/90 text-white"
+                    >
+                      <PenTool className="h-5 w-5" />
+                      Link de biometria / Assinar contrato
+                    </Button>
+                  </fmMotion.div>
+                </div>
               )}
             </div>
           )}
