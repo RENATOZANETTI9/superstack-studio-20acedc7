@@ -40,22 +40,28 @@ async function fetchAudit(
   pixType: string,
   from: string,
   to: string,
+  format: 'json' | 'csv' = 'json',
 ): Promise<PixAuditEntry[]> {
-  let q = supabase
-    .from('proposal_pix_audit')
-    .select('*')
-    .eq('proposal_id', proposalId)
-    .order('created_at', { ascending: true });
-  if (pixType !== 'all') q = q.eq('pix_key_type', pixType);
-  if (from) q = q.gte('created_at', new Date(from).toISOString());
-  if (to) {
-    const end = new Date(to);
-    end.setHours(23, 59, 59, 999);
-    q = q.lte('created_at', end.toISOString());
+  // Calls the secure edge function which validates the caller's JWT
+  // and scopes the query to their own user_id (defense-in-depth on top of RLS).
+  const { data, error } = await supabase.functions.invoke('export-pix-audit', {
+    body: {
+      proposal_id: proposalId,
+      pix_key_type: pixType,
+      from: from || undefined,
+      to: to || undefined,
+      format,
+    },
+  });
+  if (error) {
+    const msg = (error as any)?.context?.error || error.message || 'Falha na exportação.';
+    throw new Error(typeof msg === 'string' ? msg : 'Erro de permissão ou validação.');
   }
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data as PixAuditEntry[]) ?? [];
+  if (format === 'csv') {
+    // Edge function returns raw CSV text via invoke; supabase-js gives us the body
+    return data as unknown as PixAuditEntry[]; // not used, see CSV handler below
+  }
+  return ((data as any)?.rows ?? []) as PixAuditEntry[];
 }
 
 function downloadBlob(content: string, mime: string, filename: string) {
@@ -153,20 +159,41 @@ export function PixAuditExportDialog({ open, onOpenChange, proposalId }: Props) 
   const handleExport = async (format: 'csv' | 'pdf') => {
     setBusy(format);
     try {
-      const rows = await fetchAudit(proposalId, pixType, from, to);
-      if (rows.length === 0) {
-        toast.info('Nenhum evento encontrado para os filtros selecionados.');
-        return;
-      }
       if (format === 'csv') {
-        const csv = toCSV(rows);
-        downloadBlob(`\uFEFF${csv}`, 'text/csv;charset=utf-8', `auditoria-pix-${proposalId}.csv`);
-        toast.success(`CSV exportado com ${rows.length} evento(s).`);
+        // Ask the edge function for the CSV directly so server-side filters/auth apply.
+        const res = await supabase.functions.invoke('export-pix-audit', {
+          body: {
+            proposal_id: proposalId,
+            pix_key_type: pixType,
+            from: from || undefined,
+            to: to || undefined,
+            format: 'csv',
+          },
+          headers: { Accept: 'text/csv' },
+        });
+        if (res.error) {
+          const ctxErr = (res.error as any)?.context?.error;
+          throw new Error(typeof ctxErr === 'string' ? ctxErr : res.error.message);
+        }
+        const csv = typeof res.data === 'string' ? res.data : await (res.data as Blob).text();
+        if (!csv.trim() || csv.trim() === '\uFEFF') {
+          toast.info('Nenhum evento encontrado para os filtros selecionados.');
+          return;
+        }
+        downloadBlob(csv, 'text/csv;charset=utf-8', `auditoria-pix-${proposalId}.csv`);
+        toast.success('CSV exportado com sucesso.');
       } else {
+        const rows = await fetchAudit(proposalId, pixType, from, to, 'json');
+        if (rows.length === 0) {
+          toast.info('Nenhum evento encontrado para os filtros selecionados.');
+          return;
+        }
         openPrintablePDF(proposalId, rows);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? 'Falha ao exportar auditoria.');
+      toast.error(e?.message ?? 'Falha ao exportar auditoria.', {
+        description: 'Verifique sua sessão. Apenas o autor da proposta pode exportar este log.',
+      });
     } finally {
       setBusy(null);
     }

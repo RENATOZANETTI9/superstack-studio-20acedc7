@@ -540,17 +540,20 @@ export default ProposalPipeline;
 // Collapsible audit history for each approved card
 const CardAuditDisclosure = ({ proposalId, phase }: { proposalId: string; phase: PixPhase }) => {
   const [open, setOpen] = useState(false);
+  const panelId = `pix-audit-${proposalId}`;
   return (
     <div>
       <button
         type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+        className="rounded text-[11px] sm:text-xs text-foreground/80 hover:text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background min-h-[28px] px-1"
       >
         {open ? 'Ocultar histórico' : 'Ver histórico de alterações'}
       </button>
       {open && (
-        <div className="mt-2">
+        <div id={panelId} className="mt-2">
           <PixAuditTimeline proposalId={proposalId} compact showExport refreshKey={phase ? 1 : 0} />
         </div>
       )}
