@@ -1,0 +1,394 @@
+import { useState } from 'react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
+  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+type VisitStatus = 'Pendente' | 'Realizada' | 'Cancelada';
+
+interface PlannedVisit {
+  id: string;
+  clinic: string;
+  address: string;
+  goal: string;
+  responsible?: string;
+  phone?: string;
+  status: VisitStatus;
+}
+
+const INITIAL_DAYS: Record<string, PlannedVisit[]> = {
+  seg: [
+    { id: 's1', clinic: 'Clínica BH Sorriso', address: 'Av. Afonso Pena 1230, BH', goal: 'Cadastro e ativação', responsible: 'Dra. Marina', phone: '(31) 99876-1122', status: 'Pendente' },
+    { id: 's2', clinic: 'Centro Odonto Minas', address: 'R. da Bahia 88, BH', goal: 'Relacionamento com recepção', responsible: 'Carla Souza', phone: '(31) 99654-3344', status: 'Pendente' },
+  ],
+  ter: [
+    { id: 't1', clinic: 'Clínica Saúde Total', address: 'Av. do Contorno 500, BH', goal: 'Treinar recepcionista', responsible: 'Patrícia Lima', phone: '(31) 98877-2211', status: 'Pendente' },
+    { id: 't2', clinic: 'Clínica Dental BH', address: 'R. Espírito Santo 200, BH', goal: 'Reativar simulações', responsible: 'Dr. Felipe', phone: '(31) 98765-9988', status: 'Pendente' },
+  ],
+  qua: [
+    { id: 'q1', clinic: 'OdontoVida Premium BH', address: 'Av. Raja Gabaglia 1000, BH', goal: 'Apresentar campanha', responsible: 'Júlia Mendes', phone: '(31) 97654-1010', status: 'Pendente' },
+    { id: 'q2', clinic: 'Clínica Sorriso Mineiro', address: 'R. Pernambuco 450, BH', goal: 'Treinar nova recepção', responsible: 'Ana Beatriz', phone: '(31) 99123-4567', status: 'Pendente' },
+  ],
+  qui: [
+    { id: 'qi1', clinic: 'Dental Plus Centro', address: 'Av. Amazonas 770, BH', goal: 'Renegociar metas', responsible: 'Roberta Lopes', phone: '(31) 98456-7788', status: 'Pendente' },
+  ],
+  sex: [],
+};
+
+const GIFT_ROUTE_INITIAL = {
+  achieved: [
+    { id: 'g1', clinic: 'Clínica Dental Plus', simulations: 62, gift: 'Mimo Tipo 3', receptionist: 'Maria Silva', delivered: false },
+    { id: 'g2', clinic: 'Clínica BH Sorriso', simulations: 45, gift: 'Mimo Tipo 2', receptionist: 'Ana Lima', delivered: false },
+    { id: 'g3', clinic: 'Centro Odonto Minas', simulations: 35, gift: 'Mimo Tipo 2', receptionist: 'Carla Souza', delivered: false },
+  ],
+  missed: [
+    { id: 'm1', clinic: 'Clínica Saúde Total', simulations: 18 },
+    { id: 'm2', clinic: 'Clínica Dental BH', simulations: 12 },
+  ],
+};
+
+const DAYS: { key: keyof typeof INITIAL_DAYS; label: string; date: string }[] = [
+  { key: 'seg', label: 'Seg', date: '30/06' },
+  { key: 'ter', label: 'Ter', date: '01/07' },
+  { key: 'qua', label: 'Qua', date: '02/07' },
+  { key: 'qui', label: 'Qui', date: '03/07' },
+  { key: 'sex', label: 'Sex', date: '04/07' },
+];
+
+const STATUS_BADGE: Record<VisitStatus, string> = {
+  Pendente: 'bg-muted text-muted-foreground',
+  Realizada: 'bg-green-100 text-green-700',
+  Cancelada: 'bg-red-100 text-red-700',
+};
+
+export default function PartnersRota() {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [days, setDays] = useState(INITIAL_DAYS);
+  const [activeTab, setActiveTab] = useState<string>('seg');
+  const [gifts, setGifts] = useState(GIFT_ROUTE_INITIAL);
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Side sheet
+  const [openVisit, setOpenVisit] = useState<PlannedVisit | null>(null);
+  const [visitResult, setVisitResult] = useState('');
+
+  // Cobrar modal
+  const [cobrarTarget, setCobrarTarget] = useState<{ id: string; clinic: string } | null>(null);
+  const [cobrarNote, setCobrarNote] = useState('');
+
+  const weekLabel = `Semana ${27 + weekOffset} — 30/06 a 04/07/2026`;
+
+  const handleGenerate = () => {
+    toast.success('Roteiro gerado com base nas metas da semana!');
+  };
+
+  const handleShare = () => {
+    toast.success('Roteiro copiado! Cole no WhatsApp para compartilhar.');
+  };
+
+  const handleDelivered = (id: string) => {
+    setGifts(prev => ({
+      ...prev,
+      achieved: prev.achieved.map(g => g.id === id ? { ...g, delivered: true } : g),
+    }));
+    toast.success('Brinde marcado como entregue ✓');
+  };
+
+  const handleSaveCobranca = () => {
+    toast.success(`Cobrança registrada para ${cobrarTarget?.clinic}`, { description: cobrarNote || 'Sem observações.' });
+    setCobrarTarget(null);
+    setCobrarNote('');
+  };
+
+  const handleSaveVisitResult = () => {
+    if (!openVisit) return;
+    setDays(prev => {
+      const dayKey = (Object.keys(prev) as Array<keyof typeof prev>).find(k => prev[k].some(v => v.id === openVisit.id));
+      if (!dayKey) return prev;
+      return {
+        ...prev,
+        [dayKey]: prev[dayKey].map(v => v.id === openVisit.id ? { ...v, status: 'Realizada' as VisitStatus } : v),
+      };
+    });
+    toast.success('Resultado da visita registrado');
+    setOpenVisit(null);
+    setVisitResult('');
+  };
+
+  const filteredDayVisits = (key: keyof typeof INITIAL_DAYS) => {
+    return days[key].filter(v => {
+      const matchesSearch = v.clinic.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  // Goals
+  const goals = [
+    { label: 'Cadastros Novos', current: 0, total: 3, color: 'bg-primary' },
+    { label: 'Ativações', current: 0, total: 3, color: 'bg-blue-500' },
+    { label: 'Visitas Realizadas', current: Object.values(days).flat().filter(v => v.status === 'Realizada').length, total: 8, color: 'bg-green-500' },
+    { label: 'Clínicas Acima da Meta', current: 60, total: 100, color: 'bg-purple-500', suffix: '%' },
+  ];
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+              <MapPin className="w-7 h-7 text-primary" /> Minha Rota Semanal
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Planeje suas visitas e gerencie entregas de brindes</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setWeekOffset(o => o - 1)} aria-label="Semana anterior">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium px-2 min-w-[220px] text-center">{weekLabel}</span>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setWeekOffset(o => o + 1)} aria-label="Próxima semana">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button onClick={handleGenerate} className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:shadow-lg">
+              <Sparkles className="w-4 h-4" /> Gerar Roteiro Automático
+            </Button>
+          </div>
+        </div>
+
+        {/* Metas */}
+        <div>
+          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Target className="w-4 h-4 text-primary" /> Meta da Semana
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {goals.map(g => {
+              const pct = Math.min(100, (g.current / g.total) * 100);
+              return (
+                <Card key={g.label} className="shadow-sm">
+                  <CardContent className="pt-5">
+                    <p className="text-xs text-muted-foreground">{g.label}</p>
+                    <p className="text-2xl font-bold">
+                      {g.current}{g.suffix || ''}
+                      <span className="text-sm text-muted-foreground font-normal">
+                        {g.suffix ? '' : ` / ${g.total}`}
+                      </span>
+                    </p>
+                    <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
+                      <div className={`h-full ${g.color} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Roteiro por dia */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary" /> Roteiro por Dia
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid grid-cols-5 w-full sm:w-auto">
+                {DAYS.map(d => (
+                  <TabsTrigger key={d.key} value={d.key} className="flex flex-col py-2 h-auto">
+                    <span className="text-xs font-semibold">{d.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{d.date}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {/* Filtros */}
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar clínica..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-48 h-9">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Realizada">Realizada</SelectItem>
+                    <SelectItem value="Cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {DAYS.filter(d => d.key !== 'sex').map(d => (
+                <TabsContent key={d.key} value={d.key} className="mt-4 space-y-2">
+                  {filteredDayVisits(d.key).length === 0 ? (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      Nenhuma visita planejada para {d.label.toLowerCase()}.
+                    </div>
+                  ) : filteredDayVisits(d.key).map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => { setOpenVisit(v); setVisitResult(''); }}
+                      className="w-full text-left flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Building2 className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{v.clinic}</p>
+                          <p className="text-xs text-muted-foreground truncate">{v.address}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5"><span className="font-medium">Objetivo:</span> {v.goal}</p>
+                        </div>
+                      </div>
+                      <Badge className={`${STATUS_BADGE[v.status]} border-0 shrink-0`}>{v.status}</Badge>
+                    </button>
+                  ))}
+                </TabsContent>
+              ))}
+
+              {/* Sexta — Roteiro de brindes */}
+              <TabsContent value="sex" className="mt-4 space-y-4">
+                <div className="rounded-lg border-2 border-primary/30 bg-gradient-to-r from-primary/10 via-secondary/5 to-transparent p-4">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-primary" /> 🎁 Roteiro de Entrega de Brindes
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Gerado automaticamente com base na meta semanal</p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Bateram a meta</p>
+                  {gifts.achieved.map(g => (
+                    <div key={g.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-green-50/40 shadow-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{g.clinic}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {g.simulations} simulações · {g.gift} · Recepcionista: {g.receptionist}
+                        </p>
+                      </div>
+                      {g.delivered ? (
+                        <Badge className="bg-green-600 text-white gap-1 border-0">
+                          <CheckCircle2 className="w-3 h-3" /> Entregue ✓
+                        </Badge>
+                      ) : (
+                        <Button size="sm" onClick={() => handleDelivered(g.id)} className="gap-1 bg-green-600 hover:bg-green-700 text-white">
+                          <CheckCircle2 className="w-4 h-4" /> Brinde Entregue
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Não bateram a meta</p>
+                  {gifts.missed.map(m => (
+                    <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border border-red-200 bg-red-50/40 shadow-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{m.clinic}</p>
+                        <p className="text-xs text-muted-foreground">{m.simulations} simulações · Abaixo da meta</p>
+                      </div>
+                      <Button size="sm" variant="outline" className="gap-1 border-red-300 text-red-700 hover:bg-red-50" onClick={() => { setCobrarTarget(m); setCobrarNote(''); }}>
+                        <Phone className="w-4 h-4" /> Cobrar Recepção
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button variant="outline" className="gap-2" onClick={handleShare}>
+                    <Share2 className="w-4 h-4" /> Compartilhar Roteiro
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Visit side sheet */}
+        <Sheet open={!!openVisit} onOpenChange={(o) => { if (!o) { setOpenVisit(null); setVisitResult(''); } }}>
+          <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2"><Building2 className="w-5 h-5 text-primary" /> {openVisit?.clinic}</SheetTitle>
+              <SheetDescription>Detalhes da visita planejada</SheetDescription>
+            </SheetHeader>
+            {openVisit && (
+              <div className="space-y-4 mt-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Endereço</p>
+                  <p className="text-sm">{openVisit.address}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Responsável</p>
+                  <p className="text-sm">{openVisit.responsible || '—'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Telefone</p>
+                  <p className="text-sm flex items-center gap-2"><Phone className="w-3 h-3 text-muted-foreground" /> {openVisit.phone || '—'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Objetivo da Visita</p>
+                  <p className="text-sm">{openVisit.goal}</p>
+                </div>
+                <div className="space-y-2 pt-2">
+                  <label className="text-sm font-medium">Registrar resultado da visita</label>
+                  <Textarea
+                    rows={4}
+                    value={visitResult}
+                    onChange={e => setVisitResult(e.target.value)}
+                    placeholder="O que foi conversado, próximos passos, recepcionistas treinadas..."
+                  />
+                  <Button onClick={handleSaveVisitResult} className="w-full gap-2">
+                    <Save className="w-4 h-4" /> Salvar resultado
+                  </Button>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+
+        {/* Cobrar Recepção modal */}
+        <Dialog open={!!cobrarTarget} onOpenChange={(o) => { if (!o) { setCobrarTarget(null); setCobrarNote(''); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Phone className="w-5 h-5 text-primary" /> Cobrar Recepção · {cobrarTarget?.clinic}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Textarea
+                rows={4}
+                value={cobrarNote}
+                onChange={e => setCobrarNote(e.target.value)}
+                placeholder="Anote o que foi conversado e os próximos passos..."
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => { setCobrarTarget(null); setCobrarNote(''); }}>Cancelar</Button>
+              <Button onClick={handleSaveCobranca} className="gap-2"><Save className="w-4 h-4" /> Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+}
