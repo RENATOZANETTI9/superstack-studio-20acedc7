@@ -178,6 +178,26 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary')}>
                 <Building2 className="h-6 w-6 shrink-0" /><span>Clínicas</span>
               </Button>
+
+              {/* Representantes Menu - mobile */}
+              <Collapsible open={representantesOpen} onOpenChange={setRepresentantesOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent',
+                    location.pathname.startsWith('/dashboard/representantes') && 'bg-sidebar-accent text-sidebar-primary')}>
+                    <UserCheck className="h-6 w-6 shrink-0" /><span className="flex-1 text-left">Representantes</span>
+                    <ChevronDown className={cn('h-5 w-5 transition-transform duration-200', representantesOpen && 'rotate-180')} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1 pt-1">
+                  {representantesSubItems.map(sub => (
+                    <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
+                      className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
+                        isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                      <sub.icon className="h-5 w-5 shrink-0" /><span>{sub.title}</span>
+                    </Button>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
             </nav>
 
             <div className="border-t border-sidebar-border p-4">
@@ -329,6 +349,31 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           <Building2 className="h-5 w-5 shrink-0" />
           {!collapsed && <span>Clínicas</span>}
         </Button>
+
+        {/* Representantes Menu - desktop */}
+        <Collapsible open={representantesOpen} onOpenChange={setRepresentantesOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+              location.pathname.startsWith('/dashboard/representantes') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
+              <UserCheck className="h-5 w-5 shrink-0" />
+              {!collapsed && (<>
+                <span className="flex-1 text-left">Representantes</span>
+                <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', representantesOpen && 'rotate-180')} />
+              </>)}
+            </Button>
+          </CollapsibleTrigger>
+          {!collapsed && (
+            <CollapsibleContent className="space-y-1 pt-1">
+              {representantesSubItems.map(sub => (
+                <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
+                  className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                  <sub.icon className="h-4 w-4 shrink-0" /><span>{sub.title}</span>
+                </Button>
+              ))}
+            </CollapsibleContent>
+          )}
+        </Collapsible>
       </nav>
 
       <div className="border-t border-sidebar-border p-2">
