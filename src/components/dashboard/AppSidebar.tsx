@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
   Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
   UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
-  Building2, BarChart3
+  Building2, BarChart3, UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const { user, isMaster, role, logout } = useAuth();
   const [usersOpen, setUsersOpen] = useState(location.pathname.startsWith('/dashboard/usuarios'));
   const [partnersOpen, setPartnersOpen] = useState(location.pathname.startsWith('/dashboard/partners'));
+  const [representantesOpen, setRepresentantesOpen] = useState(location.pathname.startsWith('/dashboard/representantes'));
   const [clinicasOpen, setClinicasOpen] = useState(location.pathname.startsWith('/dashboard/clinicas'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -70,6 +71,12 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
   ].filter(item => item.visible);
+
+  const representantesSubItems = [
+    { title: 'Painel', icon: LayoutDashboard, path: '/dashboard/representantes' },
+    { title: 'Rede & Hierarquia', icon: Network, path: '/dashboard/representantes/rede' },
+    { title: 'Comissões', icon: DollarSign, path: '/dashboard/representantes/comissoes' },
+  ];
 
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
     : role === 'master_partner' ? 'Master Partner' 
@@ -156,6 +163,26 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-1 pt-1">
                   {partnerSubItems.map(sub => (
+                    <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
+                      className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
+                        isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                      <sub.icon className="h-5 w-5 shrink-0" /><span>{sub.title}</span>
+                    </Button>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Representantes Menu - mobile */}
+              <Collapsible open={representantesOpen} onOpenChange={setRepresentantesOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent',
+                    location.pathname.startsWith('/dashboard/representantes') && 'bg-sidebar-accent text-sidebar-primary')}>
+                    <UserCheck className="h-6 w-6 shrink-0" /><span className="flex-1 text-left">Representantes</span>
+                    <ChevronDown className={cn('h-5 w-5 transition-transform duration-200', representantesOpen && 'rotate-180')} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1 pt-1">
+                  {representantesSubItems.map(sub => (
                     <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
                       className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
                         isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
@@ -305,6 +332,31 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           {!collapsed && (
             <CollapsibleContent className="space-y-1 pt-1">
               {partnerSubItems.map(sub => (
+                <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
+                  className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
+                  <sub.icon className="h-4 w-4 shrink-0" /><span>{sub.title}</span>
+                </Button>
+              ))}
+            </CollapsibleContent>
+          )}
+        </Collapsible>
+
+        {/* Representantes Menu - desktop */}
+        <Collapsible open={representantesOpen} onOpenChange={setRepresentantesOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+              location.pathname.startsWith('/dashboard/representantes') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
+              <UserCheck className="h-5 w-5 shrink-0" />
+              {!collapsed && (<>
+                <span className="flex-1 text-left">Representantes</span>
+                <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', representantesOpen && 'rotate-180')} />
+              </>)}
+            </Button>
+          </CollapsibleTrigger>
+          {!collapsed && (
+            <CollapsibleContent className="space-y-1 pt-1">
+              {representantesSubItems.map(sub => (
                 <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
                   className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
                     isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
