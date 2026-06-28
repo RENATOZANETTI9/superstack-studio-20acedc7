@@ -62,7 +62,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Meu Perfil', icon: UserCircle, path: '/dashboard/partners/perfil', visible: true },
     { title: 'Cadastro', icon: UserPlus, path: '/dashboard/partners/cadastro', visible: true },
     { title: 'Minhas Clínicas', icon: Building2, path: '/dashboard/partners/clinicas', visible: true },
-    { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: true },
+    { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: false },
     { title: 'Bonificações', icon: DollarSign, path: '/dashboard/partners/bonificacoes', visible: true },
     { title: 'Simulador', icon: Calculator, path: '/dashboard/partners/simulador', visible: true },
     { title: 'Marketing', icon: Megaphone, path: '/dashboard/partners/marketing', visible: true },
