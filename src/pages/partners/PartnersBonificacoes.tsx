@@ -2,6 +2,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MOCK_COMMISSIONS, MOCK_INCENTIVES, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
+import { CalendarClock, Download, Copy, Gift } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminRole } from '@/lib/partner-rules';
@@ -185,6 +192,76 @@ const PartnersBonificacoes = () => {
 
         <BonificacaoEvolutionChart commissions={filteredCommissions} />
 
+        <Tabs defaultValue="resumo">
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="resumo" className="text-xs sm:text-sm">📊 Resumo</TabsTrigger>
+            <TabsTrigger value="pix-atendente" className="text-xs sm:text-sm">💸 PIX por Atendente</TabsTrigger>
+            <TabsTrigger value="mimo-ativo" className="text-xs sm:text-sm">🎁 Mimo Ativo (Campanhas)</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="resumo" className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-primary" /> Próximo pagamento PIX
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Sexta-feira, 04/07/2026</p>
+                      <p className="text-2xl font-bold text-primary">R$ 300,00</p>
+                    </div>
+                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Em 6 dias</Badge>
+                  </div>
+                  <Button variant="outline" size="sm">Ver detalhes</Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Histórico de Pagamentos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mês</TableHead>
+                        <TableHead>Total Pago</TableHead>
+                        <TableHead>Atend.</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[
+                        { mes: 'Junho/2026', total: 'R$ 280,00', n: 3 },
+                        { mes: 'Maio/2026', total: 'R$ 195,00', n: 2 },
+                        { mes: 'Abril/2026', total: 'R$ 120,00', n: 2 },
+                      ].map(r => (
+                        <TableRow key={r.mes}>
+                          <TableCell>{r.mes}</TableCell>
+                          <TableCell>{r.total}</TableCell>
+                          <TableCell>{r.n}</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-700 hover:bg-green-100">Pago ✅</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pix-atendente" className="space-y-4">
+            <PixPorAtendenteTab />
+          </TabsContent>
+
+          <TabsContent value="mimo-ativo" className="space-y-4">
+            <MimoAtivoTab />
+          </TabsContent>
+        </Tabs>
+
         <Tabs defaultValue="mimos">
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="mimos" className="text-xs sm:text-sm">🎁 Mimos Semanais</TabsTrigger>
@@ -227,5 +304,185 @@ const PartnersBonificacoes = () => {
     </DashboardLayout>
   );
 };
+
+const PIX_ATENDENTES = [
+  { nome: 'Maria Silva', clinica: 'Dental Plus', contratos: 12, gerado: 24000, pix: 85, pct: 35.3 },
+  { nome: 'Ana Lima', clinica: 'BH Sorriso', contratos: 9, gerado: 18000, pix: 65, pct: 26.5 },
+  { nome: 'Carla Souza', clinica: 'Odonto Minas', contratos: 6, gerado: 12000, pix: 45, pct: 17.6 },
+  { nome: 'Patrícia Lima', clinica: 'Saúde Total', contratos: 4, gerado: 8000, pix: 32, pct: 11.8 },
+  { nome: 'Fernanda Costa', clinica: 'Dental BH', contratos: 3, gerado: 6000, pix: 24, pct: 8.8 },
+];
+
+const PixPorAtendenteTab = () => {
+  const total = {
+    contratos: PIX_ATENDENTES.reduce((s, a) => s + a.contratos, 0),
+    gerado: PIX_ATENDENTES.reduce((s, a) => s + a.gerado, 0),
+    pix: PIX_ATENDENTES.reduce((s, a) => s + a.pix, 0),
+  };
+
+  const exportarCSV = () => {
+    const header = 'Nome,Chave PIX,Valor\n';
+    const rows = PIX_ATENDENTES.map(a => `${a.nome},${a.nome.toLowerCase().replace(/\s+/g, '.')}@pix,${a.pix.toFixed(2)}`).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'pix-atendentes-junho-2026.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV exportado para pagamento');
+  };
+
+  const copiarLista = () => {
+    const txt = PIX_ATENDENTES.map(a => `${a.nome} (${a.clinica}) — R$ ${a.pix.toFixed(2).replace('.', ',')}`).join('\n');
+    navigator.clipboard.writeText(txt);
+    toast.success('Lista copiada para a área de transferência');
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Pagamentos PIX — Junho 2026</CardTitle>
+        <p className="text-xs text-muted-foreground">Baseado em contratos pagos no período · Corte: 25/06/2026</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={exportarCSV} className="bg-primary hover:bg-primary/90">
+            <Download className="h-4 w-4 mr-2" /> Exportar para Pagamento
+          </Button>
+          <Button variant="outline" onClick={copiarLista}>
+            <Copy className="h-4 w-4 mr-2" /> Copiar Lista
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Recepcionista</TableHead>
+                <TableHead>Clínica</TableHead>
+                <TableHead className="text-right">Contratos</TableHead>
+                <TableHead className="text-right">Valor gerado</TableHead>
+                <TableHead className="text-right">% Total</TableHead>
+                <TableHead className="text-right">PIX a receber</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {PIX_ATENDENTES.map(a => (
+                <TableRow key={a.nome}>
+                  <TableCell className="font-medium">{a.nome}</TableCell>
+                  <TableCell>{a.clinica}</TableCell>
+                  <TableCell className="text-right">{a.contratos}</TableCell>
+                  <TableCell className="text-right">R$ {a.gerado.toLocaleString('pt-BR')}</TableCell>
+                  <TableCell className="text-right">{a.pct.toFixed(1)}%</TableCell>
+                  <TableCell className="text-right font-semibold text-primary">R$ {a.pix.toFixed(2).replace('.', ',')}</TableCell>
+                  <TableCell><Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Pendente</Badge></TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="bg-muted/40 font-semibold">
+                <TableCell colSpan={2}>Total</TableCell>
+                <TableCell className="text-right">{total.contratos}</TableCell>
+                <TableCell className="text-right">R$ {total.gerado.toLocaleString('pt-BR')}</TableCell>
+                <TableCell />
+                <TableCell className="text-right text-primary">R$ {total.pix.toFixed(2).replace('.', ',')}</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const TIPOS = [
+  { tipo: 'Tipo 1', faixa: '20-34 sims', brinde: 'Brinde Básico (caneta personalizada)', min: 20, max: 34 },
+  { tipo: 'Tipo 2', faixa: '35-49 sims', brinde: 'Brinde Intermediário (kit café)', min: 35, max: 49 },
+  { tipo: 'Tipo 3', faixa: '50-69 sims', brinde: 'Brinde Premium (mochila)', min: 50, max: 69 },
+  { tipo: 'Tipo 4', faixa: '70+ sims', brinde: 'Brinde Elite (smartwatch)', min: 70, max: Infinity },
+];
+
+const CLINICAS_MIMO = [
+  { nome: 'Dental Plus', sims: 62 },
+  { nome: 'BH Sorriso', sims: 18 },
+  { nome: 'OdontoVida', sims: 35 },
+  { nome: 'Sorriso Mineiro', sims: 28 },
+  { nome: 'Clínica Vida', sims: 12 },
+  { nome: 'Odonto Premium', sims: 8 },
+];
+
+const tipoAtingido = (sims: number) => {
+  for (let i = TIPOS.length - 1; i >= 0; i--) if (sims >= TIPOS[i].min) return TIPOS[i].tipo;
+  return null;
+};
+
+const MimoAtivoTab = () => (
+  <div className="space-y-4">
+    <Card className="border-primary/30">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Gift className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">Campanhas de Mimo — Semana 27</CardTitle>
+          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">ATIVA</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">Período: 30/06 a 04/07/2026 · Meta: 50 simulações por clínica para atingir Tipo 2</p>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Faixa</TableHead>
+                <TableHead>Brinde</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {TIPOS.map(t => (
+                <TableRow key={t.tipo}>
+                  <TableCell className="font-medium">{t.tipo}</TableCell>
+                  <TableCell>{t.faixa}</TableCell>
+                  <TableCell>{t.brinde}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Status atual das clínicas</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {CLINICAS_MIMO.map(c => {
+            const tipo = tipoAtingido(c.sims);
+            const proximo = TIPOS.find(t => c.sims < t.min);
+            const pct = proximo ? Math.min((c.sims / proximo.min) * 100, 100) : 100;
+            return (
+              <div key={c.nome} className="rounded-lg border p-3 space-y-2 bg-card shadow-sm">
+                <div className="flex justify-between items-center">
+                  <p className="font-medium text-sm">{c.nome}</p>
+                  {tipo ? (
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{tipo} {!proximo && '✅'}</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">Ainda sem Mimo</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{c.sims} simulações acumuladas</p>
+                <Progress value={pct} className="h-2" />
+                <p className="text-[11px] text-muted-foreground">
+                  {proximo ? `Em progresso para ${proximo.tipo}` : 'Tipo máximo atingido'}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
 
 export default PartnersBonificacoes;

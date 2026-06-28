@@ -8,6 +8,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const PartnersSimulator = () => {
   const { role } = useAuth();
@@ -98,6 +101,13 @@ const PartnersSimulator = () => {
           </p>
         </div>
 
+        <Tabs defaultValue="nova" className="space-y-4 sm:space-y-6">
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="nova" className="text-xs sm:text-sm">🧮 Nova Simulação</TabsTrigger>
+            <TabsTrigger value="real" className="text-xs sm:text-sm">📈 Real vs. Projetado</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="nova" className="space-y-4 sm:space-y-6">
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="pt-3 pb-3 sm:pt-4 sm:pb-4">
             <p className="text-xs sm:text-sm text-foreground">
@@ -301,9 +311,110 @@ const PartnersSimulator = () => {
             </Card>
           </div>
         </div>
+          </TabsContent>
+
+          <TabsContent value="real" className="space-y-4">
+            <RealVsProjetadoTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
 };
+
+const METRICAS = [
+  { label: 'Simulações', real: 127, meta: 150 },
+  { label: 'Propostas', real: 43, meta: 50 },
+  { label: 'Pagamentos', real: 28, meta: 35 },
+  { label: 'Conversão Sim→Pag', real: 22, meta: 25, unit: '%' },
+];
+
+const SEMANA = [
+  { dia: 'Seg', Realizado: 22, Meta: 25 },
+  { dia: 'Ter', Realizado: 19, Meta: 25 },
+  { dia: 'Qua', Realizado: 28, Meta: 25 },
+  { dia: 'Qui', Realizado: 31, Meta: 25 },
+  { dia: 'Sex', Realizado: 27, Meta: 25 },
+  { dia: 'Sáb', Realizado: 0, Meta: 0 },
+];
+
+const TOP_CLINICAS = [
+  { nome: 'Dental Plus', sims: 62, vs: '+12%', trend: '↑' },
+  { nome: 'OdontoVida Premium', sims: 35, vs: '+8%', trend: '↑' },
+  { nome: 'Sorriso Mineiro', sims: 28, vs: '-3%', trend: '↘' },
+];
+
+const RealVsProjetadoTab = () => (
+  <div className="space-y-4">
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Comparativo · Realizado vs. Meta — Junho 2026</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 grid-cols-2">
+          {METRICAS.map(m => {
+            const pct = Math.round((m.real / m.meta) * 100);
+            return (
+              <div key={m.label} className="rounded-lg border p-3 bg-card shadow-sm space-y-1">
+                <p className="text-xs text-muted-foreground">{m.label}</p>
+                <p className="text-lg font-bold">{m.real}{m.unit || ''} <span className="text-xs text-muted-foreground font-normal">/ {m.meta}{m.unit || ''}</span></p>
+                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">{pct}%</Badge>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Performance Semanal</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={SEMANA}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="dia" />
+              <YAxis />
+              <RTooltip />
+              <Legend />
+              <Bar dataKey="Realizado" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Meta" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Top 3 Clínicas da Semana</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Clínica</TableHead>
+              <TableHead className="text-right">Simulações</TableHead>
+              <TableHead className="text-right">Vs. Semana Ant.</TableHead>
+              <TableHead className="text-center">Tendência</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {TOP_CLINICAS.map(c => (
+              <TableRow key={c.nome}>
+                <TableCell className="font-medium">{c.nome}</TableCell>
+                <TableCell className="text-right">{c.sims}</TableCell>
+                <TableCell className="text-right">{c.vs}</TableCell>
+                <TableCell className="text-center text-lg">{c.trend}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  </div>
+);
 
 export default PartnersSimulator;
