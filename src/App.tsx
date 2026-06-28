@@ -23,6 +23,7 @@ import PartnersMonitoring from "./pages/partners/PartnersMonitoring";
 import PartnersMarketing from "./pages/partners/PartnersMarketing";
 import PartnersClinicSimulations from "./pages/partners/PartnersClinicSimulations";
 import PartnersProfile from "./pages/partners/PartnersProfile";
+import PartnersRota from "./pages/partners/PartnersRota";
 import Clinicas from "./pages/Clinicas";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/dashboard/partners/marketing" element={<PartnersMarketing />} />
             <Route path="/dashboard/partners/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
             <Route path="/dashboard/partners/perfil" element={<PartnersProfile />} />
+            <Route path="/dashboard/partners/rota" element={<PartnersRota />} />
             <Route path="/dashboard/clinicas" element={<Clinicas />} />
             <Route path="/register/partner" element={<RegisterPartner />} />
             <Route path="/cadastroclinica" element={<CadastroClinica />} />

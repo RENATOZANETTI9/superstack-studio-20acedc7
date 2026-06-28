@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
   Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
-  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone,
+  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
   Building2, BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,6 +58,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   // Partner submenu items with RBAC
   const partnerSubItems = [
     { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/partners', visible: true },
+    { title: 'Minha Rota', icon: MapPin, path: '/dashboard/partners/rota', visible: true },
     { title: 'Meu Perfil', icon: UserCircle, path: '/dashboard/partners/perfil', visible: true },
     { title: 'Cadastro', icon: UserPlus, path: '/dashboard/partners/cadastro', visible: true },
     { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: true },
