@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isAdminRole, isPartnerRole, canAccessConfig, canAccessMonitoring, canAccessUsersMenu } from '@/lib/partner-rules';
+import { usePartnerAlertsCount } from '@/hooks/usePartnerAlertsCount';
 
 interface AppSidebarProps {
   collapsed: boolean;
@@ -27,6 +28,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const [clinicasOpen, setClinicasOpen] = useState(location.pathname.startsWith('/dashboard/clinicas'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const alertsCount = usePartnerAlertsCount();
 
   const appRole = role as any;
   const isAdmin = isAdminRole(appRole);
@@ -55,7 +57,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   // Partner submenu items with RBAC
   const partnerSubItems = [
-    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/partners', visible: true },
+    { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/partners', visible: true },
     { title: 'Meu Perfil', icon: UserCircle, path: '/dashboard/partners/perfil', visible: true },
     { title: 'Cadastro', icon: UserPlus, path: '/dashboard/partners/cadastro', visible: true },
     { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: true },
@@ -142,6 +144,11 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   <Button variant="ghost" className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent',
                     location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary')}>
                     <Handshake className="h-6 w-6 shrink-0" /><span className="flex-1 text-left">Partners</span>
+                  {alertsCount > 0 && (
+                    <span className="mr-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                      {alertsCount > 99 ? '99+' : alertsCount}
+                    </span>
+                  )}
                     <ChevronDown className={cn('h-5 w-5 transition-transform duration-200', partnersOpen && 'rotate-180')} />
                   </Button>
                 </CollapsibleTrigger>
@@ -192,7 +199,14 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners')}
             className={cn('flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
               location.pathname.startsWith('/dashboard/partners') && 'text-sidebar-primary')}>
-            <Handshake className={cn('h-5 w-5', location.pathname.startsWith('/dashboard/partners') && 'text-primary')} />
+            <div className="relative">
+              <Handshake className={cn('h-5 w-5', location.pathname.startsWith('/dashboard/partners') && 'text-primary')} />
+              {alertsCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  {alertsCount > 9 ? '9+' : alertsCount}
+                </span>
+              )}
+            </div>
             <span className="text-[10px]">Partners</span>
           </Button>
         </nav>
@@ -267,8 +281,23 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
               location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
-              <Handshake className="h-5 w-5 shrink-0" />
-              {!collapsed && (<><span className="flex-1 text-left">Partners</span><ChevronDown className={cn('h-4 w-4 transition-transform duration-200', partnersOpen && 'rotate-180')} /></>)}
+              <div className="relative shrink-0">
+                <Handshake className="h-5 w-5" />
+                {collapsed && alertsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    {alertsCount > 9 ? '9+' : alertsCount}
+                  </span>
+                )}
+              </div>
+              {!collapsed && (<>
+                <span className="flex-1 text-left">Partners</span>
+                {alertsCount > 0 && (
+                  <span className="mr-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                    {alertsCount > 99 ? '99+' : alertsCount}
+                  </span>
+                )}
+                <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', partnersOpen && 'rotate-180')} />
+              </>)}
             </Button>
           </CollapsibleTrigger>
           {!collapsed && (
