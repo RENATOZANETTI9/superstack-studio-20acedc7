@@ -251,9 +251,9 @@ const MOCK_WEEK_SIMULATIONS = [
 ];
 
 const MOCK_VISITS = [
-  { clinic: 'Clínica Sorriso Feliz', address: 'Av. Paulista 1230 · São Paulo/SP', goal: 'Treinar nova recepcionista', date: '02/07' },
-  { clinic: 'Centro Médico Saúde+', address: 'R. das Flores 88 · São Paulo/SP', goal: 'Reativar simulações', date: '03/07' },
-  { clinic: 'OdontoVida Premium', address: 'Av. Brigadeiro 500 · São Paulo/SP', goal: 'Apresentar campanha de julho', date: '05/07' },
+  { clinic: 'Clínica BH Sorriso', address: 'Av. Afonso Pena 1230 · Belo Horizonte/MG', goal: 'Treinar nova recepcionista', date: '02/07' },
+  { clinic: 'Centro Odonto Minas', address: 'R. da Bahia 88 · Belo Horizonte/MG', goal: 'Reativar simulações', date: '03/07' },
+  { clinic: 'Clínica Saúde Total', address: 'Av. do Contorno 500 · Belo Horizonte/MG', goal: 'Apresentar campanha de julho', date: '05/07' },
 ];
 
 function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; userEmail?: string | null }) {
@@ -288,12 +288,12 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
             <User className="w-8 h-8 text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl md:text-2xl font-bold text-foreground">Carlos Eduardo Silva</h1>
-            <p className="text-sm text-muted-foreground">{userEmail || 'admin@helpude.com'}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">Roberto Ribeiro</h1>
+            <p className="text-sm text-muted-foreground">{userEmail || 'roberto@helpude.com'}</p>
             <div className="flex gap-2 mt-2 flex-wrap">
               <Badge variant="outline">Partner</Badge>
-              <Badge variant="outline" className="gap-1"><MapPin className="w-3 h-3" /> São Paulo / SP</Badge>
-              <Badge variant="outline" className="gap-1"><Calendar className="w-3 h-3" /> Desde 15/06/2024</Badge>
+              <Badge variant="outline" className="gap-1"><MapPin className="w-3 h-3" /> Belo Horizonte / MG</Badge>
+              <Badge variant="outline" className="gap-1"><Calendar className="w-3 h-3" /> Desde Abril 2026</Badge>
             </div>
           </div>
         </CardContent>
@@ -352,17 +352,17 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card><CardContent className="pt-5">
             <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
-            <p className="text-xl font-bold text-green-600">R$ 1.842,00</p>
+            <p className="text-xl font-bold text-green-600">R$ 280,00</p>
           </CardContent></Card>
           <Card><CardContent className="pt-5">
             <p className="text-xs text-muted-foreground">Última bonificação recebida</p>
-            <p className="text-xl font-bold">R$ 560,00</p>
-            <p className="text-[10px] text-muted-foreground">em 05/06/2026</p>
+            <p className="text-xl font-bold">R$ 195,00</p>
+            <p className="text-[10px] text-muted-foreground">em 30/05/2026</p>
           </CardContent></Card>
           <Card><CardContent className="pt-5">
             <p className="text-xs text-muted-foreground">Próxima previsão</p>
-            <p className="text-xl font-bold">R$ 720,00</p>
-            <p className="text-[10px] text-muted-foreground">previsto para 05/07/2026</p>
+            <p className="text-xl font-bold">R$ 300,00</p>
+            <p className="text-[10px] text-muted-foreground">previsto para 30/06/2026</p>
           </CardContent></Card>
         </div>
       </div>

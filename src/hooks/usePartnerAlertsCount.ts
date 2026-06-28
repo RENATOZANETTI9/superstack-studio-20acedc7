@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { MOCK_ALERTS } from '@/lib/mock-data';
+
+const MOCK_COUNT = 10;
 
 export function usePartnerAlertsCount() {
-  const [count, setCount] = useState<number>(MOCK_ALERTS.length);
+  const [count, setCount] = useState<number>(MOCK_COUNT);
 
   useEffect(() => {
     let active = true;
@@ -13,11 +14,9 @@ export function usePartnerAlertsCount() {
         .select('*', { count: 'exact', head: true })
         .is('resolved_at', null);
       if (!active) return;
-      if (error || !c) {
-        setCount(MOCK_ALERTS.length);
-      } else {
-        setCount(c);
-      }
+      // Fallback to mocked value when there is no real data
+      if (error || !c) setCount(MOCK_COUNT);
+      else setCount(c);
     };
     load();
     const channel = supabase
