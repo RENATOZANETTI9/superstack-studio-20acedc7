@@ -122,7 +122,7 @@ export default function PartnerCharts({ metrics, commissions }: Props) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Evolução SEH</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Desempenho Médio das Clínicas</CardTitle></CardHeader>
           <CardContent>
             {sehData.length > 0 ? (
               <ChartContainer config={sehConfig} className="h-[200px] w-full">
