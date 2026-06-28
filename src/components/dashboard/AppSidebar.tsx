@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
   Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
   UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
-  Building2, BarChart3
+  Building2, BarChart3, UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const { user, isMaster, role, logout } = useAuth();
   const [usersOpen, setUsersOpen] = useState(location.pathname.startsWith('/dashboard/usuarios'));
   const [partnersOpen, setPartnersOpen] = useState(location.pathname.startsWith('/dashboard/partners'));
+  const [representantesOpen, setRepresentantesOpen] = useState(location.pathname.startsWith('/dashboard/representantes'));
   const [clinicasOpen, setClinicasOpen] = useState(location.pathname.startsWith('/dashboard/clinicas'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -70,6 +71,12 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
   ].filter(item => item.visible);
+
+  const representantesSubItems = [
+    { title: 'Painel', icon: LayoutDashboard, path: '/dashboard/representantes' },
+    { title: 'Rede & Hierarquia', icon: Network, path: '/dashboard/representantes/rede' },
+    { title: 'Comissões', icon: DollarSign, path: '/dashboard/representantes/comissoes' },
+  ];
 
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
     : role === 'master_partner' ? 'Master Partner' 
