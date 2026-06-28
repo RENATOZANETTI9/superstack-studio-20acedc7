@@ -148,7 +148,7 @@ const PartnersDashboard = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Meu Painel · Partners</h1>
-            <p className="text-sm text-muted-foreground">Gestão de parceiros e performance</p>
+            <p className="text-sm text-muted-foreground">Monitoramento de clínicas e performance operacional</p>
           </div>
           <Button onClick={fetchData} variant="outline" size="sm">Atualizar dados</Button>
         </div>
