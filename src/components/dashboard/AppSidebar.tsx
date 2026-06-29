@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
-  Shield, User, Menu, X, Key, GitBranch, UserCircle, Handshake,
-  UserPlus, Network, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
+  Shield, User, Menu, X, Key, GitBranch, UserCircle,
+  UserPlus, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
   Building2, BarChart3, UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { isAdminRole, isPartnerRole, canAccessConfig, canAccessMonitoring, canAccessUsersMenu } from '@/lib/partner-rules';
-import { usePartnerAlertsCount } from '@/hooks/usePartnerAlertsCount';
+import { isAdminRole, canAccessConfig, canAccessMonitoring, canAccessUsersMenu } from '@/lib/partner-rules';
+
 
 interface AppSidebarProps {
   collapsed: boolean;
@@ -24,16 +24,16 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const navigate = useNavigate();
   const { user, isMaster, role, logout } = useAuth();
   const [usersOpen, setUsersOpen] = useState(location.pathname.startsWith('/dashboard/usuarios'));
-  const [partnersOpen, setPartnersOpen] = useState(location.pathname.startsWith('/dashboard/partners'));
+  
   const [representantesOpen, setRepresentantesOpen] = useState(location.pathname.startsWith('/dashboard/representantes'));
   const [clinicasOpen, setClinicasOpen] = useState(location.pathname.startsWith('/dashboard/clinicas'));
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const alertsCount = usePartnerAlertsCount();
+  
 
   const appRole = role as any;
   const isAdmin = isAdminRole(appRole);
-  const isPartner = isPartnerRole(appRole);
+  
   const showUsersMenu = canAccessUsersMenu(appRole);
   const showConfig = canAccessConfig(appRole);
   const showMonitoring = canAccessMonitoring(appRole);
