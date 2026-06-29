@@ -57,21 +57,6 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos' },
   );
 
-  // Partner submenu items with RBAC
-  const partnerSubItems = [
-    { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/partners', visible: true },
-    { title: 'Minha Rota', icon: MapPin, path: '/dashboard/partners/rota', visible: true },
-    { title: 'Meu Perfil', icon: UserCircle, path: '/dashboard/partners/perfil', visible: true },
-    { title: 'Cadastro', icon: UserPlus, path: '/dashboard/partners/cadastro', visible: true },
-    { title: 'Minhas Clínicas', icon: Building2, path: '/dashboard/partners/clinicas', visible: true },
-    { title: 'Rede', icon: Network, path: '/dashboard/partners/rede', visible: false },
-    { title: 'Bonificações', icon: DollarSign, path: '/dashboard/partners/bonificacoes', visible: true },
-    { title: 'Simulador', icon: Calculator, path: '/dashboard/partners/simulador', visible: true },
-    { title: 'Marketing', icon: Megaphone, path: '/dashboard/partners/marketing', visible: true },
-    { title: 'Simulações Clínicas', icon: BarChart3, path: '/dashboard/partners/simulacoes-clinicas', visible: true },
-    { title: 'Configurações', icon: Settings, path: '/dashboard/partners/config', visible: showConfig },
-    { title: 'Monitoramento', icon: Activity, path: '/dashboard/partners/monitoramento', visible: showMonitoring },
-  ].filter(item => item.visible);
 
   const representantesSubItems = [
     { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/representantes', visible: true },
