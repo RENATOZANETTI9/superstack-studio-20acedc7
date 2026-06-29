@@ -96,7 +96,7 @@ const PartnersDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     const [partnersRes, clinicsRes, metricsRes, alertsRes, commissionsRes] = await Promise.all([
-      supabase.from('partners').select('*').order('created_at', { ascending: false }),
+      supabase.from('partners').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
       supabase.from('partner_clinic_relations').select('*'),
       supabase.from('partner_metrics_daily').select('*').order('metric_date', { ascending: false }).limit(200),
       supabase.from('partner_alerts').select('*').is('resolved_at', null).order('alert_date', { ascending: false }).limit(10),
