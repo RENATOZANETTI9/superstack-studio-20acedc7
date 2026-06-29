@@ -316,42 +316,6 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           </Collapsible>
         )}
 
-        {/* Partners Menu */}
-        <Collapsible open={partnersOpen} onOpenChange={setPartnersOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-              location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
-              <div className="relative shrink-0">
-                <Handshake className="h-5 w-5" />
-                {collapsed && alertsCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                    {alertsCount > 9 ? '9+' : alertsCount}
-                  </span>
-                )}
-              </div>
-              {!collapsed && (<>
-                <span className="flex-1 text-left">Partners</span>
-                {alertsCount > 0 && (
-                  <span className="mr-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                    {alertsCount > 99 ? '99+' : alertsCount}
-                  </span>
-                )}
-                <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', partnersOpen && 'rotate-180')} />
-              </>)}
-            </Button>
-          </CollapsibleTrigger>
-          {!collapsed && (
-            <CollapsibleContent className="space-y-1 pt-1">
-              {partnerSubItems.map(sub => (
-                <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
-                  className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                    isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                  <sub.icon className="h-4 w-4 shrink-0" /><span>{sub.title}</span>
-                </Button>
-              ))}
-            </CollapsibleContent>
-          )}
-        </Collapsible>
 
         {/* Representantes Menu - desktop */}
         {showRepresentantes && (
