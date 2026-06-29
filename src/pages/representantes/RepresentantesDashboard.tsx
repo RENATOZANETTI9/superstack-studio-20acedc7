@@ -104,7 +104,7 @@ const RepresentantesDashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid.tsxols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-primary/10"><Users className="h-5 w-5 text-primary" /></div><div><p className="text-sm text-muted-foreground">Total</p><p className="text-2xl font-bold">{totalReps}</p></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-purple-500/10"><Star className="h-5 w-5 text-purple-500" /></div><div><p className="text-sm text-muted-foreground">Master Partners</p><p className="text-2xl font-bold">{masterPartners}</p></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-green-500/10"><Activity className="h-5 w-5 text-green-500" /></div><div><p className="text-sm text-muted-foreground">Ativos</p><p className="text-2xl font-bold">{activeReps}</p></div></div></CardContent></Card>
