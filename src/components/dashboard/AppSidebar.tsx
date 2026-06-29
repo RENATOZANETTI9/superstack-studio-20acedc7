@@ -156,30 +156,6 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                 </Collapsible>
               )}
 
-              {/* Partners Menu */}
-              <Collapsible open={partnersOpen} onOpenChange={setPartnersOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent',
-                    location.pathname.startsWith('/dashboard/partners') && 'bg-sidebar-accent text-sidebar-primary')}>
-                    <Handshake className="h-6 w-6 shrink-0" /><span className="flex-1 text-left">Partners</span>
-                  {alertsCount > 0 && (
-                    <span className="mr-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                      {alertsCount > 99 ? '99+' : alertsCount}
-                    </span>
-                  )}
-                    <ChevronDown className={cn('h-5 w-5 transition-transform duration-200', partnersOpen && 'rotate-180')} />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 pt-1">
-                  {partnerSubItems.map(sub => (
-                    <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
-                      className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
-                        isActive(sub.path) && 'bg-sidebar-accent text-sidebar-primary font-medium')}>
-                      <sub.icon className="h-5 w-5 shrink-0" /><span>{sub.title}</span>
-                    </Button>
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
 
               {/* Representantes Menu - mobile */}
               {showRepresentantes && (
