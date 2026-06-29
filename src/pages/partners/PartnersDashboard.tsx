@@ -78,11 +78,6 @@ function alertSeverityStyles(type: string, severity: string) {
   return { border: 'border-yellow-300', bg: 'bg-yellow-50', icon: 'text-yellow-600', badge: 'bg-yellow-100 text-yellow-700' };
 }
 
-const typeColors: Record<string, string> = {
-  PARTNER: 'bg-primary text-white',
-  MASTER: 'bg-purple-600 text-white',
-};
-
 const PartnersDashboard = () => {
   const { user } = useAuth();
   usePartnerAlertRealtime();
@@ -101,7 +96,7 @@ const PartnersDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     const [partnersRes, clinicsRes, metricsRes, alertsRes, commissionsRes] = await Promise.all([
-      supabase.from('partners').select('*').order('created_at', { ascending: false }),
+      supabase.from('partners').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
       supabase.from('partner_clinic_relations').select('*'),
       supabase.from('partner_metrics_daily').select('*').order('metric_date', { ascending: false }).limit(200),
       supabase.from('partner_alerts').select('*').is('resolved_at', null).order('alert_date', { ascending: false }).limit(10),
@@ -194,7 +189,7 @@ const PartnersDashboard = () => {
               <Card><CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10"><Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
-                  <div><p className="text-[10px] sm:text-sm text-muted-foreground">SEH médio</p><p className="text-lg sm:text-2xl font-bold">{avgSeh}</p></div>
+                  <div><p className="text-[10px] sm:text-sm text-muted-foreground">Desempenho Médio</p><p className="text-lg sm:text-2xl font-bold">{avgSeh}</p></div>
                 </div>
               </CardContent></Card>
             </>
