@@ -57,7 +57,7 @@ const RepresentantesDashboard = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from('partners').insert({
+    const { error } = await supabase.from('partners').insert([{
       legal_name: form.name,
       document_number: '',
       email: form.email,
@@ -67,7 +67,7 @@ const RepresentantesDashboard = () => {
       region_city: form.region_city || null,
       status: 'PENDING',
       person_type: 'PF',
-    });
+    }]);
     setSaving(false);
     if (error) {
       toast.error('Erro ao cadastrar representante', { description: error.message });
