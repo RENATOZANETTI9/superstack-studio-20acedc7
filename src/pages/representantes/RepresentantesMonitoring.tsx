@@ -25,7 +25,7 @@ const PartnersMonitoring = () => {
   // Redirect non-admin users
   useEffect(() => {
     if (!authLoading && role && !canAccessMonitoring(role as any)) {
-      navigate('/dashboard/partners');
+      navigate('/dashboard/representantes');
     }
   }, [role, authLoading, navigate]);
 

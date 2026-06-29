@@ -72,7 +72,7 @@ const PartnersConfig = () => {
   // Redirect non-admin users
   useEffect(() => {
     if (!authLoading && role && !canAccessConfig(role as any)) {
-      navigate('/dashboard/partners');
+      navigate('/dashboard/representantes');
     }
   }, [role, authLoading, navigate]);
 

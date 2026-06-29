@@ -179,7 +179,7 @@ export default function PartnersClinicas() {
           {filtered.map(c => (
             <button
               key={c.id}
-              onClick={() => navigate(`/dashboard/partners/clinicas/${c.id}`)}
+              onClick={() => navigate(`/dashboard/representantes/clinicas/${c.id}`)}
               className="text-left rounded-xl border bg-card hover:shadow-lg transition-all p-4 shadow-sm group"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
