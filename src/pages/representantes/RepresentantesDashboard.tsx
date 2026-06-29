@@ -58,7 +58,7 @@ const RepresentantesDashboard = () => {
     }
     setSaving(true);
     const { error } = await supabase.from('partners').insert({
-      legal_name: form.name,
+      name: form.name,
       email: form.email,
       phone: form.phone || null,
       type: form.type,
