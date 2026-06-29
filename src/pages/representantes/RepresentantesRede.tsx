@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +7,18 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Users, Building2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
+import { useAuth } from '@/contexts/AuthContext';
+import { canAccessRepresentantes } from '@/lib/partner-rules';
 
 const RepresentantesRede = () => {
+  const navigate = useNavigate();
+  const { role } = useAuth();
+  useEffect(() => {
+    if (role && !canAccessRepresentantes(role as any)) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [role, navigate]);
+
   const [partners, setPartners] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});

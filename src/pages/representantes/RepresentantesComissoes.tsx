@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +9,18 @@ import { DollarSign, TrendingUp, Users, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_PARTNERS, MOCK_COMMISSIONS, withMockFallback } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { canAccessRepresentantes } from '@/lib/partner-rules';
 
 const RepresentantesComissoes = () => {
+  const navigate = useNavigate();
+  const { role } = useAuth();
+  useEffect(() => {
+    if (role && !canAccessRepresentantes(role as any)) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [role, navigate]);
+
   const { toast } = useToast();
   const [partners, setPartners] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);

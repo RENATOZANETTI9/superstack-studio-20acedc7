@@ -132,7 +132,7 @@ const RepresentantesDashboard = () => {
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p classifiers.font-medium text-sm truncate">{name}</p>
+                          <p className="font-medium text-sm truncate">{name}</p>
                           <p className="text-xs text-muted-foreground truncate">{p.email || '—'}</p>
                         </div>
                       </div>
@@ -158,7 +158,6 @@ const RepresentantesDashboard = () => {
         </Card>
       </div>
 
-      {/* Dialog: Cadastrar Representante */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
