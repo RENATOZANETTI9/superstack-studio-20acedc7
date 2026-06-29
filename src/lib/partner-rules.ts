@@ -94,6 +94,9 @@ export const canAccessConfig = (role: AppRole | null): boolean => isAdminRole(ro
 export const canAccessMonitoring = (role: AppRole | null): boolean => isAdminRole(role);
 export const canAccessUsersMenu = (role: AppRole | null): boolean => isAdminRole(role);
 export const canEditPartner = (role: AppRole | null): boolean => isAdminRole(role);
+export const canAccessRepresentantes = (role: AppRole | null): boolean => {
+  return role === 'master' || role === 'admin' || role === 'master_partner';
+};
 
 export const formatCurrency = (value: number): string => {
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
