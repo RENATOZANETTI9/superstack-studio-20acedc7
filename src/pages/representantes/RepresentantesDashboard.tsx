@@ -58,6 +58,7 @@ const RepresentantesDashboard = () => {
     }
     setSaving(true);
     const { error } = await supabase.from('partners').insert([{
+      user_id: crypto.randomUUID(),
       legal_name: form.name,
       document_number: '',
       email: form.email,
