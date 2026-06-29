@@ -37,6 +37,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const showUsersMenu = canAccessUsersMenu(appRole);
   const showConfig = canAccessConfig(appRole);
   const showMonitoring = canAccessMonitoring(appRole);
+  const showRepresentantes = isAdminRole(appRole) || role === 'master_partner';
 
   const handleLogout = async () => { await logout(); navigate('/'); };
   const isActive = (path: string) => location.pathname === path;
