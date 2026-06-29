@@ -212,19 +212,6 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
               <span className="text-[10px]">Usuários</span>
             </Button>
           )}
-          <Button variant="ghost" onClick={() => handleNavigate('/dashboard/partners')}
-            className={cn('flex-1 flex-col h-14 gap-1 text-sidebar-foreground hover:bg-sidebar-accent',
-              location.pathname.startsWith('/dashboard/partners') && 'text-sidebar-primary')}>
-            <div className="relative">
-              <Handshake className={cn('h-5 w-5', location.pathname.startsWith('/dashboard/partners') && 'text-primary')} />
-              {alertsCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                  {alertsCount > 9 ? '9+' : alertsCount}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px]">Partners</span>
-          </Button>
         </nav>
       </>
     );
