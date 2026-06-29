@@ -74,10 +74,18 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   ].filter(item => item.visible);
 
   const representantesSubItems = [
-    { title: 'Painel', icon: LayoutDashboard, path: '/dashboard/representantes' },
-    { title: 'Rede & Hierarquia', icon: Network, path: '/dashboard/representantes/rede' },
-    { title: 'Comissões', icon: DollarSign, path: '/dashboard/representantes/comissoes' },
-  ];
+    { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/representantes', visible: true },
+    { title: 'Minha Rota', icon: MapPin, path: '/dashboard/representantes/rota', visible: true },
+    { title: 'Meu Perfil', icon: UserCircle, path: '/dashboard/representantes/perfil', visible: true },
+    { title: 'Cadastro', icon: UserPlus, path: '/dashboard/representantes/cadastro', visible: true },
+    { title: 'Minhas Clínicas', icon: Building2, path: '/dashboard/representantes/clinicas', visible: true },
+    { title: 'Bonificações', icon: DollarSign, path: '/dashboard/representantes/bonificacoes', visible: true },
+    { title: 'Simulador', icon: Calculator, path: '/dashboard/representantes/simulador', visible: true },
+    { title: 'Marketing', icon: Megaphone, path: '/dashboard/representantes/marketing', visible: true },
+    { title: 'Simulações Clínicas', icon: BarChart3, path: '/dashboard/representantes/simulacoes-clinicas', visible: true },
+    { title: 'Configurações', icon: Settings, path: '/dashboard/representantes/config', visible: showConfig },
+    { title: 'Monitoramento', icon: Activity, path: '/dashboard/representantes/monitoramento', visible: showMonitoring },
+  ].filter(item => item.visible);
 
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
     : role === 'master_partner' ? 'Master Partner' 

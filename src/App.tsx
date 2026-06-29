@@ -29,6 +29,7 @@ import PartnersClinicProfile from "./pages/partners/PartnersClinicProfile";
 import RepresentantesDashboard from "./pages/representantes/RepresentantesDashboard";
 import RepresentantesRede from "./pages/representantes/RepresentantesRede";
 import RepresentantesComissoes from "./pages/representantes/RepresentantesComissoes";
+import RepresentantesStub from "./pages/representantes/RepresentantesStub";
 import Clinicas from "./pages/Clinicas";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
@@ -73,6 +74,16 @@ const App = () => (
             <Route path="/dashboard/representantes" element={<RepresentantesDashboard />} />
             <Route path="/dashboard/representantes/rede" element={<RepresentantesRede />} />
             <Route path="/dashboard/representantes/comissoes" element={<RepresentantesComissoes />} />
+            <Route path="/dashboard/representantes/rota" element={<RepresentantesStub title="Minha Rota" />} />
+            <Route path="/dashboard/representantes/perfil" element={<RepresentantesStub title="Meu Perfil" />} />
+            <Route path="/dashboard/representantes/cadastro" element={<RepresentantesStub title="Cadastro" />} />
+            <Route path="/dashboard/representantes/clinicas" element={<RepresentantesStub title="Minhas Clínicas" />} />
+            <Route path="/dashboard/representantes/bonificacoes" element={<RepresentantesStub title="Bonificações" />} />
+            <Route path="/dashboard/representantes/simulador" element={<RepresentantesStub title="Simulador" />} />
+            <Route path="/dashboard/representantes/marketing" element={<RepresentantesStub title="Marketing" />} />
+            <Route path="/dashboard/representantes/simulacoes-clinicas" element={<RepresentantesStub title="Simulações Clínicas" />} />
+            <Route path="/dashboard/representantes/config" element={<RepresentantesStub title="Configurações" />} />
+            <Route path="/dashboard/representantes/monitoramento" element={<RepresentantesStub title="Monitoramento" />} />
             <Route path="/dashboard/clinicas" element={<Clinicas />} />
             <Route path="/register/partner" element={<RegisterPartner />} />
             <Route path="/cadastroclinica" element={<CadastroClinica />} />
