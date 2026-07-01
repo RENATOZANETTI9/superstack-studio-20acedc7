@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,6 +75,13 @@ const FORM_INITIAL = {
 
 const PartnersManagement = () => {
   const { toast } = useToast();
+  const { role } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (role === 'master_partner' || role === 'partner') {
+      navigate('/dashboard/representantes/rota', { replace: true });
+    }
+  }, [role, navigate]);
   const [form, setForm] = useState(FORM_INITIAL);
   const [saving, setSaving] = useState(false);
   const [busca, setBusca] = useState('');
