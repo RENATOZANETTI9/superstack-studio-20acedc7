@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +57,13 @@ const CARD_SECTIONS = [
 ];
 
 const PartnersMarketing = () => {
+  const { role } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (role === 'master_partner' || role === 'partner') {
+      navigate('/dashboard/representantes/rota', { replace: true });
+    }
+  }, [role, navigate]);
   return (
     <DashboardLayout>
       <div className="space-y-6">
