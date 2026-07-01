@@ -37,7 +37,8 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const showUsersMenu = canAccessUsersMenu(appRole);
   const showConfig = canAccessConfig(appRole);
   const showMonitoring = canAccessMonitoring(appRole);
-  const showRepresentantes = isAdminRole(appRole) || role === 'master_partner';
+  const isRepresentante = role === 'master_partner' || role === 'partner';
+  const showRepresentantes = isAdminRole(appRole) || role === 'master_partner' || role === 'partner';
 
   const handleLogout = async () => { await logout(); navigate('/'); };
   const isActive = (path: string) => location.pathname === path;
@@ -59,17 +60,17 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
 
   const representantesSubItems = [
-    { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/representantes', visible: true },
+    { title: 'Meu Painel', icon: LayoutDashboard, path: '/dashboard/representantes', visible: !isRepresentante },
     { title: 'Minha Rota', icon: MapPin, path: '/dashboard/representantes/rota', visible: true },
     { title: 'Meu Perfil', icon: UserCircle, path: '/dashboard/representantes/perfil', visible: true },
-    { title: 'Cadastro', icon: UserPlus, path: '/dashboard/representantes/cadastro', visible: true },
+    { title: 'Cadastro', icon: UserPlus, path: '/dashboard/representantes/cadastro', visible: !isRepresentante },
     { title: 'Minhas Clínicas', icon: Building2, path: '/dashboard/representantes/clinicas', visible: true },
     { title: 'Bonificações', icon: DollarSign, path: '/dashboard/representantes/bonificacoes', visible: true },
     { title: 'Simulador', icon: Calculator, path: '/dashboard/representantes/simulador', visible: true },
-    { title: 'Marketing', icon: Megaphone, path: '/dashboard/representantes/marketing', visible: true },
+    { title: 'Marketing', icon: Megaphone, path: '/dashboard/representantes/marketing', visible: !isRepresentante },
     { title: 'Simulações Clínicas', icon: BarChart3, path: '/dashboard/representantes/simulacoes-clinicas', visible: true },
-    { title: 'Configurações', icon: Settings, path: '/dashboard/representantes/config', visible: showConfig },
-    { title: 'Monitoramento', icon: Activity, path: '/dashboard/representantes/monitoramento', visible: showMonitoring },
+    { title: 'Configurações', icon: Settings, path: '/dashboard/representantes/config', visible: showConfig && !isRepresentante },
+    { title: 'Monitoramento', icon: Activity, path: '/dashboard/representantes/monitoramento', visible: showMonitoring && !isRepresentante },
   ].filter(item => item.visible);
 
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
