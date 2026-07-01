@@ -33,6 +33,10 @@ const RepresentantesDashboard = () => {
 
   // Route guard
   useEffect(() => {
+    if (role === 'master_partner' || role === 'partner') {
+      navigate('/dashboard/representantes/rota', { replace: true });
+      return;
+    }
     if (role && !canAccessRepresentantes(role as any)) {
       navigate('/dashboard', { replace: true });
     }
