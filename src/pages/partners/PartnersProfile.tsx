@@ -29,8 +29,7 @@ export default function PartnersProfile() {
   const userName =
     (user?.user_metadata as any)?.full_name ||
     (user?.user_metadata as any)?.name ||
-    user?.email ||
-    'Parceiro';
+    (user?.email ? user.email.split('@')[0] : 'Parceiro');
   const userLocation =
     (user?.user_metadata as any)?.city && (user?.user_metadata as any)?.state
       ? `${(user?.user_metadata as any).city} / ${(user?.user_metadata as any).state}`
