@@ -28,8 +28,8 @@ const REPRESENTANTE_LIKE: AppRole[] = ['master_partner', 'partner', 'representan
 
 const MENU_MATRIX: Record<MenuKey, AppRole[]> = {
   dashboard: ['admin', 'master', 'user', 'cs_geral', 'cs_exclusiva', 'clinic_owner', 'attendant', 'master_partner', 'partner'],
-  buscar_credito: ['admin', 'master', 'user', 'cs_geral', 'cs_exclusiva', 'clinic_owner', 'attendant'],
-  creditos_aprovados: ['admin', 'master', 'user', 'cs_geral', 'cs_exclusiva', 'clinic_owner', 'attendant', 'representante'],
+  buscar_credito: ['admin', 'master', 'user', 'cs_geral', 'cs_exclusiva', 'clinic_owner', 'attendant', 'master_partner', 'partner'],
+  creditos_aprovados: ['admin', 'master', 'user', 'cs_geral', 'cs_exclusiva', 'clinic_owner', 'attendant', 'representante', 'master_partner', 'partner'],
   usuarios: ['admin', 'master', 'representante'],
   representantes_painel: ADMIN_ROLES,
   representantes_rota: [...ADMIN_ROLES, ...REPRESENTANTE_LIKE],

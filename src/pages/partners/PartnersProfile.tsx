@@ -12,6 +12,9 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip as RTooltip, CartesianGrid } from 'recharts';
 import { isAdminRole } from '@/lib/partner-rules';
 
+const isRepresentanteRole = (r: string | null | undefined) =>
+  r === 'partner' || r === 'master_partner';
+
 const CATEGORIAS: Record<string, { label: string; icon: any }> = {
   representante_farmaceutico: { label: 'Representante Farmacêutico', icon: Pill },
   equipamentos_cirurgias: { label: 'Equipamentos de Cirurgias', icon: Wrench },
@@ -82,6 +85,7 @@ export default function PartnersProfile() {
   };
 
   const catInfo = partner?.categoria ? CATEGORIAS[partner.categoria] : null;
+  const showAnalytics = isRepresentanteRole(role as any) && !isAdmin;
 
   if (loading) {
     return (
@@ -236,6 +240,8 @@ export default function PartnersProfile() {
             </CardContent>
           </Card>
         </div>
+
+        {showAnalytics && <RepresentativeAnalyticsSections />}
       </div>
     </DashboardLayout>
   );
@@ -319,6 +325,23 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
         </CardContent>
       </Card>
 
+      {/* Bonificações */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
+        <Card><CardContent className="pt-5">
+          <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
+          <p className="text-xl font-bold text-green-600">R$ 280,00</p>
+        </CardContent></Card>
+      </div>
+
+      <RepresentativeAnalyticsSections />
+    </div>
+  );
+}
+
+function RepresentativeAnalyticsSections() {
+  return (
+    <div className="space-y-6">
       {/* Metas do mês */}
       <div>
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Minhas Metas do Mês</h2>
@@ -365,15 +388,6 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
           </div>
         </CardContent>
       </Card>
-
-      {/* Bonificações */}
-      <div>
-        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
-        <Card><CardContent className="pt-5">
-          <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
-          <p className="text-xl font-bold text-green-600">R$ 280,00</p>
-        </CardContent></Card>
-      </div>
 
       {/* Desempenho Semana a Semana */}
       <div>
