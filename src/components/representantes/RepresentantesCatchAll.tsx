@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { isRepresentanteRole } from '@/lib/partner-rules';
 
 /**
  * Catch-all for unknown /dashboard/representantes/* URLs.
@@ -8,8 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
  */
 export const RepresentantesCatchAll = () => {
   const { role } = useAuth();
-  const isRepresentanteRole =
-    role === 'master_partner' || role === 'partner' || (role as string) === 'representante';
+  const isRepresentante = isRepresentanteRole(role as any);
 
   if (isRepresentanteRole) {
     return <Navigate to="/dashboard/representantes/rota" replace />;
