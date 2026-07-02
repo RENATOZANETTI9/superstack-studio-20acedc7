@@ -91,6 +91,14 @@ export default function PartnersClinicas() {
     });
   }, [search, statusFilter, neighborhoodFilter, specialtyFilter]);
 
+  const groups = useMemo(() => ({
+    alerta: filtered.filter(c => c.alert),
+    acimaMetaComSim: filtered.filter(c => !c.alert && c.active && c.status === 'green' && !c.awaitingFirstSim),
+    abaixoMeta: filtered.filter(c => !c.alert && c.active && c.status !== 'green' && !c.awaitingFirstSim),
+    aguardando: filtered.filter(c => c.awaitingFirstSim),
+    inativas: filtered.filter(c => !c.active && !c.awaitingFirstSim),
+  }), [filtered]);
+
   const total = 12;
   const ativas = 10;
   const simHoje = 127;
