@@ -4,10 +4,13 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import {
   Building2, Search, MapPin, AlertTriangle, TrendingUp, Users, Calendar,
   ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, Activity, Sparkles,
+  ExternalLink, PhoneCall, XCircle,
 } from 'lucide-react';
 
 export type Trend = 'up' | 'upright' | 'right' | 'downright' | 'down';
@@ -62,6 +65,8 @@ const TREND_ICON: Record<Trend, JSX.Element> = {
   down: <ArrowDown className="h-4 w-4 text-red-600" />,
 };
 
+const SPECIALTIES = ['Odontologia', 'Clínica Geral', 'Implantodontia'];
+
 const NEIGHBORHOODS = ['Centro', 'Savassi', 'Lourdes', 'Buritis'];
 
 export default function PartnersClinicas() {
@@ -69,24 +74,122 @@ export default function PartnersClinicas() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
+  const [specialtyFilter, setSpecialtyFilter] = useState('all');
 
   const filtered = useMemo(() => {
     return MOCK_CLINICS.filter(c => {
-      const m1 = c.name.toLowerCase().includes(search.toLowerCase());
+      const m1 = c.name.toLowerCase().includes(search.toLowerCase()) ||
+                  c.responsible.toLowerCase().includes(search.toLowerCase());
       const m2 = statusFilter === 'all'
-        || (statusFilter === 'ativas' && c.active)
+        || (statusFilter === 'ativas' && c.active && !c.awaitingFirstSim)
         || (statusFilter === 'inativas' && !c.active)
-        || (statusFilter === 'alerta' && c.alert);
+        || (statusFilter === 'alerta' && c.alert)
+        || (statusFilter === 'aguardando' && c.awaitingFirstSim);
       const m3 = neighborhoodFilter === 'all' || c.neighborhood === neighborhoodFilter;
-      return m1 && m2 && m3;
+      const m4 = specialtyFilter === 'all' || c.specialty === specialtyFilter;
+      return m1 && m2 && m3 && m4;
     });
-  }, [search, statusFilter, neighborhoodFilter]);
+  }, [search, statusFilter, neighborhoodFilter, specialtyFilter]);
+
+  const groups = useMemo(() => ({
+    alerta: filtered.filter(c => c.alert),
+    acimaMetaComSim: filtered.filter(c => !c.alert && c.active && c.status === 'green' && !c.awaitingFirstSim),
+    abaixoMeta: filtered.filter(c => !c.alert && c.active && c.status !== 'green' && !c.awaitingFirstSim),
+    aguardando: filtered.filter(c => c.awaitingFirstSim),
+    inativas: filtered.filter(c => !c.active && !c.awaitingFirstSim),
+  }), [filtered]);
 
   const total = 12;
   const ativas = 10;
   const simHoje = 127;
   const emAlerta = 3;
   const novasSemana = 2;
+
+  const renderClinicCard = (c: MockClinic) => (
+    <div
+      key={c.id}
+      className="rounded-xl border bg-card shadow-sm p-4 flex flex-col gap-3"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`h-3 w-3 rounded-full ${STATUS_DOT[c.status]} shrink-0`} />
+          <div className="min-w-0">
+            <p className="font-semibold text-sm truncate">{c.name}</p>
+            <p className="text-[11px] text-muted-foreground">{c.specialty}</p>
+          </div>
+        </div>
+        {c.awaitingFirstSim && (
+          <Badge className="bg-orange-100 text-orange-700 border-0 text-[10px] shrink-0">Aguardando 1ª sim.</Badge>
+        )}
+      </div>
+
+      {/* Address */}
+      <p className="text-xs text-muted-foreground flex items-center gap-1">
+        <MapPin className="w-3 h-3 shrink-0" /> {c.address}
+      </p>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-lg bg-muted/40 p-2">
+          <p className="text-[10px] text-muted-foreground">Simulações hoje</p>
+          <p className="font-bold text-base flex items-center gap-1.5">
+            {c.simulationsToday}
+            <span className="text-[10px] font-normal text-muted-foreground">/ {c.expected}</span>
+            {TREND_ICON[c.trend]}
+          </p>
+          <div className="h-1 bg-muted rounded-full mt-1 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${c.status === 'green' ? 'bg-green-500' : c.status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}
+              style={{ width: `${Math.min(100, (c.simulationsToday / c.expected) * 100)}%` }}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg bg-muted/40 p-2">
+          <p className="text-[10px] text-muted-foreground">Recepcionistas</p>
+          <p className="font-bold text-base flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-muted-foreground" /> {c.activeReceptionists}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">Ativa há {c.activeDays}d</p>
+        </div>
+      </div>
+
+      {/* Footer with actions */}
+      <div className="flex items-center justify-between pt-2 border-t">
+        <span className={`text-[11px] ${c.daysSinceLastSim > 2 ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+          Última sim.: {c.daysSinceLastSim === 0 ? 'hoje' : `há ${c.daysSinceLastSim}d`}
+        </span>
+        <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={(e) => { e.stopPropagation(); toast.success(`Ligando para ${c.responsible}...`); }}
+            title="Ligar"
+          >
+            <PhoneCall className="h-3.5 w-3.5 text-muted-foreground" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={(e) => { e.stopPropagation(); toast.success(`Abrindo mapa: ${c.address}`); }}
+            title="Ver no mapa"
+          >
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs px-2"
+            onClick={() => navigate(`/dashboard/representantes/clinicas/${c.id}`)}
+          >
+            Ver detalhes
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <DashboardLayout>
@@ -151,22 +254,30 @@ export default function PartnersClinicas() {
         </div>
 
         {/* Filtros */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nome..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+            <Input placeholder="Buscar por nome ou responsável..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="ativas">Ativas</SelectItem>
-              <SelectItem value="inativas">Inativas</SelectItem>
+              <SelectItem value="all">Todas as clínicas</SelectItem>
+              <SelectItem value="ativas">Ativas com simulação</SelectItem>
               <SelectItem value="alerta">Em Alerta</SelectItem>
+              <SelectItem value="aguardando">Aguardando 1ª simulação</SelectItem>
+              <SelectItem value="inativas">Inativas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
+            <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue placeholder="Especialidade" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as especialidades</SelectItem>
+              {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={neighborhoodFilter} onValueChange={setNeighborhoodFilter}>
-            <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue placeholder="Bairro" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os bairros</SelectItem>
               {NEIGHBORHOODS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
@@ -174,61 +285,74 @@ export default function PartnersClinicas() {
           </Select>
         </div>
 
-        {/* Lista */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filtered.map(c => (
-            <button
-              key={c.id}
-              onClick={() => navigate(`/dashboard/representantes/clinicas/${c.id}`)}
-              className="text-left rounded-xl border bg-card hover:shadow-lg transition-all p-4 shadow-sm group"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className={`h-3 w-3 rounded-full ${STATUS_DOT[c.status]} shrink-0`} />
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{c.specialty}</p>
-                  </div>
+        {/* Seções agrupadas */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground">
+            Nenhuma clínica encontrada com os filtros aplicados.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Em Alerta */}
+            {groups.alerta.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-red-700 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4" /> Em Alerta ({groups.alerta.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.alerta.map(renderClinicCard)}
                 </div>
-                {c.awaitingFirstSim && (
-                  <Badge className="bg-orange-100 text-orange-700 border-0 text-[10px] shrink-0">Aguardando 1ª simulação</Badge>
-                )}
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
-                <MapPin className="w-3 h-3" /> {c.neighborhood} · {c.city}
-              </p>
+            )}
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <p className="text-[10px] text-muted-foreground">Simulações hoje</p>
-                  <p className="font-bold text-base flex items-center gap-1.5">
-                    {c.simulationsToday}
-                    <span className="text-[10px] font-normal text-muted-foreground">/ {c.expected}</span>
-                    {TREND_ICON[c.trend]}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <p className="text-[10px] text-muted-foreground">Recepcionistas hoje</p>
-                  <p className="font-bold text-base flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-muted-foreground" /> {c.activeReceptionists}
-                  </p>
+            {/* Ativas acima da meta */}
+            {groups.acimaMetaComSim.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4" /> Ativas · Acima da Meta ({groups.acimaMetaComSim.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.acimaMetaComSim.map(renderClinicCard)}
                 </div>
               </div>
+            )}
 
-              <div className="flex items-center justify-between mt-3 pt-3 border-t text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Ativa há {c.activeDays}d</span>
-                <span className={c.daysSinceLastSim > 2 ? 'text-red-600 font-medium' : ''}>
-                  Última simulação: {c.daysSinceLastSim === 0 ? 'hoje' : `há ${c.daysSinceLastSim}d`}
-                </span>
+            {/* Ativas abaixo da meta */}
+            {groups.abaixoMeta.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-yellow-700 mb-2 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4" /> Ativas · Abaixo da Meta ({groups.abaixoMeta.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.abaixoMeta.map(renderClinicCard)}
+                </div>
               </div>
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div className="col-span-full text-center py-12 text-sm text-muted-foreground">
-              Nenhuma clínica encontrada com os filtros aplicados.
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* Aguardando 1ª simulação */}
+            {groups.aguardando.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4" /> Aguardando 1ª Simulação ({groups.aguardando.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.aguardando.map(renderClinicCard)}
+                </div>
+              </div>
+            )}
+
+            {/* Inativas */}
+            {groups.inativas.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4" /> Inativas ({groups.inativas.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.inativas.map(renderClinicCard)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
