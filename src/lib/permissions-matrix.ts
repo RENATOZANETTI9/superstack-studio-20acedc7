@@ -56,6 +56,42 @@ export const getAllowedMenuKeys = (role: AppRole | null): MenuKey[] => {
   return (Object.keys(MENU_MATRIX) as MenuKey[]).filter((k) => MENU_MATRIX[k].includes(role));
 };
 
+/**
+ * Real menu impact for a (role, menu) pair — mirrors what the guards do at
+ * runtime and what the sidebar renders. Used by the Auditoria page so admins
+ * can review behaviour before exporting the CSV.
+ *
+ *  - 'visible':  sidebar shows the item and the route renders.
+ *  - 'redirect': item hidden; guard redirects to /dashboard/representantes/rota
+ *                (only for representante-like roles hitting admin-only items
+ *                inside the representantes module).
+ *  - 'forbidden': item hidden; guard sends the user to /acesso-negado (403).
+ */
+export type MenuImpact = 'visible' | 'redirect' | 'forbidden';
+
+const REPRESENTANTE_LIKE_ROLES: AppRole[] = ['master_partner', 'partner', 'representante'];
+const REPRESENTANTES_KEYS: MenuKey[] = [
+  'representantes_painel',
+  'representantes_rota',
+  'representantes_perfil',
+  'representantes_cadastro',
+  'representantes_clinicas',
+  'representantes_bonificacoes',
+  'representantes_simulador',
+  'representantes_marketing',
+  'representantes_simulacoes',
+  'representantes_config',
+  'representantes_monitoramento',
+];
+
+export const getMenuImpact = (role: AppRole | null, key: MenuKey): MenuImpact => {
+  if (canAccessMenu(role, key)) return 'visible';
+  const isRepresentanteLike = !!role && REPRESENTANTE_LIKE_ROLES.includes(role);
+  const isRepresentantesKey = REPRESENTANTES_KEYS.includes(key);
+  if (isRepresentanteLike && isRepresentantesKey) return 'redirect';
+  return 'forbidden';
+};
+
 /** Rota default por role — usada por AccessDenied e catch-alls. */
 export const getDefaultRouteForRole = (role: AppRole | null): string => {
   if (!role) return '/auth';
