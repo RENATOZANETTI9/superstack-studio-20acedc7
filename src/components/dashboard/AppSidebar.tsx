@@ -37,8 +37,9 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const showUsersMenu = canAccessUsersMenu(appRole);
   const showConfig = canAccessConfig(appRole);
   const showMonitoring = canAccessMonitoring(appRole);
-  const isRepresentante = role === 'master_partner' || role === 'partner';
-  const showRepresentantes = isAdminRole(appRole) || role === 'master_partner' || role === 'partner';
+  const isRepresentante =
+    role === 'master_partner' || role === 'partner' || role === 'representante';
+  const showRepresentantes = isAdminRole(appRole) || isRepresentante;
 
   const handleLogout = async () => { await logout(); navigate('/'); };
   const isActive = (path: string) => location.pathname === path;
@@ -76,6 +77,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
     : role === 'master_partner' ? 'Master Partner' 
     : role === 'partner' ? 'Partner' 
+    : role === 'representante' ? 'Representante'
     : role === 'cs_geral' ? 'CS Geral'
     : role === 'cs_exclusiva' ? 'CS Exclusiva'
     : role === 'clinic_owner' ? 'Dono Clínica'
