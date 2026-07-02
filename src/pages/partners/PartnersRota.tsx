@@ -149,7 +149,8 @@ export default function PartnersRota() {
   const [cobrarTarget, setCobrarTarget] = useState<{ id: string; clinic: string } | null>(null);
   const [cobrarNote, setCobrarNote] = useState('');
 
-  const weekLabel = `Semana ${27 + weekOffset} — 30/06 a 04/07/2026`;
+  const { label: weekLabel, monday } = getWeekDates(weekOffset);
+  const DAYS = getDays(monday);
 
   const handleGenerate = () => {
     toast.success('Roteiro gerado com base nas metas da semana!');
