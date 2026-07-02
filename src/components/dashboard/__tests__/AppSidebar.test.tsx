@@ -154,4 +154,111 @@ describe('AppSidebar — mobile (bottom nav & drawer)', () => {
     const bottomNav = container.querySelector('nav.fixed.bottom-0') as HTMLElement;
     expect(within(bottomNav).getByText(/Usuários/i)).toBeInTheDocument();
   });
+
+  // --------------------------------------------------------------------
+  // Full mobile drawer coverage — asserts that forbidden items NEVER
+  // appear for each representante-like mode (representante / partner /
+  // master_partner). The drawer is opened by clicking the hamburger
+  // button in the mobile header.
+  // --------------------------------------------------------------------
+  const openMobileDrawer = async (container: HTMLElement) => {
+    const { fireEvent } = await import('@testing-library/react');
+    const header = container.querySelector('header.fixed.top-0') as HTMLElement;
+    const trigger = within(header).getAllByRole('button')[0];
+    fireEvent.click(trigger);
+  };
+
+  const FORBIDDEN_FOR_REPRESENTANTE = [
+    /^Dashboard$/i,
+    /Buscar Crédito/i,
+    /Meu Painel/i,
+    /^Cadastro$/i,
+    /^Marketing$/i,
+    /Configurações/i,
+    /Monitoramento/i,
+    /^Clínicas$/i, // admin clinics module
+  ];
+
+  const ALLOWED_FOR_REPRESENTANTE = [
+    /Créditos Aprovados/i,
+    /Gestão de Usuários/i, // representante has restricted users menu access
+    /Representantes/i,
+    /Minha Rota/i,
+    /Meu Perfil/i,
+    /Minhas Clínicas/i,
+    /Bonificações/i,
+    /Simulador/i,
+  ];
+
+  const FORBIDDEN_FOR_PARTNER = [
+    /Gestão de Usuários/i,
+    /Meu Painel/i,
+    /^Cadastro$/i,
+    /^Marketing$/i,
+    /Configurações/i,
+    /Monitoramento/i,
+    /^Clínicas$/i,
+    /^Auditoria$/i,
+  ];
+
+  const ALLOWED_FOR_PARTNER = [
+    /^Dashboard$/i,
+    /Representantes/i,
+    /Minha Rota/i,
+    /Meu Perfil/i,
+    /Minhas Clínicas/i,
+    /Bonificações/i,
+    /Simulador/i,
+  ];
+
+  const drawerCases: Array<{
+    role: 'representante' | 'partner' | 'master_partner';
+    forbidden: RegExp[];
+    allowed: RegExp[];
+  }> = [
+    { role: 'representante', forbidden: FORBIDDEN_FOR_REPRESENTANTE, allowed: ALLOWED_FOR_REPRESENTANTE },
+    { role: 'partner', forbidden: FORBIDDEN_FOR_PARTNER, allowed: ALLOWED_FOR_PARTNER },
+    { role: 'master_partner', forbidden: FORBIDDEN_FOR_PARTNER, allowed: ALLOWED_FOR_PARTNER },
+  ];
+
+  for (const c of drawerCases) {
+    it(`mobile drawer — ${c.role}: allowed items render, forbidden items NEVER render`, async () => {
+      authState.role = c.role;
+      const { container } = renderSidebar('/dashboard/representantes/rota');
+      await openMobileDrawer(container);
+
+      const drawer = container.querySelector('.fixed.inset-0.z-40') as HTMLElement;
+      expect(drawer).toBeTruthy();
+      const inDrawer = within(drawer);
+
+      for (const re of c.allowed) {
+        expect(inDrawer.getAllByRole('button', { name: re }).length).toBeGreaterThan(0);
+      }
+      for (const re of c.forbidden) {
+        expect(inDrawer.queryByRole('button', { name: re })).toBeNull();
+      }
+    });
+  }
+
+  // Bottom-nav coverage for each representante-like mode
+  const bottomNavCases: Array<{
+    role: 'representante' | 'partner' | 'master_partner';
+    forbidden: RegExp[];
+  }> = [
+    { role: 'representante', forbidden: [/^Dashboard$/i, /Buscar Crédito/i] },
+    { role: 'partner', forbidden: [/Usuários/i] },
+    { role: 'master_partner', forbidden: [/Usuários/i] },
+  ];
+
+  for (const c of bottomNavCases) {
+    it(`mobile bottom nav — ${c.role}: forbidden shortcuts NEVER render`, () => {
+      authState.role = c.role;
+      const { container } = renderSidebar('/dashboard/representantes/rota');
+      const bottomNav = container.querySelector('nav.fixed.bottom-0') as HTMLElement;
+      const nav = within(bottomNav);
+      for (const re of c.forbidden) {
+        expect(nav.queryByText(re)).toBeNull();
+      }
+    });
+  }
 });

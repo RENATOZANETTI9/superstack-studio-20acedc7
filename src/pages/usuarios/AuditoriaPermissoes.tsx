@@ -3,13 +3,15 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Download } from 'lucide-react';
+import { Check, X, Download, Eye, EyeOff, ArrowRightCircle, ShieldAlert } from 'lucide-react';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
 import {
   ALL_PERMISSIONS,
   HIERARCHY_MATRIX,
   buildHierarchyMatrixCsv,
   canAccessMenu,
+  getMenuImpact,
+  type MenuImpact,
   type MenuKey,
 } from '@/lib/permissions-matrix';
 import type { AppRole } from '@/lib/partner-rules';
@@ -54,10 +56,59 @@ const No = () => (
   <X className="mx-auto h-4 w-4 text-muted-foreground/40" aria-label="bloqueado" />
 );
 
+const IMPACT_META: Record<MenuImpact, { label: string; icon: typeof Eye; className: string; description: string }> = {
+  visible: {
+    label: 'Visível',
+    icon: Eye,
+    className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+    description: 'Item aparece no menu e a rota renderiza normalmente.',
+  },
+  redirect: {
+    label: 'Redirect → /rota',
+    icon: ArrowRightCircle,
+    className: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
+    description: 'Item oculto; guard redireciona para /dashboard/representantes/rota.',
+  },
+  forbidden: {
+    label: '403 negado',
+    icon: ShieldAlert,
+    className: 'bg-rose-500/10 text-rose-600 border-rose-500/30',
+    description: 'Item oculto; guard envia para /acesso-negado.',
+  },
+};
+
+const ImpactCell = ({ impact }: { impact: MenuImpact }) => {
+  const meta = IMPACT_META[impact];
+  const Icon = meta.icon;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${meta.className}`}
+      aria-label={meta.description}
+      title={meta.description}
+    >
+      <Icon className="h-3 w-3" aria-hidden />
+      {meta.label}
+    </span>
+  );
+};
+
 const AuditoriaPermissoes = () => {
   useRoleGuard(['admin', 'master']);
 
   const csv = useMemo(() => buildHierarchyMatrixCsv(), []);
+
+  const menuKeys = Object.keys(MENU_LABELS) as MenuKey[];
+
+  /** Aggregated counts per role for the summary strip above the impact table */
+  const impactSummary = useMemo(() => {
+    return ROLES_FOR_MENUS.map(({ role, label }) => {
+      const counts: Record<MenuImpact, number> = { visible: 0, redirect: 0, forbidden: 0 };
+      menuKeys.forEach((key) => {
+        counts[getMenuImpact(role, key)] += 1;
+      });
+      return { role, label, counts };
+    });
+  }, [menuKeys]);
 
   const download = () => {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -145,6 +196,79 @@ const AuditoriaPermissoes = () => {
                 ))}
               </tbody>
             </table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Impacto real por role (antes de exportar)</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Consolida o que a matriz + os guards produzem em runtime: item{' '}
+              <strong>visível</strong>, <strong>redirect</strong> para <code>/rota</code> ou{' '}
+              <strong>403</strong> em <code>/acesso-negado</code>.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 text-xs">
+              {(Object.keys(IMPACT_META) as MenuImpact[]).map((k) => (
+                <div key={k} className="flex items-center gap-2">
+                  <ImpactCell impact={k} />
+                  <span className="text-muted-foreground">{IMPACT_META[k].description}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Summary strip */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+              {impactSummary.map(({ role, label, counts }) => (
+                <div key={role} className="rounded-lg border border-border/60 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium">{label}</span>
+                    <Badge variant="outline" className="text-[10px] font-mono">{role}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="inline-flex items-center gap-1 text-emerald-600">
+                      <Eye className="h-3 w-3" />{counts.visible}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-amber-600">
+                      <ArrowRightCircle className="h-3 w-3" />{counts.redirect}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-rose-600">
+                      <EyeOff className="h-3 w-3" />{counts.forbidden}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Detailed impact table */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="py-2 pr-4 font-medium">Menu</th>
+                    {ROLES_FOR_MENUS.map((r) => (
+                      <th key={r.role} className="px-2 py-2 text-center font-medium">
+                        {r.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {menuKeys.map((key) => (
+                    <tr key={key} className="border-b border-border/40">
+                      <td className="py-1.5 pr-4">{MENU_LABELS[key]}</td>
+                      {ROLES_FOR_MENUS.map((r) => (
+                        <td key={r.role} className="px-2 py-1.5 text-center">
+                          <ImpactCell impact={getMenuImpact(r.role, key)} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 
