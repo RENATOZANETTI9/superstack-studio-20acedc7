@@ -127,6 +127,15 @@ const mockUsers: User[] = [
     hierarchy: 'SDR',
     createdAt: '03/04/2025 10:20:15',
   },
+  {
+    id: '11',
+    name: 'Roberto Ribeiro',
+    email: 'roberto.ribeiro@helpude.com.br',
+    client: 'HELP UDE — BH/MG',
+    status: 'ATIVO',
+    hierarchy: 'Representante',
+    createdAt: '15/01/2026 08:00:00',
+  },
 ];
 
 const hierarchyOptions = [
@@ -136,6 +145,7 @@ const hierarchyOptions = [
   'Supervisor',
   'CS',
   'SDR',
+  'Representante',
   'Aprovador',
   'Atendente',
   'Médico',
