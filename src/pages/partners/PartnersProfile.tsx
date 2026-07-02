@@ -325,7 +325,15 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
         </CardContent>
       </Card>
 
-      {/* Metas do mês */}
+      {/* Bonificações */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
+        <Card><CardContent className="pt-5">
+          <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
+          <p className="text-xl font-bold text-green-600">R$ 280,00</p>
+        </CardContent></Card>
+      </div>
+
       <RepresentativeAnalyticsSections />
     </div>
   );
