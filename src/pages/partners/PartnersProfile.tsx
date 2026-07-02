@@ -326,6 +326,15 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
       </Card>
 
       {/* Metas do mês */}
+      <RepresentativeAnalyticsSections />
+    </div>
+  );
+}
+
+function RepresentativeAnalyticsSections() {
+  return (
+    <div className="space-y-6">
+      {/* Metas do mês */}
       <div>
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Minhas Metas do Mês</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -371,15 +380,6 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
           </div>
         </CardContent>
       </Card>
-
-      {/* Bonificações */}
-      <div>
-        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
-        <Card><CardContent className="pt-5">
-          <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
-          <p className="text-xl font-bold text-green-600">R$ 280,00</p>
-        </CardContent></Card>
-      </div>
 
       {/* Desempenho Semana a Semana */}
       <div>
