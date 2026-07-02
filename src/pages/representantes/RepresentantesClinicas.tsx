@@ -105,6 +105,92 @@ export default function PartnersClinicas() {
   const emAlerta = 3;
   const novasSemana = 2;
 
+  const renderClinicCard = (c: MockClinic) => (
+    <div
+      key={c.id}
+      className="rounded-xl border bg-card shadow-sm p-4 flex flex-col gap-3"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`h-3 w-3 rounded-full ${STATUS_DOT[c.status]} shrink-0`} />
+          <div className="min-w-0">
+            <p className="font-semibold text-sm truncate">{c.name}</p>
+            <p className="text-[11px] text-muted-foreground">{c.specialty}</p>
+          </div>
+        </div>
+        {c.awaitingFirstSim && (
+          <Badge className="bg-orange-100 text-orange-700 border-0 text-[10px] shrink-0">Aguardando 1ª sim.</Badge>
+        )}
+      </div>
+
+      {/* Address */}
+      <p className="text-xs text-muted-foreground flex items-center gap-1">
+        <MapPin className="w-3 h-3 shrink-0" /> {c.address}
+      </p>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-lg bg-muted/40 p-2">
+          <p className="text-[10px] text-muted-foreground">Simulações hoje</p>
+          <p className="font-bold text-base flex items-center gap-1.5">
+            {c.simulationsToday}
+            <span className="text-[10px] font-normal text-muted-foreground">/ {c.expected}</span>
+            {TREND_ICON[c.trend]}
+          </p>
+          <div className="h-1 bg-muted rounded-full mt-1 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${c.status === 'green' ? 'bg-green-500' : c.status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}
+              style={{ width: `${Math.min(100, (c.simulationsToday / c.expected) * 100)}%` }}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg bg-muted/40 p-2">
+          <p className="text-[10px] text-muted-foreground">Recepcionistas</p>
+          <p className="font-bold text-base flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-muted-foreground" /> {c.activeReceptionists}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">Ativa há {c.activeDays}d</p>
+        </div>
+      </div>
+
+      {/* Footer with actions */}
+      <div className="flex items-center justify-between pt-2 border-t">
+        <span className={`text-[11px] ${c.daysSinceLastSim > 2 ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+          Última sim.: {c.daysSinceLastSim === 0 ? 'hoje' : `há ${c.daysSinceLastSim}d`}
+        </span>
+        <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={(e) => { e.stopPropagation(); toast.success(`Ligando para ${c.responsible}...`); }}
+            title="Ligar"
+          >
+            <PhoneCall className="h-3.5 w-3.5 text-muted-foreground" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={(e) => { e.stopPropagation(); toast.success(`Abrindo mapa: ${c.address}`); }}
+            title="Ver no mapa"
+          >
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs px-2"
+            onClick={() => navigate(`/dashboard/representantes/clinicas/${c.id}`)}
+          >
+            Ver detalhes
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
