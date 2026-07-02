@@ -74,6 +74,7 @@ export default function PartnersClinicas() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
+  const [specialtyFilter, setSpecialtyFilter] = useState('all');
 
   const filtered = useMemo(() => {
     return MOCK_CLINICS.filter(c => {
