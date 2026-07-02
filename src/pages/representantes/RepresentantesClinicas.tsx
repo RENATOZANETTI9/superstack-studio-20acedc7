@@ -65,6 +65,8 @@ const TREND_ICON: Record<Trend, JSX.Element> = {
   down: <ArrowDown className="h-4 w-4 text-red-600" />,
 };
 
+const SPECIALTIES = ['Odontologia', 'Clínica Geral', 'Implantodontia'];
+
 const NEIGHBORHOODS = ['Centro', 'Savassi', 'Lourdes', 'Buritis'];
 
 export default function PartnersClinicas() {
