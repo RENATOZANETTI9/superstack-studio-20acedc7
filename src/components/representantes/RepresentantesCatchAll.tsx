@@ -11,7 +11,7 @@ export const RepresentantesCatchAll = () => {
   const { role } = useAuth();
   const isRepresentante = isRepresentanteRole(role as any);
 
-  if (isRepresentanteRole) {
+  if (isRepresentante) {
     return <Navigate to="/dashboard/representantes/rota" replace />;
   }
   return <Navigate to="/dashboard/representantes" replace />;
