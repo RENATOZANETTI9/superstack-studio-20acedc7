@@ -9,13 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
-  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save
+  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type VisitStatus = 'Pendente' | 'Realizada' | 'Cancelada';
+type VisitStatus =
+  | 'Pendente'
+  | 'Em andamento'
+  | 'Realizada'
+  | 'Não visitada'
+  | 'Reagendada'
+  | 'Sem contato'
+  | 'Clínica cadastrada'
+  | 'Clínica ativada'
+  | 'Treinamento realizado'
+  | 'Aguardando retorno'
+  | 'Cancelada';
 
 interface PlannedVisit {
   id: string;
@@ -68,7 +81,15 @@ const DAYS: { key: keyof typeof INITIAL_DAYS; label: string; date: string }[] = 
 
 const STATUS_BADGE: Record<VisitStatus, string> = {
   Pendente: 'bg-muted text-muted-foreground',
+  'Em andamento': 'bg-blue-100 text-blue-700',
   Realizada: 'bg-green-100 text-green-700',
+  'Não visitada': 'bg-gray-100 text-gray-600',
+  Reagendada: 'bg-yellow-100 text-yellow-700',
+  'Sem contato': 'bg-orange-100 text-orange-700',
+  'Clínica cadastrada': 'bg-purple-100 text-purple-700',
+  'Clínica ativada': 'bg-indigo-100 text-indigo-700',
+  'Treinamento realizado': 'bg-teal-100 text-teal-700',
+  'Aguardando retorno': 'bg-amber-100 text-amber-700',
   Cancelada: 'bg-red-100 text-red-700',
 };
 
@@ -83,7 +104,12 @@ export default function PartnersRota() {
 
   // Side sheet
   const [openVisit, setOpenVisit] = useState<PlannedVisit | null>(null);
-  const [visitResult, setVisitResult] = useState('');
+  const [visitResultStatus, setVisitResultStatus] = useState<VisitStatus>('Realizada');
+  const [visitResultActions, setVisitResultActions] = useState<string[]>([]);
+  const [visitResultNotes, setVisitResultNotes] = useState('');
+  const [visitClinicName, setVisitClinicName] = useState('');
+  const [visitClinicPhone, setVisitClinicPhone] = useState('');
+  const [visitClinicResponsible, setVisitClinicResponsible] = useState('');
 
   // Cobrar modal
   const [cobrarTarget, setCobrarTarget] = useState<{ id: string; clinic: string } | null>(null);
@@ -120,12 +146,17 @@ export default function PartnersRota() {
       if (!dayKey) return prev;
       return {
         ...prev,
-        [dayKey]: prev[dayKey].map(v => v.id === openVisit.id ? { ...v, status: 'Realizada' as VisitStatus } : v),
+        [dayKey]: prev[dayKey].map(v => v.id === openVisit.id ? { ...v, status: visitResultStatus } : v),
       };
     });
     toast.success('Resultado da visita registrado');
     setOpenVisit(null);
-    setVisitResult('');
+    setVisitResultStatus('Realizada');
+    setVisitResultActions([]);
+    setVisitResultNotes('');
+    setVisitClinicName('');
+    setVisitClinicPhone('');
+    setVisitClinicResponsible('');
   };
 
   const filteredDayVisits = (key: keyof typeof INITIAL_DAYS) => {
@@ -137,10 +168,28 @@ export default function PartnersRota() {
   };
 
   // Goals
+  const allVisits = Object.values(days).flat();
   const goals = [
-    { label: 'Cadastros Novos', current: 0, total: 3, color: 'bg-primary' },
-    { label: 'Ativações', current: 0, total: 3, color: 'bg-blue-500' },
-    { label: 'Visitas Realizadas', current: Object.values(days).flat().filter(v => v.status === 'Realizada').length, total: 8, color: 'bg-green-500' },
+    {
+      label: 'Cadastros Novos',
+      current: allVisits.filter(v => v.status === 'Clínica cadastrada' || v.status === 'Clínica ativada').length,
+      total: 3,
+      color: 'bg-primary',
+    },
+    {
+      label: 'Ativações',
+      current: allVisits.filter(v => v.status === 'Clínica ativada').length,
+      total: 3,
+      color: 'bg-blue-500',
+    },
+    {
+      label: 'Visitas Realizadas',
+      current: allVisits.filter(v =>
+        v.status !== 'Pendente' && v.status !== 'Em andamento' && v.status !== 'Cancelada'
+      ).length,
+      total: 8,
+      color: 'bg-green-500',
+    },
     { label: 'Clínicas Acima da Meta', current: 60, total: 100, color: 'bg-purple-500', suffix: '%' },
   ];
 
@@ -235,7 +284,12 @@ export default function PartnersRota() {
                   <SelectContent>
                     <SelectItem value="all">Todos os Status</SelectItem>
                     <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Em andamento">Em andamento</SelectItem>
                     <SelectItem value="Realizada">Realizada</SelectItem>
+                    <SelectItem value="Clínica cadastrada">Clínica cadastrada</SelectItem>
+                    <SelectItem value="Clínica ativada">Clínica ativada</SelectItem>
+                    <SelectItem value="Treinamento realizado">Treinamento realizado</SelectItem>
+                    <SelectItem value="Aguardando retorno">Aguardando retorno</SelectItem>
                     <SelectItem value="Cancelada">Cancelada</SelectItem>
                   </SelectContent>
                 </Select>
@@ -250,7 +304,7 @@ export default function PartnersRota() {
                   ) : filteredDayVisits(d.key).map(v => (
                     <button
                       key={v.id}
-                      onClick={() => { setOpenVisit(v); setVisitResult(''); }}
+                      onClick={() => { setOpenVisit(v); }}
                       className="w-full text-left flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors shadow-sm"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -326,8 +380,70 @@ export default function PartnersRota() {
           </CardContent>
         </Card>
 
+        {/* Fechamento do Dia */}
+        {activeTab !== 'sex' && (() => {
+          const todayKey = activeTab as keyof typeof INITIAL_DAYS;
+          const todayVisits = days[todayKey] || [];
+          if (todayVisits.length === 0) return null;
+          const planejadas = todayVisits.length;
+          const realizadas = todayVisits.filter(v =>
+            v.status !== 'Pendente' && v.status !== 'Em andamento' && v.status !== 'Cancelada'
+          ).length;
+          const cadastradas = todayVisits.filter(v =>
+            v.status === 'Clínica cadastrada' || v.status === 'Clínica ativada'
+          ).length;
+          const ativadas = todayVisits.filter(v => v.status === 'Clínica ativada').length;
+          const aguardando = todayVisits.filter(v =>
+            v.status === 'Aguardando retorno' || v.status === 'Reagendada'
+          ).length;
+          return (
+            <Card className="shadow-sm border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ClipboardCheck className="w-4 h-4 text-primary" /> Fechamento do Dia —{' '}
+                  {DAYS.find(d => d.key === activeTab)?.label} {DAYS.find(d => d.key === activeTab)?.date}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                  <div className="text-center p-2 rounded-lg bg-muted/40">
+                    <p className="text-xl font-bold">{planejadas}</p>
+                    <p className="text-[10px] text-muted-foreground">Planejadas</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-green-50">
+                    <p className="text-xl font-bold text-green-700">{realizadas}</p>
+                    <p className="text-[10px] text-muted-foreground">Realizadas</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-purple-50">
+                    <p className="text-xl font-bold text-purple-700">{cadastradas}</p>
+                    <p className="text-[10px] text-muted-foreground">Cadastros</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-indigo-50">
+                    <p className="text-xl font-bold text-indigo-700">{ativadas}</p>
+                    <p className="text-[10px] text-muted-foreground">Ativações</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-amber-50">
+                    <p className="text-xl font-bold text-amber-700">{aguardando}</p>
+                    <p className="text-[10px] text-muted-foreground">Retorno</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Visit side sheet */}
-        <Sheet open={!!openVisit} onOpenChange={(o) => { if (!o) { setOpenVisit(null); setVisitResult(''); } }}>
+        <Sheet open={!!openVisit} onOpenChange={(o) => {
+          if (!o) {
+            setOpenVisit(null);
+            setVisitResultStatus('Realizada');
+            setVisitResultActions([]);
+            setVisitResultNotes('');
+            setVisitClinicName('');
+            setVisitClinicPhone('');
+            setVisitClinicResponsible('');
+          }
+        }}>
           <SheetContent className="w-full sm:max-w-md overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2"><Building2 className="w-5 h-5 text-primary" /> {openVisit?.clinic}</SheetTitle>
@@ -351,14 +467,93 @@ export default function PartnersRota() {
                   <p className="text-xs text-muted-foreground">Objetivo da Visita</p>
                   <p className="text-sm">{openVisit.goal}</p>
                 </div>
-                <div className="space-y-2 pt-2">
-                  <label className="text-sm font-medium">Registrar resultado da visita</label>
-                  <Textarea
-                    rows={4}
-                    value={visitResult}
-                    onChange={e => setVisitResult(e.target.value)}
-                    placeholder="O que foi conversado, próximos passos, recepcionistas treinadas..."
-                  />
+                <div className="space-y-4 border-t pt-4 mt-2">
+                  {/* Status da visita */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Resultado da visita</label>
+                    <Select value={visitResultStatus} onValueChange={(v) => setVisitResultStatus(v as VisitStatus)}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Realizada">✅ Realizada</SelectItem>
+                        <SelectItem value="Clínica cadastrada">🏥 Clínica cadastrada</SelectItem>
+                        <SelectItem value="Clínica ativada">⚡ Clínica ativada</SelectItem>
+                        <SelectItem value="Treinamento realizado">📚 Treinamento realizado</SelectItem>
+                        <SelectItem value="Aguardando retorno">🕐 Aguardando retorno</SelectItem>
+                        <SelectItem value="Reagendada">📅 Reagendada</SelectItem>
+                        <SelectItem value="Sem contato">📵 Sem contato</SelectItem>
+                        <SelectItem value="Não visitada">❌ Não visitada</SelectItem>
+                        <SelectItem value="Cancelada">🚫 Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Mini-form cadastro de clínica */}
+                  {visitResultStatus === 'Clínica cadastrada' && (
+                    <div className="rounded-lg border border-purple-200 bg-purple-50/40 p-3 space-y-2">
+                      <p className="text-xs font-semibold text-purple-700 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5" /> Dados da nova clínica
+                      </p>
+                      <Input
+                        placeholder="Nome da clínica"
+                        value={visitClinicName}
+                        onChange={e => setVisitClinicName(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                      <Input
+                        placeholder="Responsável"
+                        value={visitClinicResponsible}
+                        onChange={e => setVisitClinicResponsible(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                      <Input
+                        placeholder="Telefone"
+                        value={visitClinicPhone}
+                        onChange={e => setVisitClinicPhone(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {/* Ações secundárias */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Ações realizadas (opcional)</label>
+                    <div className="space-y-2">
+                      {[
+                        { id: 'usuarios', label: 'Usuários da recepção criados' },
+                        { id: 'simulacao', label: 'Primeira simulação realizada' },
+                        { id: 'retorno', label: 'Requer nova visita' },
+                      ].map(action => (
+                        <div key={action.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={action.id}
+                            checked={visitResultActions.includes(action.id)}
+                            onCheckedChange={(checked) => {
+                              setVisitResultActions(prev =>
+                                checked ? [...prev, action.id] : prev.filter(a => a !== action.id)
+                              );
+                            }}
+                          />
+                          <Label htmlFor={action.id} className="text-sm font-normal cursor-pointer">
+                            {action.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Observações */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Observações (opcional)</label>
+                    <Textarea
+                      rows={3}
+                      value={visitResultNotes}
+                      onChange={e => setVisitResultNotes(e.target.value)}
+                      placeholder="O que foi conversado, próximos passos..."
+                    />
+                  </div>
+
                   <Button onClick={handleSaveVisitResult} className="w-full gap-2">
                     <Save className="w-4 h-4" /> Salvar resultado
                   </Button>
