@@ -108,6 +108,34 @@ const mockHierarchies: Hierarchy[] = [
     permissions: ['user_alert_access'],
     createdAt: '2025-01-01',
   },
+  {
+    id: '10',
+    title: 'Representante',
+    description:
+      'Representante comercial de campo — herda as permissões de CS + SDR e enxerga apenas os registros que cadastrou (Buscar Crédito, Créditos Aprovados, Representantes, Clínicas, Gestão de Usuários restrita)',
+    permissions: [
+      // União das permissões de CS + SDR (visão ampla, escopo por ownership)
+      'user_management_access',
+      'user_access',
+      'clinica_edit',
+      'clinica_access',
+      'clinica_edit_endereco',
+      'clinica_filial_create',
+      'propostum_access',
+      'propostum_show',
+      'simulacao_access',
+      'simulacao_create',
+      'simulacao_show',
+      'paciente_access',
+      'paciente_create',
+      'paciente_edit',
+      'audit_log_access',
+      'dashboard_access',
+      'onboarding_dashboard_access',
+      'user_create_atendente',
+    ],
+    createdAt: '2026-01-15',
+  },
 ];
 
 const hierarchyColors: Record<string, string> = {
@@ -120,6 +148,7 @@ const hierarchyColors: Record<string, string> = {
   'Aprovador': 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
   'Atendente': 'bg-slate-500/20 text-slate-400 border-slate-500/30',
   'Médico': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+  'Representante': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
 };
 
 const Hierarquias = () => {
