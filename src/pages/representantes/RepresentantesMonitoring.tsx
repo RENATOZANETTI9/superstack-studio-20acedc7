@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessMonitoring } from '@/lib/partner-rules';
+import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 import {
   Activity, AlertTriangle, CheckCircle, Clock, Download,
   RefreshCw, Shield, TrendingUp, XCircle
@@ -22,12 +23,8 @@ const PartnersMonitoring = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Redirect non-admin users
-  useEffect(() => {
-    if (!authLoading && role && !canAccessMonitoring(role as any)) {
-      navigate('/dashboard/representantes');
-    }
-  }, [role, authLoading, navigate]);
+  // Admin-only page: partner/master_partner/representante -> /rota, others -> /dashboard
+  useRepresentanteGuard('admin');
 
   useEffect(() => { fetchData(); }, []);
 
