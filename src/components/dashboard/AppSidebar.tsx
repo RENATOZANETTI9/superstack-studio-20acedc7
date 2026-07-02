@@ -34,7 +34,6 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   const appRole = role as any;
   const isAdmin = isAdminRole(appRole);
-  const isRepresentanteOnly = role === 'representante';
   
   const showUsersMenu = canAccessUsersMenu(appRole);
   const showConfig = canAccessConfig(appRole);
