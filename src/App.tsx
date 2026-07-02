@@ -40,6 +40,8 @@ import PoliticaDePrivacidade from "./pages/PoliticaDePrivacidade";
 import RegisterPartner from "./pages/RegisterPartner";
 import CadastroClinica from "./pages/CadastroClinica";
 import CadastroPartner from "./pages/CadastroPartner";
+import AccessDenied from "./pages/AccessDenied";
+import AuditoriaPermissoes from "./pages/usuarios/AuditoriaPermissoes";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,7 @@ const App = () => (
             <Route path="/dashboard/usuarios/permissoes" element={<Permissoes />} />
             <Route path="/dashboard/usuarios/hierarquias" element={<Hierarquias />} />
             <Route path="/dashboard/usuarios/lista" element={<Lista />} />
+            <Route path="/dashboard/usuarios/auditoria" element={<AuditoriaPermissoes />} />
             <Route path="/dashboard/partners" element={<PartnersDashboard />} />
             <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
             <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
@@ -96,6 +99,7 @@ const App = () => (
             <Route path="/cadastropartner" element={<CadastroPartner />} />
             <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidade />} />
+            <Route path="/acesso-negado" element={<AccessDenied />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
