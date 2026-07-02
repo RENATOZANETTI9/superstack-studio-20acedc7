@@ -71,13 +71,47 @@ const GIFT_ROUTE_INITIAL = {
   ],
 };
 
-const DAYS: { key: keyof typeof INITIAL_DAYS; label: string; date: string }[] = [
-  { key: 'seg', label: 'Seg', date: '30/06' },
-  { key: 'ter', label: 'Ter', date: '01/07' },
-  { key: 'qua', label: 'Qua', date: '02/07' },
-  { key: 'qui', label: 'Qui', date: '03/07' },
-  { key: 'sex', label: 'Sex', date: '04/07' },
+const DAY_META: { key: keyof typeof INITIAL_DAYS; label: string }[] = [
+  { key: 'seg', label: 'Seg' },
+  { key: 'ter', label: 'Ter' },
+  { key: 'qua', label: 'Qua' },
+  { key: 'qui', label: 'Qui' },
+  { key: 'sex', label: 'Sex' },
 ];
+
+function getWeekDates(offset: number) {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(today.getDate() + diffToMonday + offset * 7);
+
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  const weekNum = Math.ceil(
+    ((monday.getTime() - new Date(monday.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7,
+  );
+
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+  return {
+    label: `Semana ${weekNum} — ${fmt(monday)} a ${fmt(friday)}`,
+    monday,
+  };
+}
+
+function getDays(monday: Date) {
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return DAY_META.map((d, idx) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + idx);
+    return { ...d, date: fmt(date) };
+  });
+}
 
 const STATUS_BADGE: Record<VisitStatus, string> = {
   Pendente: 'bg-muted text-muted-foreground',
