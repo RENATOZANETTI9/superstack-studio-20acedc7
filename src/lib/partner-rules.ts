@@ -49,6 +49,20 @@ export const TYPE_COLORS: Record<string, string> = {
   MASTER: 'bg-purple-600 text-white',
 };
 
+/** Unified Mimo tiers — single source of truth (weekly, paid by partner). */
+export const MIMO_TIERS = [
+  { min: 20, max: 34, label: 'Mimo Tipo 1', level: 1 },
+  { min: 35, max: 49, label: 'Mimo Tipo 2', level: 2 },
+  { min: 50, max: 69, label: 'Mimo Tipo 3', level: 3 },
+  { min: 70, max: Infinity, label: 'Mimo Tipo 4', level: 4 },
+] as const;
+
+export type MimoTier = typeof MIMO_TIERS[number];
+
+export function getMimoTier(simulacoes: number): MimoTier | null {
+  return MIMO_TIERS.find((t) => simulacoes >= t.min && simulacoes <= t.max) ?? null;
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'Ativo',
   PENDING: 'Pendente',
