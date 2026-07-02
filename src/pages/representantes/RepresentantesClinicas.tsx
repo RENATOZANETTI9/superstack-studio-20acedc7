@@ -78,15 +78,18 @@ export default function PartnersClinicas() {
 
   const filtered = useMemo(() => {
     return MOCK_CLINICS.filter(c => {
-      const m1 = c.name.toLowerCase().includes(search.toLowerCase());
+      const m1 = c.name.toLowerCase().includes(search.toLowerCase()) ||
+                  c.responsible.toLowerCase().includes(search.toLowerCase());
       const m2 = statusFilter === 'all'
-        || (statusFilter === 'ativas' && c.active)
+        || (statusFilter === 'ativas' && c.active && !c.awaitingFirstSim)
         || (statusFilter === 'inativas' && !c.active)
-        || (statusFilter === 'alerta' && c.alert);
+        || (statusFilter === 'alerta' && c.alert)
+        || (statusFilter === 'aguardando' && c.awaitingFirstSim);
       const m3 = neighborhoodFilter === 'all' || c.neighborhood === neighborhoodFilter;
-      return m1 && m2 && m3;
+      const m4 = specialtyFilter === 'all' || c.specialty === specialtyFilter;
+      return m1 && m2 && m3 && m4;
     });
-  }, [search, statusFilter, neighborhoodFilter]);
+  }, [search, statusFilter, neighborhoodFilter, specialtyFilter]);
 
   const total = 12;
   const ativas = 10;
