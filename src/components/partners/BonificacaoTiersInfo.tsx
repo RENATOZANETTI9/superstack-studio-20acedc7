@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, Gift } from 'lucide-react';
-import { PARTNER_RULES } from '@/lib/partner-rules';
+import { PARTNER_RULES, MIMO_TIERS } from '@/lib/partner-rules';
+
+const formatRange = (min: number, max: number) =>
+  Number.isFinite(max) ? `${min}–${max} simulações` : `${min}+ simulações`;
 
 const BonificacaoTiersInfo = () => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -16,10 +19,10 @@ const BonificacaoTiersInfo = () => (
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {PARTNER_RULES.MIMO_TIERS.map((tier, i) => (
+          {MIMO_TIERS.map((tier, i) => (
             <div key={i} className="flex justify-between items-center p-2.5 rounded bg-muted/50 text-sm">
-              <span>{tier.label}</span>
-              <Badge variant="outline" className="font-medium">{tier.mimo}</Badge>
+              <span>{formatRange(tier.min, tier.max)}</span>
+              <Badge variant="outline" className="font-medium">{tier.label}</Badge>
             </div>
           ))}
         </div>

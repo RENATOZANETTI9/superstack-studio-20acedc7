@@ -13,14 +13,6 @@ export const PARTNER_RULES = {
   COMMISSION_RATE_DIRECT: 0.016,   // 1.6%
   COMMISSION_RATE_OVERRIDE: 0.002, // 0.2%
   
-  /** Mimo tiers (weekly, paid by partner) */
-  MIMO_TIERS: [
-    { min: 0, max: 30, label: '0–30 simulações', mimo: 'Mimo Tipo 1', description: 'Brinde básico' },
-    { min: 31, max: 60, label: '31–60 simulações', mimo: 'Mimo Tipo 2', description: 'Brinde intermediário' },
-    { min: 61, max: 100, label: '61–100 simulações', mimo: 'Mimo Tipo 3', description: 'Brinde premium' },
-    { min: 101, max: Infinity, label: '101+ simulações', mimo: 'Mimo Tipo 4', description: 'Brinde especial' },
-  ],
-  
   /** PIX tiers (monthly, paid by Help Ude) */
   PIX_TIERS: [
     { min: 5000, max: 10000, label: 'R$ 5.000 – R$ 10.000', pix: 'R$ 100' },
@@ -56,6 +48,20 @@ export const TYPE_COLORS: Record<string, string> = {
   PARTNER: 'bg-primary text-white',
   MASTER: 'bg-purple-600 text-white',
 };
+
+/** Unified Mimo tiers — single source of truth (weekly, paid by partner). */
+export const MIMO_TIERS = [
+  { min: 20, max: 34, label: 'Mimo Tipo 1', level: 1 },
+  { min: 35, max: 49, label: 'Mimo Tipo 2', level: 2 },
+  { min: 50, max: 69, label: 'Mimo Tipo 3', level: 3 },
+  { min: 70, max: Infinity, label: 'Mimo Tipo 4', level: 4 },
+] as const;
+
+export type MimoTier = typeof MIMO_TIERS[number];
+
+export function getMimoTier(simulacoes: number): MimoTier | null {
+  return MIMO_TIERS.find((t) => simulacoes >= t.min && simulacoes <= t.max) ?? null;
+}
 
 export const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'Ativo',

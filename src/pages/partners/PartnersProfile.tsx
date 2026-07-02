@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, Phone, FileText, MapPin, Save, Loader2, Pill, Wrench, HeartPulse, Megaphone, Star, Target, DollarSign, TrendingUp, Calendar, Info, Building2, AlertTriangle, CheckCircle2, TrendingDown } from 'lucide-react';
+import { User, Mail, Phone, FileText, MapPin, Save, Loader2, Pill, Wrench, HeartPulse, Megaphone, Star, Target, DollarSign, TrendingUp, Info, Building2, AlertTriangle, CheckCircle2, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +26,15 @@ const CATEGORIAS: Record<string, { label: string; icon: any }> = {
 export default function PartnersProfile() {
   const { user, role } = useAuth();
   const isAdmin = isAdminRole(role as any);
+  const userName =
+    (user?.user_metadata as any)?.full_name ||
+    (user?.user_metadata as any)?.name ||
+    user?.email ||
+    'Parceiro';
+  const userLocation =
+    (user?.user_metadata as any)?.city && (user?.user_metadata as any)?.state
+      ? `${(user?.user_metadata as any).city} / ${(user?.user_metadata as any).state}`
+      : null;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [partner, setPartner] = useState<any>(null);
@@ -100,7 +109,7 @@ export default function PartnersProfile() {
   if (!partner) {
     return (
       <DashboardLayout>
-        <RepresentativeDashboard isAdmin={isAdmin} userEmail={user?.email} />
+        <RepresentativeDashboard isAdmin={isAdmin} userEmail={user?.email} userName={userName} userLocation={userLocation} />
       </DashboardLayout>
     );
   }
@@ -282,7 +291,7 @@ const MOCK_CARTEIRA = {
   ],
 };
 
-function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; userEmail?: string | null }) {
+function RepresentativeDashboard({ isAdmin, userEmail, userName, userLocation }: { isAdmin: boolean; userEmail?: string | null; userName: string; userLocation: string | null }) {
   if (!isAdmin) {
     return (
       <div className="space-y-6">
@@ -314,12 +323,11 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
             <User className="w-8 h-8 text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl md:text-2xl font-bold text-foreground">Roberto Ribeiro</h1>
-            <p className="text-sm text-muted-foreground">{userEmail || 'roberto@helpude.com'}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">{userName}</h1>
+            <p className="text-sm text-muted-foreground">{userEmail || ''}</p>
             <div className="flex gap-2 mt-2 flex-wrap">
               <Badge variant="outline">Partner</Badge>
-              <Badge variant="outline" className="gap-1"><MapPin className="w-3 h-3" /> Belo Horizonte / MG</Badge>
-              <Badge variant="outline" className="gap-1"><Calendar className="w-3 h-3" /> Desde Abril 2026</Badge>
+              <Badge variant="outline" className="gap-1"><MapPin className="w-3 h-3" /> {userLocation || 'Localização não informada'}</Badge>
             </div>
           </div>
         </CardContent>
