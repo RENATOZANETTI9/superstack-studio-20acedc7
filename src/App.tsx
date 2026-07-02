@@ -92,6 +92,7 @@ const App = () => (
             <Route path="/dashboard/representantes/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
             <Route path="/dashboard/representantes/config" element={<RepresentantesConfig />} />
             <Route path="/dashboard/representantes/monitoramento" element={<RepresentantesMonitoring />} />
+            <Route path="/dashboard/representantes/adm" element={<RepresentantesADM />} />
             {/* Catch-all for unknown /dashboard/representantes/* URLs */}
             <Route path="/dashboard/representantes/*" element={<RepresentantesCatchAll />} />
             <Route path="/dashboard/clinicas" element={<Clinicas />} />
