@@ -12,6 +12,9 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip as RTooltip, CartesianGrid } from 'recharts';
 import { isAdminRole } from '@/lib/partner-rules';
 
+const isRepresentanteRole = (r: string | null | undefined) =>
+  r === 'partner' || r === 'master_partner';
+
 const CATEGORIAS: Record<string, { label: string; icon: any }> = {
   representante_farmaceutico: { label: 'Representante Farmacêutico', icon: Pill },
   equipamentos_cirurgias: { label: 'Equipamentos de Cirurgias', icon: Wrench },
@@ -82,6 +85,7 @@ export default function PartnersProfile() {
   };
 
   const catInfo = partner?.categoria ? CATEGORIAS[partner.categoria] : null;
+  const showAnalytics = isRepresentanteRole(role as any) && !isAdmin;
 
   if (loading) {
     return (
@@ -236,6 +240,8 @@ export default function PartnersProfile() {
             </CardContent>
           </Card>
         </div>
+
+        {showAnalytics && <RepresentativeAnalyticsSections />}
       </div>
     </DashboardLayout>
   );
