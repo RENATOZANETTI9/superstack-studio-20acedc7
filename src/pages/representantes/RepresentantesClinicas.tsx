@@ -285,61 +285,74 @@ export default function PartnersClinicas() {
           </Select>
         </div>
 
-        {/* Lista */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filtered.map(c => (
-            <button
-              key={c.id}
-              onClick={() => navigate(`/dashboard/representantes/clinicas/${c.id}`)}
-              className="text-left rounded-xl border bg-card hover:shadow-lg transition-all p-4 shadow-sm group"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className={`h-3 w-3 rounded-full ${STATUS_DOT[c.status]} shrink-0`} />
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{c.specialty}</p>
-                  </div>
+        {/* Seções agrupadas */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground">
+            Nenhuma clínica encontrada com os filtros aplicados.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Em Alerta */}
+            {groups.alerta.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-red-700 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4" /> Em Alerta ({groups.alerta.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.alerta.map(renderClinicCard)}
                 </div>
-                {c.awaitingFirstSim && (
-                  <Badge className="bg-orange-100 text-orange-700 border-0 text-[10px] shrink-0">Aguardando 1ª simulação</Badge>
-                )}
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
-                <MapPin className="w-3 h-3" /> {c.neighborhood} · {c.city}
-              </p>
+            )}
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <p className="text-[10px] text-muted-foreground">Simulações hoje</p>
-                  <p className="font-bold text-base flex items-center gap-1.5">
-                    {c.simulationsToday}
-                    <span className="text-[10px] font-normal text-muted-foreground">/ {c.expected}</span>
-                    {TREND_ICON[c.trend]}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <p className="text-[10px] text-muted-foreground">Recepcionistas hoje</p>
-                  <p className="font-bold text-base flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-muted-foreground" /> {c.activeReceptionists}
-                  </p>
+            {/* Ativas acima da meta */}
+            {groups.acimaMetaComSim.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4" /> Ativas · Acima da Meta ({groups.acimaMetaComSim.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.acimaMetaComSim.map(renderClinicCard)}
                 </div>
               </div>
+            )}
 
-              <div className="flex items-center justify-between mt-3 pt-3 border-t text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Ativa há {c.activeDays}d</span>
-                <span className={c.daysSinceLastSim > 2 ? 'text-red-600 font-medium' : ''}>
-                  Última simulação: {c.daysSinceLastSim === 0 ? 'hoje' : `há ${c.daysSinceLastSim}d`}
-                </span>
+            {/* Ativas abaixo da meta */}
+            {groups.abaixoMeta.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-yellow-700 mb-2 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4" /> Ativas · Abaixo da Meta ({groups.abaixoMeta.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.abaixoMeta.map(renderClinicCard)}
+                </div>
               </div>
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div className="col-span-full text-center py-12 text-sm text-muted-foreground">
-              Nenhuma clínica encontrada com os filtros aplicados.
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* Aguardando 1ª simulação */}
+            {groups.aguardando.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4" /> Aguardando 1ª Simulação ({groups.aguardando.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.aguardando.map(renderClinicCard)}
+                </div>
+              </div>
+            )}
+
+            {/* Inativas */}
+            {groups.inativas.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4" /> Inativas ({groups.inativas.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {groups.inativas.map(renderClinicCard)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
