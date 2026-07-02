@@ -69,7 +69,7 @@ describe('AppSidebar — desktop visibility per role', () => {
 
   it('partner: hides admin representantes items and users menu', () => {
     authState.role = 'partner';
-    renderSidebar('/dashboard');
+    renderSidebar('/dashboard/representantes/rota');
 
     expect(screen.getByRole('button', { name: /^Dashboard$/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Gestão de Usuários/i })).toBeNull();
@@ -82,7 +82,9 @@ describe('AppSidebar — desktop visibility per role', () => {
 
   it('admin: shows all top-level menus including Auditoria and Clínicas', () => {
     authState.role = 'admin';
-    renderSidebar('/dashboard');
+    // Path opens both collapsibles (users + representantes) simultaneously
+    // via startsWith seed; fall back to { hidden: true } for the other one.
+    renderSidebar('/dashboard/usuarios/lista');
 
     expect(screen.getByRole('button', { name: /^Dashboard$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Buscar Crédito/i })).toBeInTheDocument();
@@ -90,11 +92,13 @@ describe('AppSidebar — desktop visibility per role', () => {
     expect(screen.getByRole('button', { name: /Gestão de Usuários/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Auditoria$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Representantes/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Meu Painel/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Cadastro$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Marketing$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Configurações/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Monitoramento/i })).toBeInTheDocument();
+    // Representantes collapsible is closed here — assert with hidden:true so
+    // the mounted-but-hidden subitems are counted.
+    expect(screen.getByRole('button', { name: /Meu Painel/i, hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Cadastro$/i, hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Marketing$/i, hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Configurações/i, hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Monitoramento/i, hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Clínicas$/i })).toBeInTheDocument();
   });
 
