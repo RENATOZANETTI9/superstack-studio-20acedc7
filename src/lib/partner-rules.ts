@@ -80,7 +80,7 @@ export const COMMISSION_STATUS_COLORS: Record<string, string> = {
 };
 
 /** Roles that have admin-level access */
-export type AppRole = 'master' | 'user' | 'partner' | 'master_partner' | 'cs_geral' | 'cs_exclusiva' | 'clinic_owner' | 'attendant' | 'admin';
+export type AppRole = 'master' | 'user' | 'partner' | 'master_partner' | 'cs_geral' | 'cs_exclusiva' | 'clinic_owner' | 'attendant' | 'admin' | 'representante';
 
 export const isAdminRole = (role: AppRole | null): boolean => {
   return role === 'master' || role === 'admin';
@@ -90,12 +90,28 @@ export const isPartnerRole = (role: AppRole | null): boolean => {
   return role === 'partner' || role === 'master_partner';
 };
 
+/** Roles that participate in the representantes module as field users (not admins). */
+export const isRepresentanteRole = (role: AppRole | null): boolean => {
+  return role === 'partner' || role === 'master_partner' || role === 'representante';
+};
+
 export const canAccessConfig = (role: AppRole | null): boolean => isAdminRole(role);
 export const canAccessMonitoring = (role: AppRole | null): boolean => isAdminRole(role);
-export const canAccessUsersMenu = (role: AppRole | null): boolean => isAdminRole(role);
+/**
+ * "Gestão de Usuários" menu — admins get full access; representante gets a
+ * restricted view (scoped to records they own).
+ */
+export const canAccessUsersMenu = (role: AppRole | null): boolean =>
+  isAdminRole(role) || role === 'representante';
 export const canEditPartner = (role: AppRole | null): boolean => isAdminRole(role);
 export const canAccessRepresentantes = (role: AppRole | null): boolean => {
-  return role === 'master' || role === 'admin' || role === 'master_partner';
+  return (
+    role === 'master' ||
+    role === 'admin' ||
+    role === 'master_partner' ||
+    role === 'partner' ||
+    role === 'representante'
+  );
 };
 
 export const formatCurrency = (value: number): string => {

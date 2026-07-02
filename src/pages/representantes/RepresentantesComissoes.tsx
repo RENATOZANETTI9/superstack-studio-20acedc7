@@ -9,17 +9,11 @@ import { DollarSign, TrendingUp, Users, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_PARTNERS, MOCK_COMMISSIONS, withMockFallback } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { canAccessRepresentantes } from '@/lib/partner-rules';
+import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 
 const RepresentantesComissoes = () => {
   const navigate = useNavigate();
-  const { role } = useAuth();
-  useEffect(() => {
-    if (role && !canAccessRepresentantes(role as any)) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [role, navigate]);
+  useRepresentanteGuard('admin');
 
   const { toast } = useToast();
   const [partners, setPartners] = useState<any[]>([]);
