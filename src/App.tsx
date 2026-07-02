@@ -43,6 +43,9 @@ import CadastroClinica from "./pages/CadastroClinica";
 import CadastroPartner from "./pages/CadastroPartner";
 import AccessDenied from "./pages/AccessDenied";
 import AuditoriaPermissoes from "./pages/usuarios/AuditoriaPermissoes";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import MeuAcesso from "./pages/MeuAcesso";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -57,7 +60,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<DashboardHome />} />
+            <Route path="/dashboard/meu-acesso" element={<MeuAcesso />} />
             <Route path="/dashboard/consultas" element={<Consultas />} />
             <Route path="/dashboard/contratos" element={<Contratos />} />
             <Route path="/dashboard/usuarios" element={<Usuarios />} />
