@@ -254,22 +254,30 @@ export default function PartnersClinicas() {
         </div>
 
         {/* Filtros */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nome..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+            <Input placeholder="Buscar por nome ou responsável..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="ativas">Ativas</SelectItem>
-              <SelectItem value="inativas">Inativas</SelectItem>
+              <SelectItem value="all">Todas as clínicas</SelectItem>
+              <SelectItem value="ativas">Ativas com simulação</SelectItem>
               <SelectItem value="alerta">Em Alerta</SelectItem>
+              <SelectItem value="aguardando">Aguardando 1ª simulação</SelectItem>
+              <SelectItem value="inativas">Inativas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
+            <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue placeholder="Especialidade" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as especialidades</SelectItem>
+              {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={neighborhoodFilter} onValueChange={setNeighborhoodFilter}>
-            <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue placeholder="Bairro" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os bairros</SelectItem>
               {NEIGHBORHOODS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
