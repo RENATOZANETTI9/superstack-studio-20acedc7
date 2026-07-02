@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, Phone, FileText, MapPin, Save, Loader2, Pill, Wrench, HeartPulse, Megaphone, Star, Target, DollarSign, TrendingUp, Calendar, Info } from 'lucide-react';
+import { User, Mail, Phone, FileText, MapPin, Save, Loader2, Pill, Wrench, HeartPulse, Megaphone, Star, Target, DollarSign, TrendingUp, Calendar, Info, Building2, AlertTriangle, CheckCircle2, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -250,11 +250,31 @@ const MOCK_WEEK_SIMULATIONS = [
   { week: 'Sem 4', simulacoes: 221 },
 ];
 
-const MOCK_VISITS = [
-  { clinic: 'Clínica BH Sorriso', address: 'Av. Afonso Pena 1230 · Belo Horizonte/MG', goal: 'Treinar nova recepcionista', date: '02/07' },
-  { clinic: 'Centro Odonto Minas', address: 'R. da Bahia 88 · Belo Horizonte/MG', goal: 'Reativar simulações', date: '03/07' },
-  { clinic: 'Clínica Saúde Total', address: 'Av. do Contorno 500 · Belo Horizonte/MG', goal: 'Apresentar campanha de julho', date: '05/07' },
+const MOCK_WEEKLY_BREAKDOWN = [
+  { sem: 'Sem 1', cadastradas: 1, ativadas: 0, simulacoes: 142, contratos: 0 },
+  { sem: 'Sem 2', cadastradas: 1, ativadas: 1, simulacoes: 168, contratos: 1 },
+  { sem: 'Sem 3', cadastradas: 1, ativadas: 1, simulacoes: 195, contratos: 0 },
+  { sem: 'Sem 4', cadastradas: 0, ativadas: 0, simulacoes: 221, contratos: 2 },
 ];
+
+const MOCK_CARTEIRA = {
+  acimaMetaComSim: [
+    { name: 'Clínica Dental Plus', simHoje: 62, meta: 50 },
+    { name: 'OdontoVida Premium', simHoje: 35, meta: 30 },
+    { name: 'Clínica Sorriso Mineiro', simHoje: 28, meta: 25 },
+  ],
+  abaixoMeta: [
+    { name: 'Clínica BH Sorriso', simHoje: 18, meta: 25 },
+    { name: 'Clínica Dental BH', simHoje: 12, meta: 20 },
+  ],
+  emAlerta: [
+    { name: 'Centro Odonto Minas', motivo: 'Sem simulações há 3 dias' },
+    { name: 'Clínica Saúde Total', motivo: 'Sem recepcionistas ativos' },
+  ],
+  aguardandoAtivacao: [
+    { name: 'Dental Plus Centro', cadastradaEm: '26/06/2026' },
+  ],
+};
 
 function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; userEmail?: string | null }) {
   if (!isAdmin) {
@@ -349,44 +369,106 @@ function RepresentativeDashboard({ isAdmin, userEmail }: { isAdmin: boolean; use
       {/* Bonificações */}
       <div>
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
-            <p className="text-xl font-bold text-green-600">R$ 280,00</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">Última bonificação recebida</p>
-            <p className="text-xl font-bold">R$ 195,00</p>
-            <p className="text-[10px] text-muted-foreground">em 30/05/2026</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">Próxima previsão</p>
-            <p className="text-xl font-bold">R$ 300,00</p>
-            <p className="text-[10px] text-muted-foreground">previsto para 30/06/2026</p>
-          </CardContent></Card>
+        <Card><CardContent className="pt-5">
+          <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
+          <p className="text-xl font-bold text-green-600">R$ 280,00</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Desempenho Semana a Semana */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" /> Desempenho Semana a Semana
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {MOCK_WEEKLY_BREAKDOWN.map(w => (
+            <Card key={w.sem}>
+              <CardContent className="pt-4">
+                <p className="text-xs font-bold text-primary mb-3 uppercase tracking-wide">{w.sem}</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Cadastradas</span>
+                    <span className="font-semibold">{w.cadastradas}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Ativadas</span>
+                    <span className="font-semibold">{w.ativadas}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Simulações</span>
+                    <span className="font-semibold">{w.simulacoes}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Contratos</span>
+                    <span className="font-semibold">{w.contratos}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
-      {/* Visitas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Próximas Visitas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {MOCK_VISITS.map(v => (
-              <div key={v.clinic} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-lg border bg-card">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{v.clinic}</p>
-                  <p className="text-xs text-muted-foreground">{v.address}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5"><span className="font-medium">Objetivo:</span> {v.goal}</p>
+      {/* Clínicas da Minha Carteira */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-primary" /> Clínicas da Minha Carteira
+        </h2>
+        <div className="space-y-3">
+          <div className="rounded-lg border border-green-200 bg-green-50/40 p-3">
+            <p className="text-xs font-semibold text-green-700 mb-2 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Ativas acima da meta ({MOCK_CARTEIRA.acimaMetaComSim.length})
+            </p>
+            <div className="space-y-1">
+              {MOCK_CARTEIRA.acimaMetaComSim.map(c => (
+                <div key={c.name} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.name}</span>
+                  <span className="text-green-700 font-medium">{c.simHoje} sim. / meta {c.meta}</span>
                 </div>
-                <Badge variant="outline" className="gap-1 shrink-0"><Calendar className="w-3 h-3" /> {v.date}</Badge>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50/40 p-3">
+            <p className="text-xs font-semibold text-yellow-700 mb-2 flex items-center gap-1.5">
+              <TrendingDown className="w-3.5 h-3.5" /> Ativas abaixo da meta ({MOCK_CARTEIRA.abaixoMeta.length})
+            </p>
+            <div className="space-y-1">
+              {MOCK_CARTEIRA.abaixoMeta.map(c => (
+                <div key={c.name} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.name}</span>
+                  <span className="text-yellow-700 font-medium">{c.simHoje} sim. / meta {c.meta}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-red-200 bg-red-50/40 p-3">
+            <p className="text-xs font-semibold text-red-700 mb-2 flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" /> Em alerta ({MOCK_CARTEIRA.emAlerta.length})
+            </p>
+            <div className="space-y-1">
+              {MOCK_CARTEIRA.emAlerta.map(c => (
+                <div key={c.name} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.name}</span>
+                  <span className="text-red-700 font-medium">{c.motivo}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3">
+            <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" /> Aguardando ativação ({MOCK_CARTEIRA.aguardandoAtivacao.length})
+            </p>
+            <div className="space-y-1">
+              {MOCK_CARTEIRA.aguardandoAtivacao.map(c => (
+                <div key={c.name} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.name}</span>
+                  <span className="text-blue-700 font-medium">Cadastrada em {c.cadastradaEm}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
