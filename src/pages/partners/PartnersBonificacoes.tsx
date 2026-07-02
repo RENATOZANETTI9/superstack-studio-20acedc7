@@ -11,7 +11,7 @@ import { CalendarClock, Download, Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { isAdminRole } from '@/lib/partner-rules';
+import { isAdminRole, MIMO_TIERS, getMimoTier } from '@/lib/partner-rules';
 import BonificacaoFilters from '@/components/partners/BonificacaoFilters';
 import BonificacaoSummaryCards from '@/components/partners/BonificacaoSummaryCards';
 import BonificacaoTiersInfo from '@/components/partners/BonificacaoTiersInfo';
@@ -395,12 +395,15 @@ const PixPorAtendenteTab = () => {
   );
 };
 
-const TIPOS = [
-  { tipo: 'Tipo 1', faixa: '20-34 sims', brinde: 'Brinde Básico (caneta personalizada)', min: 20, max: 34 },
-  { tipo: 'Tipo 2', faixa: '35-49 sims', brinde: 'Brinde Intermediário (kit café)', min: 35, max: 49 },
-  { tipo: 'Tipo 3', faixa: '50-69 sims', brinde: 'Brinde Premium (mochila)', min: 50, max: 69 },
-  { tipo: 'Tipo 4', faixa: '70+ sims', brinde: 'Brinde Elite (smartwatch)', min: 70, max: Infinity },
-];
+const BRINDES: Record<number, string> = {
+  1: 'Brinde Básico (caneta personalizada)',
+  2: 'Brinde Intermediário (kit café)',
+  3: 'Brinde Premium (mochila)',
+  4: 'Brinde Elite (smartwatch)',
+};
+
+const formatMimoRange = (min: number, max: number) =>
+  Number.isFinite(max) ? `${min}-${max} sims` : `${min}+ sims`;
 
 const CLINICAS_MIMO = [
   { nome: 'Dental Plus', sims: 62 },
@@ -411,10 +414,7 @@ const CLINICAS_MIMO = [
   { nome: 'Odonto Premium', sims: 8 },
 ];
 
-const tipoAtingido = (sims: number) => {
-  for (let i = TIPOS.length - 1; i >= 0; i--) if (sims >= TIPOS[i].min) return TIPOS[i].tipo;
-  return null;
-};
+const tipoAtingido = (sims: number) => getMimoTier(sims)?.label ?? null;
 
 const MimoAtivoTab = () => (
   <div className="space-y-4">
@@ -438,11 +438,11 @@ const MimoAtivoTab = () => (
               </TableRow>
             </TableHeader>
             <TableBody>
-              {TIPOS.map(t => (
-                <TableRow key={t.tipo}>
-                  <TableCell className="font-medium">{t.tipo}</TableCell>
-                  <TableCell>{t.faixa}</TableCell>
-                  <TableCell>{t.brinde}</TableCell>
+              {MIMO_TIERS.map(t => (
+                <TableRow key={t.label}>
+                  <TableCell className="font-medium">{t.label}</TableCell>
+                  <TableCell>{formatMimoRange(t.min, t.max)}</TableCell>
+                  <TableCell>{BRINDES[t.level]}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -459,7 +459,7 @@ const MimoAtivoTab = () => (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {CLINICAS_MIMO.map(c => {
             const tipo = tipoAtingido(c.sims);
-            const proximo = TIPOS.find(t => c.sims < t.min);
+            const proximo = MIMO_TIERS.find(t => c.sims < t.min);
             const pct = proximo ? Math.min((c.sims / proximo.min) * 100, 100) : 100;
             return (
               <div key={c.nome} className="rounded-lg border p-3 space-y-2 bg-card shadow-sm">
@@ -474,7 +474,7 @@ const MimoAtivoTab = () => (
                 <p className="text-xs text-muted-foreground">{c.sims} simulações acumuladas</p>
                 <Progress value={pct} className="h-2" />
                 <p className="text-[11px] text-muted-foreground">
-                  {proximo ? `Em progresso para ${proximo.tipo}` : 'Tipo máximo atingido'}
+                  {proximo ? `Em progresso para ${proximo.label}` : 'Tipo máximo atingido'}
                 </p>
               </div>
             );
