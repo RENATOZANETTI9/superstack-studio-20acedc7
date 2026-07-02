@@ -13,14 +13,6 @@ export const PARTNER_RULES = {
   COMMISSION_RATE_DIRECT: 0.016,   // 1.6%
   COMMISSION_RATE_OVERRIDE: 0.002, // 0.2%
   
-  /** Mimo tiers (weekly, paid by partner) */
-  MIMO_TIERS: [
-    { min: 0, max: 30, label: '0–30 simulações', mimo: 'Mimo Tipo 1', description: 'Brinde básico' },
-    { min: 31, max: 60, label: '31–60 simulações', mimo: 'Mimo Tipo 2', description: 'Brinde intermediário' },
-    { min: 61, max: 100, label: '61–100 simulações', mimo: 'Mimo Tipo 3', description: 'Brinde premium' },
-    { min: 101, max: Infinity, label: '101+ simulações', mimo: 'Mimo Tipo 4', description: 'Brinde especial' },
-  ],
-  
   /** PIX tiers (monthly, paid by Help Ude) */
   PIX_TIERS: [
     { min: 5000, max: 10000, label: 'R$ 5.000 – R$ 10.000', pix: 'R$ 100' },
