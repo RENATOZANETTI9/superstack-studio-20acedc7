@@ -32,6 +32,7 @@ import RepresentantesComissoes from "./pages/representantes/RepresentantesComiss
 import RepresentantesClinicas from "./pages/representantes/RepresentantesClinicas";
 import RepresentantesConfig from "./pages/representantes/RepresentantesConfig";
 import RepresentantesMonitoring from "./pages/representantes/RepresentantesMonitoring";
+import RepresentantesADM from "@/pages/representantes/RepresentantesADM";
 import { RepresentantesCatchAll } from "./components/representantes/RepresentantesCatchAll";
 import Clinicas from "./pages/Clinicas";
 import NotFound from "./pages/NotFound";
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/dashboard/representantes/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
             <Route path="/dashboard/representantes/config" element={<RepresentantesConfig />} />
             <Route path="/dashboard/representantes/monitoramento" element={<RepresentantesMonitoring />} />
+            <Route path="/dashboard/representantes/adm" element={<RepresentantesADM />} />
             {/* Catch-all for unknown /dashboard/representantes/* URLs */}
             <Route path="/dashboard/representantes/*" element={<RepresentantesCatchAll />} />
             <Route path="/dashboard/clinicas" element={<Clinicas />} />

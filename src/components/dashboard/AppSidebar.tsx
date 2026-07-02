@@ -69,6 +69,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Simulações Clínicas', icon: BarChart3, path: '/dashboard/representantes/simulacoes-clinicas', visible: true },
     { title: 'Configurações', icon: Settings, path: '/dashboard/representantes/config', visible: showConfig && !isRepresentante },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/representantes/monitoramento', visible: showMonitoring && !isRepresentante },
+    { title: 'Gestão de Representantes', icon: BarChart3, path: '/dashboard/representantes/adm', visible: !isRepresentante },
   ].filter(item => item.visible);
 
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
