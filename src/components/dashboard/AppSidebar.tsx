@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isAdminRole, canAccessConfig, canAccessMonitoring, canAccessUsersMenu } from '@/lib/partner-rules';
+import { canAccessMenu } from '@/lib/permissions-matrix';
 
 
 interface AppSidebarProps {
@@ -33,6 +34,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   const appRole = role as any;
   const isAdmin = isAdminRole(appRole);
+  const isRepresentanteOnly = role === 'representante';
   
   const showUsersMenu = canAccessUsersMenu(appRole);
   const showConfig = canAccessConfig(appRole);
@@ -48,16 +50,12 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     if (isMobile) setMobileMenuOpen(false);
   };
 
-  // Base menu items - visible to all
+  // Menu base filtrado pela matriz de permissões (uma fonte de verdade)
   const menuItems = [
-    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  ];
-
-  // Buscar Crédito and Créditos Aprovados visible to all roles
-  menuItems.unshift(
-    { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas' },
-    { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos' },
-  );
+    { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas', key: 'buscar_credito' as const },
+    { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos', key: 'creditos_aprovados' as const },
+    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', key: 'dashboard' as const },
+  ].filter((i) => canAccessMenu(appRole, i.key));
 
 
   const representantesSubItems = [
