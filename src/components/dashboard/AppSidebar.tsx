@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isAdminRole, canAccessConfig, canAccessMonitoring, canAccessUsersMenu } from '@/lib/partner-rules';
+import { canAccessMenu } from '@/lib/permissions-matrix';
 
 
 interface AppSidebarProps {
@@ -48,16 +49,12 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     if (isMobile) setMobileMenuOpen(false);
   };
 
-  // Base menu items - visible to all
+  // Menu base filtrado pela matriz de permissões (uma fonte de verdade)
   const menuItems = [
-    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  ];
-
-  // Buscar Crédito and Créditos Aprovados visible to all roles
-  menuItems.unshift(
-    { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas' },
-    { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos' },
-  );
+    { title: 'Buscar Crédito', icon: FileSearch, path: '/dashboard/consultas', key: 'buscar_credito' as const },
+    { title: 'Créditos Aprovados', icon: FileSignature, path: '/dashboard/contratos', key: 'creditos_aprovados' as const },
+    { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', key: 'dashboard' as const },
+  ].filter((i) => canAccessMenu(appRole, i.key));
 
 
   const representantesSubItems = [
@@ -133,6 +130,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                       { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
                       { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
                       { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
+                      ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                     ].map(sub => (
                       <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
                         className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
@@ -168,11 +166,13 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
               )}
 
               {/* Clínicas Menu */}
+              {canAccessMenu(appRole, 'clinicas_admin') && (
               <Button variant="ghost" onClick={() => handleNavigate('/dashboard/clinicas')}
                 className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
                   isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary')}>
                 <Building2 className="h-6 w-6 shrink-0" /><span>Clínicas</span>
               </Button>
+              )}
             </nav>
 
             <div className="border-t border-sidebar-border p-4">
@@ -255,6 +255,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
                   { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
                   { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
+                  ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                 ].map(sub => (
                   <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
                     className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
@@ -296,12 +297,14 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
         )}
 
         {/* Clínicas Menu */}
+        {canAccessMenu(appRole, 'clinicas_admin') && (
         <Button variant="ghost" onClick={() => navigate('/dashboard/clinicas')}
           className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
             isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
           <Building2 className="h-5 w-5 shrink-0" />
           {!collapsed && <span>Clínicas</span>}
         </Button>
+        )}
       </nav>
 
       <div className="border-t border-sidebar-border p-2">

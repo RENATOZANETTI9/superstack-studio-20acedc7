@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessRepresentantes, isAdminRole, type AppRole } from '@/lib/partner-rules';
 
@@ -15,6 +15,7 @@ import { canAccessRepresentantes, isAdminRole, type AppRole } from '@/lib/partne
  */
 export function useRepresentanteGuard(mode: 'admin' | 'shared' = 'shared') {
   const navigate = useNavigate();
+  const location = useLocation();
   const { role, isLoading } = useAuth();
 
   useEffect(() => {
@@ -22,6 +23,8 @@ export function useRepresentanteGuard(mode: 'admin' | 'shared' = 'shared') {
     const appRole = role as AppRole;
     const isRepresentanteRole =
       appRole === 'master_partner' || appRole === 'partner' || (appRole as string) === 'representante';
+    const denied = () =>
+      navigate(`/acesso-negado?from=${encodeURIComponent(location.pathname)}`, { replace: true });
 
     if (mode === 'admin') {
       if (isRepresentanteRole) {
@@ -29,16 +32,16 @@ export function useRepresentanteGuard(mode: 'admin' | 'shared' = 'shared') {
         return;
       }
       if (!isAdminRole(appRole)) {
-        navigate('/dashboard', { replace: true });
+        denied();
       }
       return;
     }
 
     // shared: allow admin + representante roles; block everyone else
     if (!canAccessRepresentantes(appRole) && !isRepresentanteRole) {
-      navigate('/dashboard', { replace: true });
+      denied();
     }
-  }, [role, isLoading, navigate, mode]);
+  }, [role, isLoading, navigate, mode, location.pathname]);
 }
 
 /**
