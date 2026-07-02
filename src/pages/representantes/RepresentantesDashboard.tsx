@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { canAccessRepresentantes } from '@/lib/partner-rules';
+import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 import { Users, Star, Building2, Award, Activity, UserPlus } from 'lucide-react';
 import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
 import { toast } from 'sonner';
@@ -22,6 +22,7 @@ const ESTADOS_BR = [
 const RepresentantesDashboard = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
+  useRepresentanteGuard('admin');
   const [partners, setPartners] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,17 +31,6 @@ const RepresentantesDashboard = () => {
   const [form, setForm] = useState({
     name: '', email: '', phone: '', type: 'PARTNER', region_state: '', region_city: '',
   });
-
-  // Route guard
-  useEffect(() => {
-    if (role === 'master_partner' || role === 'partner') {
-      navigate('/dashboard/representantes/rota', { replace: true });
-      return;
-    }
-    if (role && !canAccessRepresentantes(role as any)) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [role, navigate]);
 
   useEffect(() => { fetchData(); }, []);
 
