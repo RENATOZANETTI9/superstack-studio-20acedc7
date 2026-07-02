@@ -7,17 +7,11 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Users, Building2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
-import { useAuth } from '@/contexts/AuthContext';
-import { canAccessRepresentantes } from '@/lib/partner-rules';
+import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 
 const RepresentantesRede = () => {
   const navigate = useNavigate();
-  const { role } = useAuth();
-  useEffect(() => {
-    if (role && !canAccessRepresentantes(role as any)) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [role, navigate]);
+  useRepresentanteGuard('admin');
 
   const [partners, setPartners] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
