@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, DollarSign, Target, Zap, Gift, Flag, Pencil, History, Info, Lock } from 'lucide-react';
 import { isAdminRole, canAccessConfig } from '@/lib/partner-rules';
+import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 import JsonEditor from '@/components/partners/JsonEditor';
 
 const categoryLabels: Record<string, string> = {
@@ -69,12 +70,8 @@ const PartnersConfig = () => {
 
   const isAdmin = isAdminRole(role as any);
 
-  // Redirect non-admin users
-  useEffect(() => {
-    if (!authLoading && role && !canAccessConfig(role as any)) {
-      navigate('/dashboard/representantes');
-    }
-  }, [role, authLoading, navigate]);
+  // Admin-only page: partner/master_partner/representante -> /rota, others -> /dashboard
+  useRepresentanteGuard('admin');
 
   useEffect(() => { fetchConfigs(); }, []);
 
