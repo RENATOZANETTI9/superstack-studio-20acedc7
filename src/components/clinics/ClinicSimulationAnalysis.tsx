@@ -19,6 +19,7 @@ interface Props {
   partnerId?: string;
   /** If set, show clinics for this partner + network */
   masterPartnerId?: string;
+  hidePartnerLabel?: boolean;
 }
 
 type Trend = 'up' | 'stable' | 'down';
@@ -42,7 +43,7 @@ const trendConfig: Record<Trend, { icon: typeof TrendingUp; label: string; color
   down: { icon: TrendingDown, label: 'Em queda', color: 'hsl(var(--destructive))', badgeClass: 'bg-red-100 text-red-800' },
 };
 
-const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
+const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId, hidePartnerLabel }: Props) => {
   const [clinics, setClinics] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
@@ -343,7 +344,9 @@ const ClinicSimulationAnalysis = ({ partnerId, masterPartnerId }: Props) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold text-foreground">{clinic.clinic_name}</h3>
-                        {clinic.partner_name && <p className="text-xs text-muted-foreground">Partner: {clinic.partner_name}</p>}
+                        {!hidePartnerLabel && clinic.partner_name && (
+                          <p className="text-xs text-muted-foreground">Partner: {clinic.partner_name}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge className={cfg.badgeClass}>
