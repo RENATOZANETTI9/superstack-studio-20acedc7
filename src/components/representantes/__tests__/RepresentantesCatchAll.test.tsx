@@ -8,9 +8,9 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => authState,
 }));
 
-const renderCatchAll = () =>
+const renderCatchAll = (initialPath = '/dashboard/representantes/anything') =>
   render(
-    <MemoryRouter initialEntries={['/dashboard/representantes/anything']}>
+    <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route path="/dashboard/representantes/*" element={<RepresentantesCatchAll />} />
         <Route path="/dashboard/representantes/rota" element={<div>ROTA</div>} />
@@ -36,4 +36,36 @@ describe('RepresentantesCatchAll', () => {
       expect(screen.getByText(c.expected)).toBeInTheDocument();
     });
   }
+
+  // Sub-routes and actions that could escape guards via partial permissions.
+  const nestedPaths = [
+    '/dashboard/representantes/config/edit',
+    '/dashboard/representantes/monitoramento/detalhe/42',
+    '/dashboard/representantes/cadastro/novo',
+    '/dashboard/representantes/marketing/campanhas',
+    '/dashboard/representantes/clinicas/999/simulacoes',
+    '/dashboard/representantes/rota/dia/2026-07-02',
+    '/dashboard/representantes/painel?tab=hoje',
+  ];
+
+  describe('nested/unknown sub-routes are still caught', () => {
+    for (const path of nestedPaths) {
+      it(`representante on ${path} → ROTA`, () => {
+        authState.role = 'representante';
+        renderCatchAll(path);
+        expect(screen.getByText('ROTA')).toBeInTheDocument();
+      });
+      it(`admin on ${path} → PAINEL`, () => {
+        authState.role = 'admin';
+        renderCatchAll(path);
+        expect(screen.getByText('PAINEL')).toBeInTheDocument();
+      });
+    }
+  });
+
+  it('null role falls through to PAINEL (admin dashboard) so guard on target can act', () => {
+    authState.role = null;
+    renderCatchAll('/dashboard/representantes/unknown');
+    expect(screen.getByText('PAINEL')).toBeInTheDocument();
+  });
 });

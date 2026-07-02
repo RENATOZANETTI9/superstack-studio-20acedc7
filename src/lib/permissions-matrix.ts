@@ -105,3 +105,15 @@ export const HIERARCHY_MATRIX: HierarchyRow[] = [
   { id: 'cs_sdr', title: 'CS + SDR', permissions: Array.from(new Set([...CS_PERMS, ...SDR_PERMS])) },
   { id: 'representante', title: 'Representante', permissions: REPRESENTANTE_PERMS },
 ];
+
+/**
+ * Build the CSV representation of the hierarchy permission matrix.
+ * Exposed so it can be tested and reused outside the audit UI.
+ */
+export const buildHierarchyMatrixCsv = (): string => {
+  const header = ['permissao', ...HIERARCHY_MATRIX.map((h) => h.title)].join(',');
+  const rows = ALL_PERMISSIONS.map((p) =>
+    [p, ...HIERARCHY_MATRIX.map((h) => (h.permissions.includes(p) ? '1' : '0'))].join(','),
+  );
+  return [header, ...rows].join('\n');
+};

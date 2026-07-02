@@ -8,6 +8,7 @@ import { useRoleGuard } from '@/hooks/useRoleGuard';
 import {
   ALL_PERMISSIONS,
   HIERARCHY_MATRIX,
+  buildHierarchyMatrixCsv,
   canAccessMenu,
   type MenuKey,
 } from '@/lib/permissions-matrix';
@@ -56,13 +57,7 @@ const No = () => (
 const AuditoriaPermissoes = () => {
   useRoleGuard(['admin', 'master']);
 
-  const csv = useMemo(() => {
-    const header = ['permissao', ...HIERARCHY_MATRIX.map((h) => h.title)].join(',');
-    const rows = ALL_PERMISSIONS.map((p) =>
-      [p, ...HIERARCHY_MATRIX.map((h) => (h.permissions.includes(p) ? '1' : '0'))].join(','),
-    );
-    return [header, ...rows].join('\n');
-  }, []);
+  const csv = useMemo(() => buildHierarchyMatrixCsv(), []);
 
   const download = () => {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

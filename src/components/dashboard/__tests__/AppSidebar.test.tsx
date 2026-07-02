@@ -1,0 +1,157 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, cleanup, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import AppSidebar from '@/components/dashboard/AppSidebar';
+
+// --- Mocks ---------------------------------------------------------------
+const authState: { role: any; user: any; isMaster: boolean } = {
+  role: null,
+  user: { email: 'user@test.com' },
+  isMaster: false,
+};
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    ...authState,
+    logout: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
+const mobileState = { isMobile: false };
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: () => mobileState.isMobile,
+}));
+
+const renderSidebar = (path = '/dashboard') =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <AppSidebar collapsed={false} onToggle={() => {}} />
+    </MemoryRouter>,
+  );
+
+// -------------------------------------------------------------------------
+describe('AppSidebar — desktop visibility per role', () => {
+  beforeEach(() => {
+    cleanup();
+    mobileState.isMobile = false;
+  });
+
+  it('representante: hides Dashboard/Buscar Crédito, shows Créditos Aprovados, Gestão de Usuários, Representantes without admin-only subitems', () => {
+    authState.role = 'representante';
+    renderSidebar('/dashboard/representantes/rota');
+
+    // top-level menu
+    expect(screen.queryByRole('button', { name: /^Dashboard$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Buscar Crédito/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /Créditos Aprovados/i })).toBeInTheDocument();
+
+    // users menu present, but Auditoria (admin-only) hidden
+    expect(screen.getByRole('button', { name: /Gestão de Usuários/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Auditoria$/i })).toBeNull();
+
+    // representantes menu present with representante-allowed subitems
+    expect(screen.getByRole('button', { name: /Representantes/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Minha Rota/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Meu Perfil/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Minhas Clínicas/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Bonificações/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simulador/i })).toBeInTheDocument();
+
+    // admin-only representantes items hidden
+    expect(screen.queryByRole('button', { name: /Meu Painel/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Cadastro$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Marketing$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Configurações/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Monitoramento/i })).toBeNull();
+
+    // Clínicas admin hidden
+    expect(screen.queryByRole('button', { name: /^Clínicas$/i })).toBeNull();
+  });
+
+  it('partner: hides admin representantes items and users menu', () => {
+    authState.role = 'partner';
+    renderSidebar('/dashboard/representantes/rota');
+
+    expect(screen.getByRole('button', { name: /^Dashboard$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gestão de Usuários/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /Representantes/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Minha Rota/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Meu Painel/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Cadastro$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Marketing$/i })).toBeNull();
+  });
+
+  it('admin: shows all top-level menus including Auditoria and Clínicas', () => {
+    authState.role = 'admin';
+
+    // First render: users menu open (path starts with /usuarios)
+    renderSidebar('/dashboard/usuarios/lista');
+    expect(screen.getByRole('button', { name: /^Dashboard$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Buscar Crédito/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Créditos Aprovados/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Gestão de Usuários/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Auditoria$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Clínicas$/i })).toBeInTheDocument();
+
+    cleanup();
+
+    // Second render: representantes menu open (path starts with /representantes)
+    renderSidebar('/dashboard/representantes');
+    expect(screen.getByRole('button', { name: /Representantes/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Meu Painel/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Cadastro$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Marketing$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Configurações/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Monitoramento/i })).toBeInTheDocument();
+  });
+
+  it('user (basic): sees only Dashboard/Buscar/Créditos and no admin menus', () => {
+    authState.role = 'user';
+    renderSidebar('/dashboard');
+
+    expect(screen.getByRole('button', { name: /^Dashboard$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Buscar Crédito/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Créditos Aprovados/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gestão de Usuários/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Representantes/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Clínicas$/i })).toBeNull();
+  });
+});
+
+describe('AppSidebar — mobile (bottom nav & drawer)', () => {
+  beforeEach(() => {
+    cleanup();
+    mobileState.isMobile = true;
+  });
+
+  it('representante: bottom nav omits Buscar Crédito/Dashboard, keeps Créditos + Usuários shortcut', () => {
+    authState.role = 'representante';
+    const { container } = renderSidebar('/dashboard/representantes/rota');
+
+    const bottomNav = container.querySelector('nav.fixed.bottom-0') as HTMLElement;
+    expect(bottomNav).toBeTruthy();
+    const nav = within(bottomNav);
+    expect(nav.queryByText(/Dashboard/i)).toBeNull();
+    expect(nav.queryByText(/Buscar Crédito/i)).toBeNull();
+    expect(nav.getByText(/Créditos Aprovados/i)).toBeInTheDocument();
+    expect(nav.getByText(/Usuários/i)).toBeInTheDocument();
+  });
+
+  it('user: bottom nav shows Dashboard/Buscar/Créditos and no Usuários shortcut', () => {
+    authState.role = 'user';
+    const { container } = renderSidebar('/dashboard');
+
+    const bottomNav = container.querySelector('nav.fixed.bottom-0') as HTMLElement;
+    const nav = within(bottomNav);
+    expect(nav.getByText(/Dashboard/i)).toBeInTheDocument();
+    expect(nav.getByText(/Buscar Crédito/i)).toBeInTheDocument();
+    expect(nav.getByText(/Créditos Aprovados/i)).toBeInTheDocument();
+    expect(nav.queryByText(/Usuários/i)).toBeNull();
+  });
+
+  it('admin: bottom nav includes Usuários shortcut', () => {
+    authState.role = 'admin';
+    const { container } = renderSidebar('/dashboard');
+    const bottomNav = container.querySelector('nav.fixed.bottom-0') as HTMLElement;
+    expect(within(bottomNav).getByText(/Usuários/i)).toBeInTheDocument();
+  });
+});
