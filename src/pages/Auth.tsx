@@ -175,6 +175,14 @@ const Auth = () => {
             >
               Cadastrar
             </Button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              className="w-full text-sm text-primary hover:underline text-center"
+            >
+              Esqueci minha senha
+            </button>
           </form>
 
           {/* Info */}
