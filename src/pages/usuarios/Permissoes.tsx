@@ -58,6 +58,7 @@ const mockPermissions: Permission[] = [
   { id: '28', name: 'paciente_edit', description: 'Editar paciente', createdAt: '2025-01-01' },
   { id: '29', name: 'paciente_create', description: 'Criar paciente', createdAt: '2025-01-01' },
   { id: '30', name: 'paciente_access', description: 'Acesso a pacientes', createdAt: '2025-01-01' },
+  { id: '31', name: 'representante', description: 'Permissão de Representante (CS + SDR com visão restrita aos próprios cadastros)', createdAt: '2026-01-15' },
 ];
 
 const Permissoes = () => {
