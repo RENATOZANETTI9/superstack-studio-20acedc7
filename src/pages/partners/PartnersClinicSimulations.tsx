@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ClinicSimulationAnalysis from '@/components/clinics/ClinicSimulationAnalysis';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const PartnersClinicSimulations = () => {
   const { user, role } = useAuth();
+  const location = useLocation();
+  const isRepresentantesRoute = location.pathname.startsWith('/dashboard/representantes');
   const [partnerId, setPartnerId] = useState<string | undefined>();
   const [isMaster, setIsMaster] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -41,6 +44,7 @@ const PartnersClinicSimulations = () => {
         <ClinicSimulationAnalysis
           partnerId={!isMaster ? partnerId : undefined}
           masterPartnerId={isMaster ? partnerId : undefined}
+          hidePartnerLabel={isRepresentantesRoute}
         />
       </div>
     </DashboardLayout>
