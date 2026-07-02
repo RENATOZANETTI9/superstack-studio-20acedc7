@@ -131,6 +131,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                       { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
                       { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
                       { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
+                      ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                     ].map(sub => (
                       <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
                         className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
@@ -166,11 +167,13 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
               )}
 
               {/* Clínicas Menu */}
+              {canAccessMenu(appRole, 'clinicas_admin') && (
               <Button variant="ghost" onClick={() => handleNavigate('/dashboard/clinicas')}
                 className={cn('w-full justify-start gap-3 h-14 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
                   isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary')}>
                 <Building2 className="h-6 w-6 shrink-0" /><span>Clínicas</span>
               </Button>
+              )}
             </nav>
 
             <div className="border-t border-sidebar-border p-4">
@@ -253,6 +256,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
                   { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
                   { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
+                  ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                 ].map(sub => (
                   <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
                     className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
@@ -294,12 +298,14 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
         )}
 
         {/* Clínicas Menu */}
+        {canAccessMenu(appRole, 'clinicas_admin') && (
         <Button variant="ghost" onClick={() => navigate('/dashboard/clinicas')}
           className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
             isActive('/dashboard/clinicas') && 'bg-sidebar-accent text-sidebar-primary', collapsed && 'justify-center px-2')}>
           <Building2 className="h-5 w-5 shrink-0" />
           {!collapsed && <span>Clínicas</span>}
         </Button>
+        )}
       </nav>
 
       <div className="border-t border-sidebar-border p-2">
