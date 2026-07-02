@@ -11,7 +11,7 @@ export interface ContractMarketingStatus {
 }
 
 export function useContracts() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [marketingStatusMap, setMarketingStatusMap] = useState<Record<string, ContractMarketingStatus>>({});
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,11 @@ export function useContracts() {
   const fetchContracts = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    const isRepresentante = role === 'representante';
+    const contractsQuery = supabase.from('contracts').select('*').order('created_at', { ascending: false });
+    if (isRepresentante) contractsQuery.eq('user_id', user.id);
     const [contractsRes, historyRes] = await Promise.all([
-      supabase.from('contracts').select('*').order('created_at', { ascending: false }),
+      contractsQuery,
       supabase.from('contract_history').select('contract_id, type'),
     ]);
 
@@ -47,7 +50,7 @@ export function useContracts() {
     }
 
     setLoading(false);
-  }, [user]);
+  }, [user, role]);
 
   useEffect(() => { fetchContracts(); }, [fetchContracts]);
 
