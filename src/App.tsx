@@ -43,6 +43,7 @@ import CadastroClinica from "./pages/CadastroClinica";
 import CadastroPartner from "./pages/CadastroPartner";
 import AccessDenied from "./pages/AccessDenied";
 import AuditoriaPermissoes from "./pages/usuarios/AuditoriaPermissoes";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -65,34 +66,38 @@ const App = () => (
             <Route path="/dashboard/usuarios/hierarquias" element={<Hierarquias />} />
             <Route path="/dashboard/usuarios/lista" element={<Lista />} />
             <Route path="/dashboard/usuarios/auditoria" element={<AuditoriaPermissoes />} />
-            <Route path="/dashboard/partners" element={<PartnersDashboard />} />
-            <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
-            <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
-            <Route path="/dashboard/partners/bonificacoes" element={<PartnersBonificacoes />} />
-            <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
-            <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
-            <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
-            <Route path="/dashboard/partners/marketing" element={<PartnersMarketing />} />
-            <Route path="/dashboard/partners/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
-            <Route path="/dashboard/partners/perfil" element={<PartnersProfile />} />
-            <Route path="/dashboard/partners/rota" element={<PartnersRota />} />
-            <Route path="/dashboard/partners/clinicas" element={<PartnersClinicas />} />
-            <Route path="/dashboard/partners/clinicas/:id" element={<PartnersClinicProfile />} />
-            <Route path="/dashboard/representantes" element={<RepresentantesDashboard />} />
-            <Route path="/dashboard/representantes/rede" element={<RepresentantesRede />} />
-            <Route path="/dashboard/representantes/comissoes" element={<RepresentantesComissoes />} />
-            <Route path="/dashboard/representantes/rota" element={<PartnersRota />} />
-            <Route path="/dashboard/representantes/perfil" element={<PartnersProfile />} />
-            <Route path="/dashboard/representantes/cadastro" element={<PartnersManagement />} />
-            <Route path="/dashboard/representantes/clinicas" element={<RepresentantesClinicas />} />
-            <Route path="/dashboard/representantes/clinicas/:id" element={<PartnersClinicProfile />} />
-            <Route path="/dashboard/representantes/bonificacoes" element={<PartnersBonificacoes />} />
-            <Route path="/dashboard/representantes/simulador" element={<PartnersSimulator />} />
-            <Route path="/dashboard/representantes/marketing" element={<PartnersMarketing />} />
-            <Route path="/dashboard/representantes/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
-            <Route path="/dashboard/representantes/config" element={<RepresentantesConfig />} />
-            <Route path="/dashboard/representantes/monitoramento" element={<RepresentantesMonitoring />} />
-            <Route path="/dashboard/representantes/adm" element={<RepresentantesADM />} />
+            <Route element={<ProtectedRoute allowedRoles={['master', 'admin', 'master_partner', 'partner', 'representante']} />}>
+              <Route path="/dashboard/partners" element={<PartnersDashboard />} />
+              <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
+              <Route path="/dashboard/partners/rede" element={<PartnersNetwork />} />
+              <Route path="/dashboard/partners/bonificacoes" element={<PartnersBonificacoes />} />
+              <Route path="/dashboard/partners/config" element={<PartnersConfig />} />
+              <Route path="/dashboard/partners/simulador" element={<PartnersSimulator />} />
+              <Route path="/dashboard/partners/monitoramento" element={<PartnersMonitoring />} />
+              <Route path="/dashboard/partners/marketing" element={<PartnersMarketing />} />
+              <Route path="/dashboard/partners/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
+              <Route path="/dashboard/partners/perfil" element={<PartnersProfile />} />
+              <Route path="/dashboard/partners/rota" element={<PartnersRota />} />
+              <Route path="/dashboard/partners/clinicas" element={<PartnersClinicas />} />
+              <Route path="/dashboard/partners/clinicas/:id" element={<PartnersClinicProfile />} />
+              <Route path="/dashboard/representantes" element={<RepresentantesDashboard />} />
+              <Route path="/dashboard/representantes/rede" element={<RepresentantesRede />} />
+              <Route path="/dashboard/representantes/comissoes" element={<RepresentantesComissoes />} />
+              <Route path="/dashboard/representantes/rota" element={<PartnersRota />} />
+              <Route path="/dashboard/representantes/perfil" element={<PartnersProfile />} />
+              <Route path="/dashboard/representantes/cadastro" element={<PartnersManagement />} />
+              <Route path="/dashboard/representantes/clinicas" element={<RepresentantesClinicas />} />
+              <Route path="/dashboard/representantes/clinicas/:id" element={<PartnersClinicProfile />} />
+              <Route path="/dashboard/representantes/bonificacoes" element={<PartnersBonificacoes />} />
+              <Route path="/dashboard/representantes/simulador" element={<PartnersSimulator />} />
+              <Route path="/dashboard/representantes/marketing" element={<PartnersMarketing />} />
+              <Route path="/dashboard/representantes/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
+              <Route path="/dashboard/representantes/config" element={<RepresentantesConfig />} />
+              <Route path="/dashboard/representantes/monitoramento" element={<RepresentantesMonitoring />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['master', 'admin']} />}>
+              <Route path="/dashboard/representantes/adm" element={<RepresentantesADM />} />
+            </Route>
             {/* Catch-all for unknown /dashboard/representantes/* URLs */}
             <Route path="/dashboard/representantes/*" element={<RepresentantesCatchAll />} />
             <Route path="/dashboard/clinicas" element={<Clinicas />} />
