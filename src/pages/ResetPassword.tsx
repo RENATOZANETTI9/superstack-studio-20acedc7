@@ -19,6 +19,7 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [retryAfter, setRetryAfter] = useState(0);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (retryAfter <= 0) return;
@@ -37,17 +38,43 @@ const ResetPassword = () => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
         setReady(true);
+        if (session?.user?.email) setSessionEmail(session.user.email);
       }
     });
     // Also check immediately (in case listener missed the initial event)
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-      else if (!window.location.hash.includes('access_token')) {
+      if (data.session) {
+        setReady(true);
+        if (data.session.user?.email) setSessionEmail(data.session.user.email);
+      } else if (!window.location.hash.includes('access_token')) {
         setLinkError('Link inválido ou expirado. Solicite um novo e-mail de recuperação.');
       }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Ao ter uma sessão de recovery, consulta status para exibir mensagem clara
+  // sobre rate limit sem revelar existência do e-mail (o próprio usuário é o dono).
+  useEffect(() => {
+    if (!sessionEmail) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.functions.invoke('password-reset-status', {
+        body: { email: sessionEmail },
+      });
+      if (cancelled) return;
+      const payload = data as {
+        throttled?: boolean;
+        retry_after_seconds?: number;
+      } | null;
+      if (payload?.throttled && payload.retry_after_seconds) {
+        setRetryAfter(payload.retry_after_seconds);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
