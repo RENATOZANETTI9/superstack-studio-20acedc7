@@ -10,8 +10,8 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigateMock };
 });
 
-const functionsInvoke = vi.fn();
-const signOut = vi.fn(async () => ({ error: null }));
+const functionsInvoke = vi.fn((..._args: unknown[]) => ({ data: null, error: null }));
+const signOut = vi.fn(async (..._args: unknown[]) => ({ error: null }));
 const getSession = vi.fn(async () => ({
   data: { session: { access_token: 'tok', user: { id: 'u1' } } },
 }));
@@ -20,12 +20,12 @@ const onAuthStateChange = vi.fn((_cb: unknown) => ({ data: { subscription: { uns
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      signOut: (...a: any[]) => signOut(...a),
+      signOut: (...a: unknown[]) => signOut(...a),
       getSession: () => getSession(),
       onAuthStateChange: (cb: unknown) => onAuthStateChange(cb),
     },
     functions: {
-      invoke: (...a: any[]) => functionsInvoke(...a),
+      invoke: (...a: unknown[]) => functionsInvoke(...a),
     },
   },
 }));
