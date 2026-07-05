@@ -31,13 +31,18 @@ const ForgotPassword = () => {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
-    if (err) {
-      setError('Não foi possível enviar o e-mail. Verifique o endereço e tente novamente.');
-      toast.error('Falha ao enviar e-mail de recuperação');
-      return;
+    // Anti-enumeração: sempre mostra a mesma mensagem de sucesso,
+    // não revelamos se o e-mail está cadastrado. Erros de rede genuínos
+    // são reportados via toast sem mencionar existência do e-mail.
+    if (err && !/rate|too many|network/i.test(err.message)) {
+      // Apenas registramos internamente; UI mostra sucesso.
+      console.warn('reset password (silenciado por anti-enumeração):', err.message);
+    }
+    if (err && /rate|too many|network/i.test(err.message)) {
+      toast.error('Muitas tentativas. Tente novamente em alguns instantes.');
     }
     setSent(true);
-    toast.success('E-mail de recuperação enviado');
+    toast.success('Se o e-mail estiver cadastrado, você receberá um link');
   };
 
   return (
