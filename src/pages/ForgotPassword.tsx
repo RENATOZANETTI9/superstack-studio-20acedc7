@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, Info } from 'lucide-react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,12 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [retryAfter, setRetryAfter] = useState(0);
+  const [statusInfo, setStatusInfo] = useState<{
+    in_progress: boolean;
+    attempts_remaining: number;
+    max_attempts: number;
+  } | null>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
   useEffect(() => {
     if (retryAfter <= 0) return;
@@ -29,6 +35,36 @@ const ForgotPassword = () => {
     const m = Math.floor(s / 60);
     const r = s % 60;
     return `${m}:${String(r).padStart(2, '0')}`;
+  };
+
+  // Consulta status (rate limit / em andamento) sem revelar existência do e-mail
+  const checkStatus = async (rawEmail: string) => {
+    const parsed = schema.safeParse({ email: rawEmail });
+    if (!parsed.success) {
+      setStatusInfo(null);
+      return;
+    }
+    setCheckingStatus(true);
+    const { data } = await supabase.functions.invoke('password-reset-status', {
+      body: { email: parsed.data.email },
+    });
+    setCheckingStatus(false);
+    const payload = data as {
+      in_progress?: boolean;
+      attempts_remaining?: number;
+      max_attempts?: number;
+      throttled?: boolean;
+      retry_after_seconds?: number;
+    } | null;
+    if (!payload) return;
+    setStatusInfo({
+      in_progress: !!payload.in_progress,
+      attempts_remaining: payload.attempts_remaining ?? 0,
+      max_attempts: payload.max_attempts ?? 5,
+    });
+    if (payload.throttled && payload.retry_after_seconds) {
+      setRetryAfter(payload.retry_after_seconds);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,12 +147,27 @@ const ForgotPassword = () => {
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={(e) => checkStatus(e.target.value)}
                     className="pl-10"
                     disabled={loading}
                     autoFocus
                   />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
+                {statusInfo && !error && retryAfter === 0 && (
+                  <p
+                    className="text-xs text-muted-foreground flex items-center gap-1"
+                    data-testid="status-info"
+                  >
+                    <Info className="w-3 h-3" />
+                    {statusInfo.in_progress
+                      ? `Solicitação em andamento — ${statusInfo.attempts_remaining} de ${statusInfo.max_attempts} tentativas restantes na janela atual.`
+                      : 'Nenhuma solicitação recente detectada para este endereço.'}
+                  </p>
+                )}
+                {checkingStatus && (
+                  <p className="text-xs text-muted-foreground">Verificando status...</p>
+                )}
                 {retryAfter > 0 && (
                   <p className="text-xs text-warning" data-testid="retry-after">
                     Aguarde <span className="font-mono">{formatCountdown(retryAfter)}</span> para tentar novamente.
