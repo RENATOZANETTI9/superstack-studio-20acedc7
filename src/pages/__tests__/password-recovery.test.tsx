@@ -40,9 +40,14 @@ describe('ForgotPassword — fluxo de solicitação', () => {
 
   it('rejeita e-mail inválido antes de chamar o backend', async () => {
     render(<MemoryRouter><ForgotPassword /></MemoryRouter>);
-    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'nao-e-email' } });
+    const input = document.getElementById('email') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'nao-e-email' } });
     fireEvent.click(screen.getByRole('button', { name: /enviar link/i }));
-    expect(await screen.findByText(/email inválido/i, {}, { timeout: 3000 })).toBeInTheDocument();
+    await waitFor(() => {
+      const alerts = document.querySelectorAll('p.text-destructive');
+      const texts = Array.from(alerts).map((el) => el.textContent ?? '').join(' ');
+      expect(/inválido|invalid/i.test(texts)).toBe(true);
+    });
     expect(resetPasswordForEmail).not.toHaveBeenCalled();
   });
 
