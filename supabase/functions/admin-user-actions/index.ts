@@ -104,6 +104,11 @@ Deno.serve(async (req) => {
         await logAudit({ target: email, auditAction: 'reset_password', success: false, errorMessage: upErr.message });
         return json({ error: upErr.message }, 400);
       }
+      // Invalida todas as sessões existentes desse usuário
+      try {
+        // @ts-expect-error scope suportado em runtime
+        await admin.auth.admin.signOut(profile.user_id, 'global');
+      } catch (_) { /* noop */ }
       await logAudit({ target: email, auditAction: 'reset_password', success: true });
       return json({ success: true });
     }
