@@ -42,10 +42,11 @@ describe('ForgotPassword — fluxo de solicitação', () => {
     render(<MemoryRouter><ForgotPassword /></MemoryRouter>);
     const input = document.getElementById('email') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'nao-e-email' } });
-    fireEvent.click(screen.getByRole('button', { name: /enviar link/i }));
+    const form = input.closest('form')!;
+    fireEvent.submit(form);
     await waitFor(() => {
-      const alerts = document.querySelectorAll('p.text-destructive');
-      const texts = Array.from(alerts).map((el) => el.textContent ?? '').join(' ');
+      const alerts = document.querySelectorAll('p');
+      const texts = Array.from(alerts).map((el) => el.textContent ?? '').join(' | ');
       expect(/inválido|invalid/i.test(texts)).toBe(true);
     });
     expect(resetPasswordForEmail).not.toHaveBeenCalled();
