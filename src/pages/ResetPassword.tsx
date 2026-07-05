@@ -18,6 +18,19 @@ const ResetPassword = () => {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [retryAfter, setRetryAfter] = useState(0);
+
+  useEffect(() => {
+    if (retryAfter <= 0) return;
+    const t = setInterval(() => setRetryAfter((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [retryAfter]);
+
+  const formatCountdown = (s: number) => {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     // Supabase places the recovery session in URL hash; SDK auto-processes it.
@@ -58,10 +71,24 @@ const ResetPassword = () => {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     setLoading(false);
-    const errMsg =
-      (data as { error?: string } | null)?.error ??
-      error?.message ??
-      null;
+    let payload: { error?: string; throttled?: boolean; retry_after_seconds?: number } | null =
+      (data as { error?: string; throttled?: boolean; retry_after_seconds?: number } | null) ?? null;
+    const errResponse = (error as unknown as { context?: { response?: Response } })?.context?.response;
+    if (!payload && errResponse) {
+      payload = await errResponse.clone().json().catch(() => null);
+      const headerRetry = errResponse.headers.get('Retry-After');
+      if (payload && headerRetry && !payload.retry_after_seconds) {
+        payload.retry_after_seconds = Number(headerRetry);
+      }
+    }
+    if (payload?.throttled) {
+      const secs = payload.retry_after_seconds ?? 900;
+      setRetryAfter(secs);
+      setErr(`Muitas tentativas. Tente novamente em ${formatCountdown(secs)}.`);
+      toast.error('Rate limit atingido');
+      return;
+    }
+    const errMsg = payload?.error ?? error?.message ?? null;
     if (errMsg) {
       setErr(errMsg);
       toast.error('Falha ao atualizar senha');
@@ -163,9 +190,14 @@ const ResetPassword = () => {
                 )}
               </div>
               {err && <p className="text-sm text-destructive">{err}</p>}
+              {retryAfter > 0 && (
+                <p className="text-xs text-warning text-center" data-testid="retry-after">
+                  Aguarde <span className="font-mono">{formatCountdown(retryAfter)}</span> para tentar novamente.
+                </p>
+              )}
               {!ready && <p className="text-xs text-muted-foreground text-center">Validando link de recuperação...</p>}
-              <Button type="submit" className="w-full" disabled={loading || !ready}>
-                {loading ? 'Atualizando...' : 'Redefinir senha'}
+              <Button type="submit" className="w-full" disabled={loading || !ready || retryAfter > 0}>
+                {loading ? 'Atualizando...' : retryAfter > 0 ? `Aguarde ${formatCountdown(retryAfter)}` : 'Redefinir senha'}
               </Button>
             </form>
           )}
