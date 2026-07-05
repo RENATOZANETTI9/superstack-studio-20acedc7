@@ -27,19 +27,19 @@ const ForgotPassword = () => {
       return;
     }
     setLoading(true);
-    const { error: err } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const { data, error: err } = await supabase.functions.invoke('password-reset-request', {
+      body: {
+        email: parsed.data.email,
+        redirectTo: `${window.location.origin}/reset-password`,
+      },
     });
     setLoading(false);
-    // Anti-enumeração: sempre mostra a mesma mensagem de sucesso,
-    // não revelamos se o e-mail está cadastrado. Erros de rede genuínos
-    // são reportados via toast sem mencionar existência do e-mail.
-    if (err && !/rate|too many|network/i.test(err.message)) {
-      // Apenas registramos internamente; UI mostra sucesso.
-      console.warn('reset password (silenciado por anti-enumeração):', err.message);
-    }
-    if (err && /rate|too many|network/i.test(err.message)) {
-      toast.error('Muitas tentativas. Tente novamente em alguns instantes.');
+    // 429 (rate limit) chega como erro em err.context.status ou payload throttled
+    const throttled =
+      (data && (data as { throttled?: boolean }).throttled) ||
+      (err && /429|rate|too many/i.test(err.message ?? ''));
+    if (throttled) {
+      toast.error('Muitas tentativas. Aguarde alguns minutos e tente novamente.');
     }
     setSent(true);
     toast.success('Se o e-mail estiver cadastrado, você receberá um link');
