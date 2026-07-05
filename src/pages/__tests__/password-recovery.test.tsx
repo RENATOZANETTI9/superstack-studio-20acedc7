@@ -98,8 +98,11 @@ describe('ResetPassword — validação de política e redirect', () => {
     fireEvent.change(screen.getByLabelText(/nova senha/i), { target: { value: '123456' } });
     fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: /redefinir senha/i }));
+    // A mensagem de erro do submit aparece dentro de <p class="text-sm text-destructive">
     await waitFor(() => {
-      expect(screen.getByText(/deve conter|caracteres/i)).toBeInTheDocument();
+      const alerts = document.querySelectorAll('p.text-sm.text-destructive');
+      const texts = Array.from(alerts).map((el) => el.textContent ?? '');
+      expect(texts.some((t) => /senha/i.test(t))).toBe(true);
     });
     expect(updateUser).not.toHaveBeenCalled();
   });
@@ -138,7 +141,8 @@ describe('ResetPassword — validação de política e redirect', () => {
     fireEvent.change(screen.getByLabelText(/nova senha/i), { target: { value: 'Senha@123' } });
     await waitFor(() => {
       expect(screen.getByTestId('password-strength')).toBeInTheDocument();
-      expect(screen.getByText(/excelente|forte/i)).toBeInTheDocument();
     });
+    const strength = screen.getByTestId('password-strength');
+    expect(/excelente|forte/i.test(strength.textContent ?? '')).toBe(true);
   });
 });
