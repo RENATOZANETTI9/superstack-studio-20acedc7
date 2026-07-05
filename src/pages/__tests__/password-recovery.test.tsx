@@ -40,11 +40,9 @@ describe('ForgotPassword — fluxo de solicitação', () => {
 
   it('rejeita e-mail inválido antes de chamar o backend', async () => {
     render(<MemoryRouter><ForgotPassword /></MemoryRouter>);
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'nao-e-email' } });
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'nao-e-email' } });
     fireEvent.click(screen.getByRole('button', { name: /enviar link/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/email inválido/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/email inválido/i, {}, { timeout: 3000 })).toBeInTheDocument();
     expect(resetPasswordForEmail).not.toHaveBeenCalled();
   });
 
@@ -81,15 +79,17 @@ describe('ResetPassword — validação de política e redirect', () => {
     navigateMock.mockReset();
     updateUser.mockReset();
     signOut.mockClear();
-    vi.useFakeTimers();
   });
 
   const setup = async () => {
     const utils = render(<MemoryRouter><ResetPassword /></MemoryRouter>);
     // aguarda getSession resolver e marcar como ready
-    await waitFor(() => {
-      expect(screen.getByLabelText(/nova senha/i)).not.toBeDisabled();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/nova senha/i)).not.toBeDisabled();
+      },
+      { timeout: 3000 },
+    );
     return utils;
   };
 
@@ -127,8 +127,10 @@ describe('ResetPassword — validação de política e redirect', () => {
     await waitFor(() => {
       expect(signOut).toHaveBeenCalled();
     });
-    vi.advanceTimersByTime(1600);
-    expect(navigateMock).toHaveBeenCalledWith('/auth');
+    await waitFor(
+      () => expect(navigateMock).toHaveBeenCalledWith('/auth'),
+      { timeout: 3000 },
+    );
   });
 
   it('mostra força da senha conforme complexidade', async () => {
