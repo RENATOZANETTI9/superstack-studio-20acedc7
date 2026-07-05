@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, RefreshCw, ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
+import { KeyRound, RefreshCw, ShieldAlert, CheckCircle2, XCircle, ShieldOff, Repeat } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -29,6 +32,14 @@ const ACTION_LABELS: Record<string, string> = {
   self_request: 'Solicitação do usuário',
 };
 
+type StatusFilter = 'all' | 'success' | 'error' | 'rate_limit' | 'token_reused';
+type ActionFilter = 'all' | 'send_reset_email' | 'reset_password' | 'self_request';
+
+const isRateLimit = (r: AuditRow) =>
+  !r.success && (r.error_message ?? '').toLowerCase().startsWith('rate_limited');
+const isTokenReused = (r: AuditRow) =>
+  !r.success && (r.error_message ?? '').toLowerCase().includes('já utilizado');
+
 const AuditoriaSenhas = () => {
   const { role } = useAuth();
   const isAdmin = isAdminRole(role as AppRole | null);
@@ -36,6 +47,8 @@ const AuditoriaSenhas = () => {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('');
+  const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const load = async () => {
     setLoading(true);
@@ -69,12 +82,27 @@ const AuditoriaSenhas = () => {
 
   const filtered = rows.filter((r) => {
     const q = filter.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      r.target_email.toLowerCase().includes(q) ||
-      (r.actor_email ?? '').toLowerCase().includes(q)
-    );
+    if (q) {
+      const matches =
+        r.target_email.toLowerCase().includes(q) ||
+        (r.actor_email ?? '').toLowerCase().includes(q);
+      if (!matches) return false;
+    }
+    if (actionFilter !== 'all' && r.action !== actionFilter) return false;
+    if (statusFilter === 'success' && !r.success) return false;
+    if (statusFilter === 'error' && (r.success || isRateLimit(r) || isTokenReused(r))) return false;
+    if (statusFilter === 'rate_limit' && !isRateLimit(r)) return false;
+    if (statusFilter === 'token_reused' && !isTokenReused(r)) return false;
+    return true;
   });
+
+  const counts = {
+    total: rows.length,
+    success: rows.filter((r) => r.success).length,
+    rate_limit: rows.filter(isRateLimit).length,
+    token_reused: rows.filter(isTokenReused).length,
+    error: rows.filter((r) => !r.success && !isRateLimit(r) && !isTokenReused(r)).length,
+  };
 
   return (
     <DashboardLayout>
@@ -97,15 +125,45 @@ const AuditoriaSenhas = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Eventos</CardTitle>
-            <CardDescription>Filtre por e-mail do solicitante ou do alvo.</CardDescription>
+            <CardDescription>
+              Filtre por e-mail, ação ou status. Inclui bloqueios por rate limit (429) e tokens reutilizados.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input
-              placeholder="Filtrar por e-mail..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="max-w-md"
-            />
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+              <div className="rounded-md border p-2"><span className="text-muted-foreground">Total</span><div className="text-lg font-semibold">{counts.total}</div></div>
+              <div className="rounded-md border p-2"><span className="text-success">Sucesso</span><div className="text-lg font-semibold">{counts.success}</div></div>
+              <div className="rounded-md border p-2"><span className="text-warning">Rate limit</span><div className="text-lg font-semibold">{counts.rate_limit}</div></div>
+              <div className="rounded-md border p-2"><span className="text-warning">Token reusado</span><div className="text-lg font-semibold">{counts.token_reused}</div></div>
+              <div className="rounded-md border p-2"><span className="text-destructive">Erro</span><div className="text-lg font-semibold">{counts.error}</div></div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                placeholder="Filtrar por e-mail..."
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="max-w-xs"
+              />
+              <Select value={actionFilter} onValueChange={(v) => setActionFilter(v as ActionFilter)}>
+                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Ação" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as ações</SelectItem>
+                  <SelectItem value="self_request">Solicitação do usuário</SelectItem>
+                  <SelectItem value="send_reset_email">Envio de link (admin)</SelectItem>
+                  <SelectItem value="reset_password">Redefinição de senha</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="success">Sucesso</SelectItem>
+                  <SelectItem value="error">Erro</SelectItem>
+                  <SelectItem value="rate_limit">Bloqueio por rate limit</SelectItem>
+                  <SelectItem value="token_reused">Token reutilizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -140,6 +198,14 @@ const AuditoriaSenhas = () => {
                           {r.success ? (
                             <span className="inline-flex items-center gap-1 text-success text-xs">
                               <CheckCircle2 className="w-4 h-4" /> Sucesso
+                            </span>
+                          ) : isRateLimit(r) ? (
+                            <span className="inline-flex items-center gap-1 text-warning text-xs" title={r.error_message ?? ''}>
+                              <ShieldOff className="w-4 h-4" /> Rate limit (429)
+                            </span>
+                          ) : isTokenReused(r) ? (
+                            <span className="inline-flex items-center gap-1 text-warning text-xs" title={r.error_message ?? ''}>
+                              <Repeat className="w-4 h-4" /> Token reutilizado
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-destructive text-xs" title={r.error_message ?? ''}>
