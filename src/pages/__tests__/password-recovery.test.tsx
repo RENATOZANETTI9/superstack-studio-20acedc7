@@ -14,7 +14,7 @@ const resetPasswordForEmail = vi.fn();
 const updateUser = vi.fn();
 const signOut = vi.fn(async () => ({ error: null }));
 const getSession = vi.fn(async () => ({ data: { session: { user: { id: 'u1' } } } }));
-const onAuthStateChange = vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
+const onAuthStateChange = vi.fn((_cb: unknown) => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -23,7 +23,7 @@ vi.mock('@/integrations/supabase/client', () => ({
       updateUser: (...a: any[]) => updateUser(...a),
       signOut: () => signOut(),
       getSession: () => getSession(),
-      onAuthStateChange: (cb: any) => onAuthStateChange(cb),
+      onAuthStateChange: (cb: unknown) => onAuthStateChange(cb),
     },
   },
 }));
