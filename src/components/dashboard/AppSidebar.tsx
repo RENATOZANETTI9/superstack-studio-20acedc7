@@ -132,6 +132,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                       { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
                       { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
                       ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
+                      ...(isAdmin ? [{ title: 'Auditoria de senhas', icon: Shield, path: '/dashboard/usuarios/auditoria-senhas' }] : []),
                     ].map(sub => (
                       <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
                         className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
@@ -257,6 +258,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
                   { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
                   ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
+                  ...(isAdmin ? [{ title: 'Auditoria de senhas', icon: Shield, path: '/dashboard/usuarios/auditoria-senhas' }] : []),
                 ].map(sub => (
                   <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
                     className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
