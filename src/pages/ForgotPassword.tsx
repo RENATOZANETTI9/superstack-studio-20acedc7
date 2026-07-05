@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -17,6 +17,19 @@ const ForgotPassword = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [retryAfter, setRetryAfter] = useState(0);
+
+  useEffect(() => {
+    if (retryAfter <= 0) return;
+    const t = setInterval(() => setRetryAfter((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [retryAfter]);
+
+  const formatCountdown = (s: number) => {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +47,21 @@ const ForgotPassword = () => {
       },
     });
     setLoading(false);
-    // 429 (rate limit) chega como erro em err.context.status ou payload throttled
-    const throttled =
-      (data && (data as { throttled?: boolean }).throttled) ||
-      (err && /429|rate|too many/i.test(err.message ?? ''));
-    if (throttled) {
-      toast.error('Muitas tentativas. Aguarde alguns minutos e tente novamente.');
+    // 429 pode chegar como erro (FunctionsHttpError) OU como data.throttled
+    let payload: { throttled?: boolean; retry_after_seconds?: number } | null =
+      (data as { throttled?: boolean; retry_after_seconds?: number } | null) ?? null;
+    const errResponse = (err as unknown as { context?: { response?: Response } })?.context?.response;
+    if (!payload && errResponse) {
+      payload = await errResponse.clone().json().catch(() => null);
+      const headerRetry = errResponse.headers.get('Retry-After');
+      if (payload && headerRetry && !payload.retry_after_seconds) {
+        payload.retry_after_seconds = Number(headerRetry);
+      }
+    }
+    if (payload?.throttled) {
+      const secs = payload.retry_after_seconds ?? 900;
+      setRetryAfter(secs);
+      toast.error(`Muitas tentativas. Tente novamente em ${formatCountdown(secs)}.`);
     }
     setSent(true);
     toast.success('Se o e-mail estiver cadastrado, você receberá um link');
@@ -95,9 +117,14 @@ const ForgotPassword = () => {
                   />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
+                {retryAfter > 0 && (
+                  <p className="text-xs text-warning" data-testid="retry-after">
+                    Aguarde <span className="font-mono">{formatCountdown(retryAfter)}</span> para tentar novamente.
+                  </p>
+                )}
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+              <Button type="submit" className="w-full" disabled={loading || retryAfter > 0}>
+                {loading ? 'Enviando...' : retryAfter > 0 ? `Aguarde ${formatCountdown(retryAfter)}` : 'Enviar link de recuperação'}
               </Button>
             </form>
           )}
