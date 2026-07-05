@@ -813,6 +813,27 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_rate_limits: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          identifier: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          identifier: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          identifier?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -971,6 +992,27 @@ export type Database = {
           },
         ]
       }
+      used_recovery_tokens: {
+        Row: {
+          expires_at: string
+          session_id: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          session_id: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          session_id?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -997,6 +1039,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_recent_password_reset_attempts: {
+        Args: { _action: string; _identifier: string; _window_seconds?: number }
+        Returns: number
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
