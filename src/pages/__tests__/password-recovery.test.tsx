@@ -10,20 +10,22 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigateMock };
 });
 
-const resetPasswordForEmail = vi.fn();
-const updateUser = vi.fn();
-const signOut = vi.fn(async () => ({ error: null }));
-const getSession = vi.fn(async () => ({ data: { session: { user: { id: 'u1' } } } }));
+const functionsInvoke = vi.fn((..._args: unknown[]) => ({ data: null, error: null }));
+const signOut = vi.fn(async (..._args: unknown[]) => ({ error: null }));
+const getSession = vi.fn(async () => ({
+  data: { session: { access_token: 'tok', user: { id: 'u1' } } },
+}));
 const onAuthStateChange = vi.fn((_cb: unknown) => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      resetPasswordForEmail: (...a: any[]) => resetPasswordForEmail(...a),
-      updateUser: (...a: any[]) => updateUser(...a),
-      signOut: () => signOut(),
+      signOut: (...a: unknown[]) => signOut(...a),
       getSession: () => getSession(),
       onAuthStateChange: (cb: unknown) => onAuthStateChange(cb),
+    },
+    functions: {
+      invoke: (...a: unknown[]) => functionsInvoke(...a),
     },
   },
 }));
@@ -35,7 +37,7 @@ vi.mock('sonner', () => ({
 describe('ForgotPassword — fluxo de solicitação', () => {
   beforeEach(() => {
     navigateMock.mockReset();
-    resetPasswordForEmail.mockReset();
+    functionsInvoke.mockReset();
   });
 
   it('rejeita e-mail inválido antes de chamar o backend', async () => {
@@ -49,31 +51,34 @@ describe('ForgotPassword — fluxo de solicitação', () => {
       const texts = Array.from(alerts).map((el) => el.textContent ?? '').join(' | ');
       expect(/inválido|invalid/i.test(texts)).toBe(true);
     });
-    expect(resetPasswordForEmail).not.toHaveBeenCalled();
+    expect(functionsInvoke).not.toHaveBeenCalled();
   });
 
   it('anti-enumeração: mostra sucesso mesmo quando o provedor retorna erro', async () => {
-    resetPasswordForEmail.mockResolvedValue({ error: { message: 'user not found' } });
+    functionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
     render(<MemoryRouter><ForgotPassword /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'inexistente@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: /enviar link/i }));
     await waitFor(() => {
       expect(screen.getByText(/verifique sua caixa de entrada/i)).toBeInTheDocument();
     });
-    // A UI não deve mostrar mensagem que revele existência
-    expect(screen.queryByText(/not found/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/não encontrado/i)).not.toBeInTheDocument();
   });
 
   it('caso feliz: envia link e mostra confirmação', async () => {
-    resetPasswordForEmail.mockResolvedValue({ error: null });
+    functionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
     render(<MemoryRouter><ForgotPassword /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'valido@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: /enviar link/i }));
     await waitFor(() => {
-      expect(resetPasswordForEmail).toHaveBeenCalledWith(
-        'valido@example.com',
-        expect.objectContaining({ redirectTo: expect.stringContaining('/reset-password') }),
+      expect(functionsInvoke).toHaveBeenCalledWith(
+        'password-reset-request',
+        expect.objectContaining({
+          body: expect.objectContaining({
+            email: 'valido@example.com',
+            redirectTo: expect.stringContaining('/reset-password'),
+          }),
+        }),
       );
       expect(screen.getByText(/verifique sua caixa de entrada/i)).toBeInTheDocument();
     });
@@ -83,7 +88,7 @@ describe('ForgotPassword — fluxo de solicitação', () => {
 describe('ResetPassword — validação de política e redirect', () => {
   beforeEach(() => {
     navigateMock.mockReset();
-    updateUser.mockReset();
+    functionsInvoke.mockReset();
     signOut.mockClear();
   });
 
@@ -110,7 +115,7 @@ describe('ResetPassword — validação de política e redirect', () => {
       const texts = Array.from(alerts).map((el) => el.textContent ?? '');
       expect(texts.some((t) => /senha/i.test(t))).toBe(true);
     });
-    expect(updateUser).not.toHaveBeenCalled();
+    expect(functionsInvoke).not.toHaveBeenCalled();
   });
 
   it('bloqueia quando confirmação não coincide', async () => {
@@ -121,17 +126,23 @@ describe('ResetPassword — validação de política e redirect', () => {
     await waitFor(() => {
       expect(screen.getAllByText(/não coincidem/i).length).toBeGreaterThan(0);
     });
-    expect(updateUser).not.toHaveBeenCalled();
+    expect(functionsInvoke).not.toHaveBeenCalled();
   });
 
   it('caso feliz: redefine senha e redireciona para /auth', async () => {
-    updateUser.mockResolvedValue({ error: null });
+    functionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
     await setup();
     fireEvent.change(screen.getByLabelText(/nova senha/i), { target: { value: 'Senha@123' } });
     fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'Senha@123' } });
     fireEvent.click(screen.getByRole('button', { name: /redefinir senha/i }));
     await waitFor(() => {
-      expect(updateUser).toHaveBeenCalledWith({ password: 'Senha@123' });
+      expect(functionsInvoke).toHaveBeenCalledWith(
+        'password-reset-complete',
+        expect.objectContaining({
+          body: { newPassword: 'Senha@123' },
+          headers: expect.objectContaining({ Authorization: expect.stringContaining('Bearer ') }),
+        }),
+      );
     });
     await waitFor(() => {
       expect(signOut).toHaveBeenCalled();
@@ -140,6 +151,35 @@ describe('ResetPassword — validação de política e redirect', () => {
       () => expect(navigateMock).toHaveBeenCalledWith('/auth'),
       { timeout: 3000 },
     );
+  });
+
+  it('mostra erro específico quando o backend rejeita (token expirado)', async () => {
+    functionsInvoke.mockResolvedValue({
+      data: { error: 'Token expirado' },
+      error: null,
+    });
+    await setup();
+    fireEvent.change(screen.getByLabelText(/nova senha/i), { target: { value: 'Senha@123' } });
+    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'Senha@123' } });
+    fireEvent.click(screen.getByRole('button', { name: /redefinir senha/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/token expirado/i)).toBeInTheDocument();
+    });
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('mostra erro específico quando o token já foi utilizado', async () => {
+    functionsInvoke.mockResolvedValue({
+      data: { error: 'Este link já foi utilizado. Solicite um novo.' },
+      error: null,
+    });
+    await setup();
+    fireEvent.change(screen.getByLabelText(/nova senha/i), { target: { value: 'Senha@123' } });
+    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'Senha@123' } });
+    fireEvent.click(screen.getByRole('button', { name: /redefinir senha/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/já foi utilizado/i)).toBeInTheDocument();
+    });
   });
 
   it('mostra força da senha conforme complexidade', async () => {

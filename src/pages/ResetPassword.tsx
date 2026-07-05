@@ -45,16 +45,32 @@ const ResetPassword = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    // Chama edge function que valida token single-use, política e invalida sessões
+    const { data: session } = await supabase.auth.getSession();
+    const accessToken = session.session?.access_token;
+    if (!accessToken) {
+      setLoading(false);
+      setErr('Sessão de recuperação ausente. Solicite um novo link.');
+      return;
+    }
+    const { data, error } = await supabase.functions.invoke('password-reset-complete', {
+      body: { newPassword: password },
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     setLoading(false);
-    if (error) {
-      setErr(error.message);
+    const errMsg =
+      (data as { error?: string } | null)?.error ??
+      error?.message ??
+      null;
+    if (errMsg) {
+      setErr(errMsg);
       toast.error('Falha ao atualizar senha');
       return;
     }
     setDone(true);
     toast.success('Senha redefinida com sucesso');
-    await supabase.auth.signOut();
+    // Invalida sessão local também (o backend já revogou globalmente)
+    await supabase.auth.signOut({ scope: 'global' }).catch(() => supabase.auth.signOut());
     setTimeout(() => navigate('/auth'), 1500);
   };
 
