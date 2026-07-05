@@ -65,9 +65,23 @@ Deno.serve(async (req) => {
     const overIp = (ipCount ?? 0) >= MAX_ATTEMPTS_PER_IP;
 
     if (overEmail || overIp) {
-      // Anti-enumeração: retornamos genérico, mas com header Retry-After
+      // Audita bloqueio por rate limit (sucesso=false) sem vazar existência do e-mail.
+      await admin.from('password_reset_audit').insert({
+        actor_email: email,
+        target_email: email,
+        action: 'self_request',
+        success: false,
+        error_message: `rate_limited: email=${emailCount ?? 0}/${MAX_ATTEMPTS_PER_EMAIL} ip=${ipCount ?? 0}/${MAX_ATTEMPTS_PER_IP}`,
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+      // Anti-enumeração: resposta genérica + Retry-After no header e no body.
       return new Response(
-        JSON.stringify({ success: true, throttled: true }),
+        JSON.stringify({
+          success: true,
+          throttled: true,
+          retry_after_seconds: WINDOW_SECONDS,
+        }),
         {
           status: 429,
           headers: {

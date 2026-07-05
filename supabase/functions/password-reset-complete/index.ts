@@ -98,8 +98,21 @@ Deno.serve(async (req) => {
         .gt('created_at', windowStart),
     ]);
     if ((userCount ?? 0) >= MAX_ATTEMPTS_PER_USER || (ipCount ?? 0) >= MAX_ATTEMPTS_PER_IP) {
+      await admin.from('password_reset_audit').insert({
+        actor_user_id: userId,
+        target_email: String(claims.email ?? ''),
+        action: 'reset_password',
+        success: false,
+        error_message: `rate_limited: user=${userCount ?? 0}/${MAX_ATTEMPTS_PER_USER} ip=${ipCount ?? 0}/${MAX_ATTEMPTS_PER_IP}`,
+        ip_address: ip,
+        user_agent: userAgent,
+      });
       return new Response(
-        JSON.stringify({ error: 'Muitas tentativas. Aguarde alguns minutos.' }),
+        JSON.stringify({
+          error: 'Muitas tentativas. Aguarde alguns minutos.',
+          throttled: true,
+          retry_after_seconds: WINDOW_SECONDS,
+        }),
         {
           status: 429,
           headers: {
