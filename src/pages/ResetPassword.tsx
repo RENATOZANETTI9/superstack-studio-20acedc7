@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { passwordResetSchema, evaluatePassword, PASSWORD_MIN_LENGTH } from '@/lib/password-policy';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -38,8 +39,11 @@ const ResetPassword = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
-    if (password.length < 6) return setErr('A senha precisa ter pelo menos 6 caracteres.');
-    if (password !== confirm) return setErr('As senhas não coincidem.');
+    const parsed = passwordResetSchema.safeParse({ password, confirm });
+    if (!parsed.success) {
+      setErr(parsed.error.errors[0]?.message ?? 'Senha inválida');
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
@@ -53,6 +57,17 @@ const ResetPassword = () => {
     await supabase.auth.signOut();
     setTimeout(() => navigate('/auth'), 1500);
   };
+
+  const strength = evaluatePassword(password);
+  const strengthLabels = ['Muito fraca', 'Fraca', 'Razoável', 'Boa', 'Forte', 'Excelente'];
+  const strengthColors = [
+    'bg-destructive',
+    'bg-destructive',
+    'bg-warning',
+    'bg-warning',
+    'bg-success',
+    'bg-success',
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
@@ -85,6 +100,40 @@ const ResetPassword = () => {
                   <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                     className="pl-10" disabled={loading || !ready} />
                 </div>
+                {password && (
+                  <div className="space-y-1.5" data-testid="password-strength">
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded ${
+                            i < strength.score ? strengthColors[strength.score] : 'bg-muted'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Força: <span className="font-medium">{strengthLabels[strength.score]}</span>
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-0.5">
+                      <li className={strength.checks.length ? 'text-success' : ''}>
+                        {strength.checks.length ? '✓' : '•'} Pelo menos {PASSWORD_MIN_LENGTH} caracteres
+                      </li>
+                      <li className={strength.checks.lowercase ? 'text-success' : ''}>
+                        {strength.checks.lowercase ? '✓' : '•'} Uma letra minúscula
+                      </li>
+                      <li className={strength.checks.uppercase ? 'text-success' : ''}>
+                        {strength.checks.uppercase ? '✓' : '•'} Uma letra maiúscula
+                      </li>
+                      <li className={strength.checks.number ? 'text-success' : ''}>
+                        {strength.checks.number ? '✓' : '•'} Um número
+                      </li>
+                      <li className={strength.checks.special ? 'text-success' : ''}>
+                        {strength.checks.special ? '✓' : '•'} Um caractere especial
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pw2">Confirmar senha</Label>
@@ -93,6 +142,9 @@ const ResetPassword = () => {
                   <Input id="pw2" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
                     className="pl-10" disabled={loading || !ready} />
                 </div>
+                {confirm && password !== confirm && (
+                  <p className="text-xs text-destructive">As senhas não coincidem</p>
+                )}
               </div>
               {err && <p className="text-sm text-destructive">{err}</p>}
               {!ready && <p className="text-xs text-muted-foreground text-center">Validando link de recuperação...</p>}

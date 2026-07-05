@@ -43,6 +43,7 @@ import CadastroClinica from "./pages/CadastroClinica";
 import CadastroPartner from "./pages/CadastroPartner";
 import AccessDenied from "./pages/AccessDenied";
 import AuditoriaPermissoes from "./pages/usuarios/AuditoriaPermissoes";
+import AuditoriaSenhas from "./pages/usuarios/AuditoriaSenhas";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import MeuAcesso from "./pages/MeuAcesso";
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/dashboard/usuarios/hierarquias" element={<Hierarquias />} />
             <Route path="/dashboard/usuarios/lista" element={<Lista />} />
             <Route path="/dashboard/usuarios/auditoria" element={<AuditoriaPermissoes />} />
+            <Route path="/dashboard/usuarios/auditoria-senhas" element={<AuditoriaSenhas />} />
             <Route element={<ProtectedRoute allowedRoles={['master', 'admin', 'master_partner', 'partner', 'representante']} />}>
               <Route path="/dashboard/partners" element={<PartnersDashboard />} />
               <Route path="/dashboard/partners/cadastro" element={<PartnersManagement />} />
