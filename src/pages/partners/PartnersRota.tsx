@@ -227,7 +227,7 @@ export default function PartnersRota() {
           cidade: String(r.Cidade ?? r.cidade ?? ''),
           telefone: String(r.Telefone ?? r.telefone ?? ''),
           responsavel: String(r.Responsavel ?? r.responsavel ?? r.Responsável ?? ''),
-          status: 'Lead',
+          status: 'Lead' as const,
         })).filter(c => c.nome);
         setPortfolio(prev => [...prev, ...imported]);
         toast.success(`${imported.length} clínica(s) importada(s) do Excel`);
