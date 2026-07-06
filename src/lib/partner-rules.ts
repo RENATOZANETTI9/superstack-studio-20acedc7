@@ -16,12 +16,12 @@ export const PARTNER_RULES = {
   
   /** PIX tiers (monthly, paid by Help Ude) */
   PIX_TIERS: [
-    { min: 5000, max: 10000, label: 'R$ 5.000 – R$ 10.000', pix: 'R$ 100' },
-    { min: 10001, max: 30000, label: 'R$ 10.001 – R$ 30.000', pix: 'R$ 200' },
-    { min: 30001, max: 60000, label: 'R$ 30.001 – R$ 60.000', pix: 'R$ 300' },
-    { min: 60001, max: 120000, label: 'R$ 60.001 – R$ 120.000', pix: 'R$ 500' },
-    { min: 121000, max: 240000, label: 'R$ 121.000 – R$ 240.000', pix: 'R$ 800' },
-    { min: 240001, max: Infinity, label: 'Acima de R$ 240.000', pix: 'R$ 1.200' },
+    { min: 5000, max: 10000, label: 'R$ 5.000 – R$ 10.000', pix: 'R$ 50,00', value: 50 },
+    { min: 10001, max: 30000, label: 'R$ 10.001 – R$ 30.000', pix: 'R$ 100,00', value: 100 },
+    { min: 30001, max: 60000, label: 'R$ 30.001 – R$ 60.000', pix: 'R$ 300,00', value: 300 },
+    { min: 60001, max: 120000, label: 'R$ 60.001 – R$ 120.000', pix: 'R$ 600,00', value: 600 },
+    { min: 120001, max: 240000, label: 'R$ 120.001 – R$ 240.000', pix: 'R$ 1.200,00', value: 1200 },
+    { min: 240001, max: Infinity, label: 'Acima de R$ 240.000', pix: 'R$ 2.400,00', value: 2400 },
   ],
   
   /** SEH weights (only volume + conversion, no activation) */
