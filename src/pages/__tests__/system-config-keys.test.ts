@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import * as fs from 'fs';
+import * as path from 'path';
 
-const read = (p: string) => readFileSync(resolve(__dirname, '../../..', p), 'utf8');
+const ROOT = process.cwd();
+const read = (p: string) => fs.readFileSync(path.resolve(ROOT, p), 'utf8');
 
 /**
  * Guardrail suite — mantém o sistema fiel às chaves canônicas do banco
