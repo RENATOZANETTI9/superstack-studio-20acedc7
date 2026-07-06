@@ -195,6 +195,34 @@ export default function PartnersRota() {
   const { label: weekLabel, monday } = getWeekDates(weekOffset);
   const DAYS = getDays(monday);
 
+  useEffect(() => {
+    const loadPortfolio = async () => {
+      if (!user?.id) return;
+      const { data: partnerData } = await supabase
+        .from('partners').select('id').eq('user_id', user.id).single();
+      if (!partnerData?.id) return;
+      const { data: clinics } = await supabase
+        .from('portfolio_clinics')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .order('created_at');
+      if (clinics && clinics.length > 0) {
+        setPortfolio(clinics.map((c: any) => ({
+          id: c.id,
+          nome: c.nome,
+          tipo: c.tipo as PortfolioClinic['tipo'],
+          bairro: c.bairro,
+          cidade: c.cidade,
+          telefone: c.telefone || '',
+          responsavel: c.responsavel || '',
+          status: c.status as PortfolioClinic['status'],
+          ultimaVisita: c.ultima_visita || undefined,
+        })));
+      }
+    };
+    loadPortfolio();
+  }, [user?.id]);
+
   const handleGenerateAI = async () => {
     setAiLoading(true);
     setAiRoute(null);
