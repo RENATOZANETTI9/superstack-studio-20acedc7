@@ -10,17 +10,18 @@ export const PARTNER_RULES = {
   QUALIFICATION_THRESHOLD: 30,
   
   /** Commission rates */
-  COMMISSION_RATE_DIRECT: 0.016,   // 1.6%
+  COMMISSION_RATE_DIRECT: 0.008,   // 0.80%
   COMMISSION_RATE_OVERRIDE: 0.002, // 0.2%
+  SIMULATOR_COMMISSION_RATE: 0.0075, // 0.75% — used only in simulator projections
   
   /** PIX tiers (monthly, paid by Help Ude) */
   PIX_TIERS: [
-    { min: 5000, max: 10000, label: 'R$ 5.000 – R$ 10.000', pix: 'R$ 100' },
-    { min: 10001, max: 30000, label: 'R$ 10.001 – R$ 30.000', pix: 'R$ 200' },
-    { min: 30001, max: 60000, label: 'R$ 30.001 – R$ 60.000', pix: 'R$ 300' },
-    { min: 60001, max: 120000, label: 'R$ 60.001 – R$ 120.000', pix: 'R$ 500' },
-    { min: 121000, max: 240000, label: 'R$ 121.000 – R$ 240.000', pix: 'R$ 800' },
-    { min: 240001, max: Infinity, label: 'Acima de R$ 240.000', pix: 'R$ 1.200' },
+    { min: 5000, max: 10000, label: 'R$ 5.000 – R$ 10.000', pix: 'R$ 50,00', value: 50 },
+    { min: 10001, max: 30000, label: 'R$ 10.001 – R$ 30.000', pix: 'R$ 100,00', value: 100 },
+    { min: 30001, max: 60000, label: 'R$ 30.001 – R$ 60.000', pix: 'R$ 300,00', value: 300 },
+    { min: 60001, max: 120000, label: 'R$ 60.001 – R$ 120.000', pix: 'R$ 600,00', value: 600 },
+    { min: 120001, max: 240000, label: 'R$ 120.001 – R$ 240.000', pix: 'R$ 1.200,00', value: 1200 },
+    { min: 240001, max: Infinity, label: 'Acima de R$ 240.000', pix: 'R$ 2.400,00', value: 2400 },
   ],
   
   /** SEH weights (only volume + conversion, no activation) */
@@ -29,13 +30,13 @@ export const PARTNER_RULES = {
   /** SEH reference values */
   SEH_REFERENCE: {
     /** Simulations per clinic per day */
-    SIMULATIONS_PER_DAY: 5,
+    SIMULATIONS_PER_DAY: 10,
     /** Working days per month */
-    WORKING_DAYS: 20,
+    WORKING_DAYS: 22,
     /** Approval rate reference */
     APPROVAL_RATE: 0.10,
     /** Paid rate (of total simulations) reference */
-    PAID_RATE: 0.10,
+    PAID_RATE: 0.20,
     /** Average ticket */
     AVG_TICKET: 3500,
   },
@@ -51,10 +52,10 @@ export const TYPE_COLORS: Record<string, string> = {
 
 /** Unified Mimo tiers — single source of truth (weekly, paid by partner). */
 export const MIMO_TIERS = [
-  { min: 20, max: 34, label: 'Mimo Tipo 1', level: 1 },
-  { min: 35, max: 49, label: 'Mimo Tipo 2', level: 2 },
-  { min: 50, max: 69, label: 'Mimo Tipo 3', level: 3 },
-  { min: 70, max: Infinity, label: 'Mimo Tipo 4', level: 4 },
+  { min: 25, max: 60, label: 'Mimo Tipo 1', level: 1 },
+  { min: 61, max: 100, label: 'Mimo Tipo 2', level: 2 },
+  { min: 101, max: 200, label: 'Mimo Tipo 3', level: 3 },
+  { min: 201, max: Infinity, label: 'Mimo Tipo 4', level: 4 },
 ] as const;
 
 export type MimoTier = typeof MIMO_TIERS[number];
