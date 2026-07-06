@@ -33,7 +33,7 @@ const DB_KEYS = [
 ] as const;
 
 describe('AdminParametros — expõe todas as chaves canônicas do banco', () => {
-  const src = read('src/pages/admin/AdminParametros.tsx');
+  const src = bySuffix('admin/AdminParametros.tsx');
   for (const key of DB_KEYS) {
     it(`referencia a chave "${key}"`, () => {
       expect(src).toContain(key);
@@ -45,7 +45,7 @@ describe('AdminParametros — expõe todas as chaves canônicas do banco', () =>
 });
 
 describe('PartnersSimulator — lê taxas via useSystemConfig, não hardcoded', () => {
-  const src = read('src/pages/partners/PartnersSimulator.tsx');
+  const src = bySuffix('partners/PartnersSimulator.tsx');
 
   it('assina taxa_bonificacao_direta via useSystemConfig', () => {
     expect(src).toMatch(/useSystemConfig\(\s*['"]taxa_bonificacao_direta['"]\s*\)/);
@@ -70,12 +70,12 @@ describe('PartnersSimulator — lê taxas via useSystemConfig, não hardcoded', 
 
 describe('Edge functions de comissão — leem partner_system_config', () => {
   it('compute-commission consulta a categoria COMMISSION_RATES', () => {
-    const src = read('supabase/functions/compute-commission/index.ts');
+    const src = bySuffix('compute-commission/index.ts');
     expect(src).toContain('partner_system_config');
     expect(src).toContain('COMMISSION_RATES');
   });
   it('monthly-commission-job consulta a categoria COMMISSION_RATES', () => {
-    const src = read('supabase/functions/monthly-commission-job/index.ts');
+    const src = bySuffix('monthly-commission-job/index.ts');
     expect(src).toContain('partner_system_config');
     expect(src).toContain('COMMISSION_RATES');
   });
