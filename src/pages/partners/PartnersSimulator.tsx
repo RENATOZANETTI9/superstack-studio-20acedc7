@@ -75,7 +75,8 @@ const PartnersSimulator = () => {
   const approvedContracts = Math.round(consultationsMonth * (approvalRate / 100));
   const paidContracts = Math.round(approvedContracts * (paidRate / 100));
   const totalPaidValue = paidContracts * avgTicket;
-  const directCommission = totalPaidValue * PARTNER_RULES.SIMULATOR_COMMISSION_RATE;
+  // Projeção usa a taxa de bonificação direta configurada em Parâmetros do Sistema.
+  const directCommission = totalPaidValue * rates.direct;
   const yearlyProjection = directCommission * 12;
 
   // Funnel data
@@ -271,14 +272,14 @@ const PartnersSimulator = () => {
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">Projeção Financeira</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      Taxa simulada: {(PARTNER_RULES.SIMULATOR_COMMISSION_RATE * 100).toFixed(2)}%
+                      Taxa: {(rates.direct * 100).toFixed(2)}%
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <HelpCircle className="w-3.5 h-3.5 text-muted-foreground inline ml-1 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p>Projeção usa premissa conservadora de 0,75%. Sua comissão contratual real é de 0,80%.</p>
+                            <p>Taxa de bonificação direta configurada em Parâmetros do Sistema.</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
