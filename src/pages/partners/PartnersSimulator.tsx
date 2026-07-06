@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -266,7 +266,19 @@ const PartnersSimulator = () => {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">Projeção Financeira</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Taxa simulada: {(PARTNER_RULES.SIMULATOR_COMMISSION_RATE * 100).toFixed(2)}%</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      Taxa simulada: {(PARTNER_RULES.SIMULATOR_COMMISSION_RATE * 100).toFixed(2)}%
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground inline ml-1 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Projeção usa premissa conservadora de 0,75%. Sua comissão contratual real é de 0,80%.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-2 sm:space-y-3">
