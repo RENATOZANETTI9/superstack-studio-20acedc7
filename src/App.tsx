@@ -47,8 +47,10 @@ import AuditoriaPermissoes from "./pages/usuarios/AuditoriaPermissoes";
 import AuditoriaSenhas from "./pages/usuarios/AuditoriaSenhas";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ChangePassword from "./pages/ChangePassword";
 import MeuAcesso from "./pages/MeuAcesso";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { MustChangePasswordGate } from "./components/auth/MustChangePasswordGate";
 
 const queryClient = new QueryClient();
 
@@ -59,11 +61,13 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <MustChangePasswordGate>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/dashboard" element={<DashboardHome />} />
             <Route path="/dashboard/meu-acesso" element={<MeuAcesso />} />
             <Route path="/dashboard/consultas" element={<Consultas />} />
@@ -120,6 +124,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </MustChangePasswordGate>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
