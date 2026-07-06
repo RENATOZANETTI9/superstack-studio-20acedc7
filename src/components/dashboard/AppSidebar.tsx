@@ -5,7 +5,7 @@ import {
   Shield, User, Menu, X, Key, GitBranch, UserCircle,
   UserPlus, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
   Building2, BarChart3, UserCheck
-} from 'lucide-react';
+, Settings2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     { title: 'Configurações', icon: Settings, path: '/dashboard/representantes/config', visible: showConfig && !isRepresentante },
     { title: 'Monitoramento', icon: Activity, path: '/dashboard/representantes/monitoramento', visible: showMonitoring && !isRepresentante },
     { title: 'Gestão de Representantes', icon: BarChart3, path: '/dashboard/representantes/adm', visible: !isRepresentante },
+    { title: 'Parâmetros do Sistema', icon: Settings2, path: '/dashboard/admin/parametros', visible: isAdmin },
   ].filter(item => item.visible);
 
   const roleLabel = isAdmin ? (role === 'master' ? 'Master' : 'Admin') 
