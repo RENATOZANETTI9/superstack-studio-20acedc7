@@ -889,6 +889,69 @@ export default function PartnersRota() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Add Clinic dialog */}
+        <Dialog open={addClinicOpen} onOpenChange={setAddClinicOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" /> Adicionar Clínica
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Nome*</Label>
+                <Input value={newClinic.nome} onChange={e => setNewClinic(p => ({ ...p, nome: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tipo*</Label>
+                  <Select value={newClinic.tipo} onValueChange={(v) => setNewClinic(p => ({ ...p, tipo: v as PortfolioClinic['tipo'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Clínica">Clínica</SelectItem>
+                      <SelectItem value="Hospital">Hospital</SelectItem>
+                      <SelectItem value="Consultório">Consultório</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Status*</Label>
+                  <Select value={newClinic.status} onValueChange={(v) => setNewClinic(p => ({ ...p, status: v as PortfolioClinic['status'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Lead">Lead</SelectItem>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Bairro*</Label>
+                  <Input value={newClinic.bairro} onChange={e => setNewClinic(p => ({ ...p, bairro: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cidade*</Label>
+                  <Input value={newClinic.cidade} onChange={e => setNewClinic(p => ({ ...p, cidade: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Telefone</Label>
+                <Input value={newClinic.telefone} onChange={e => setNewClinic(p => ({ ...p, telefone: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Responsável</Label>
+                <Input value={newClinic.responsavel} onChange={e => setNewClinic(p => ({ ...p, responsavel: e.target.value }))} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setAddClinicOpen(false)}>Cancelar</Button>
+              <Button onClick={handleAddClinic} className="gap-2"><Save className="w-4 h-4" /> Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
