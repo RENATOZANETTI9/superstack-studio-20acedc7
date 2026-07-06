@@ -10,8 +10,9 @@ export const PARTNER_RULES = {
   QUALIFICATION_THRESHOLD: 30,
   
   /** Commission rates */
-  COMMISSION_RATE_DIRECT: 0.016,   // 1.6%
+  COMMISSION_RATE_DIRECT: 0.008,   // 0.80%
   COMMISSION_RATE_OVERRIDE: 0.002, // 0.2%
+  SIMULATOR_COMMISSION_RATE: 0.0075, // 0.75% — used only in simulator projections
   
   /** PIX tiers (monthly, paid by Help Ude) */
   PIX_TIERS: [
