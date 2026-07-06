@@ -337,6 +337,7 @@ const AuditoriaSenhas = () => {
                             onClick={() => updateParams({ event: r.id })}
                             aria-label="Ver detalhes"
                             data-testid="view-details"
+                            data-row-id={r.id}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -395,6 +396,16 @@ const AuditoriaSenhas = () => {
                     Informações sanitizadas — tokens, e-mails secundários e hashes são mascarados.
                   </SheetDescription>
                 </SheetHeader>
+                {/* Região viva dedicada para feedback do "Copiar" sem expor dados sensíveis. */}
+                <div
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="sr-only"
+                  data-testid="copy-live-region"
+                >
+                  {copiedKey ? 'Copiado para a área de transferência' : ''}
+                </div>
                 <div className="mt-6 space-y-4 text-sm">
                   <div>
                     <div className="text-xs text-muted-foreground">Trace ID</div>
