@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import {
   MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
-  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck
+  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck,
+  Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +45,24 @@ interface PlannedVisit {
   phone?: string;
   status: VisitStatus;
 }
+
+interface PortfolioClinic {
+  id: string;
+  nome: string;
+  tipo: 'Clínica' | 'Hospital' | 'Consultório';
+  bairro: string;
+  cidade: string;
+  telefone: string;
+  responsavel: string;
+  status: 'Lead' | 'Ativo' | 'Inativo';
+  ultimaVisita?: string;
+}
+
+const INITIAL_PORTFOLIO: PortfolioClinic[] = [
+  { id: 'p1', nome: 'Clínica Savassi Odonto', tipo: 'Clínica', bairro: 'Savassi', cidade: 'Belo Horizonte', telefone: '(31) 99876-1122', responsavel: 'Dra. Marina', status: 'Ativo', ultimaVisita: '02/07/2026' },
+  { id: 'p2', nome: 'Hospital Lourdes Saúde', tipo: 'Hospital', bairro: 'Lourdes', cidade: 'Belo Horizonte', telefone: '(31) 99654-3344', responsavel: 'Dr. Ricardo', status: 'Lead' },
+  { id: 'p3', nome: 'Consultório Centro BH', tipo: 'Consultório', bairro: 'Centro', cidade: 'Belo Horizonte', telefone: '(31) 98877-2211', responsavel: 'Patrícia Lima', status: 'Inativo', ultimaVisita: '15/05/2026' },
+];
 
 const INITIAL_DAYS: Record<string, PlannedVisit[]> = {
   seg: [
@@ -149,12 +173,107 @@ export default function PartnersRota() {
   const [cobrarTarget, setCobrarTarget] = useState<{ id: string; clinic: string } | null>(null);
   const [cobrarNote, setCobrarNote] = useState('');
 
+  // Outer tabs
+  const [outerTab, setOuterTab] = useState<string>('rota');
+
+  // Portfolio
+  const [portfolio, setPortfolio] = useState<PortfolioClinic[]>(INITIAL_PORTFOLIO);
+  const [portfolioSearch, setPortfolioSearch] = useState('');
+  const [portfolioStatusFilter, setPortfolioStatusFilter] = useState<string>('all');
+  const [addClinicOpen, setAddClinicOpen] = useState(false);
+  const [newClinic, setNewClinic] = useState<Omit<PortfolioClinic, 'id'>>({
+    nome: '', tipo: 'Clínica', bairro: '', cidade: '', telefone: '', responsavel: '', status: 'Lead',
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // AI
+  const [aiRoute, setAiRoute] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   const { label: weekLabel, monday } = getWeekDates(weekOffset);
   const DAYS = getDays(monday);
 
-  const handleGenerate = () => {
-    toast.success('Roteiro gerado com base nas metas da semana!');
+  const handleGenerateAI = async () => {
+    setAiLoading(true);
+    setAiRoute(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-ai-route', {
+        body: { clinicas: portfolio, semana: weekLabel },
+      });
+      if (error) throw error;
+      setAiRoute(data?.roteiro || 'Roteiro não disponível.');
+    } catch (err) {
+      toast.error('Erro ao gerar roteiro. Verifique a configuração da Edge Function.');
+    } finally {
+      setAiLoading(false);
+    }
   };
+
+  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+        const imported: PortfolioClinic[] = rows.map((r) => ({
+          id: crypto.randomUUID(),
+          nome: String(r.Nome ?? r.nome ?? ''),
+          tipo: (r.Tipo ?? r.tipo ?? 'Clínica') as PortfolioClinic['tipo'],
+          bairro: String(r.Bairro ?? r.bairro ?? ''),
+          cidade: String(r.Cidade ?? r.cidade ?? ''),
+          telefone: String(r.Telefone ?? r.telefone ?? ''),
+          responsavel: String(r.Responsavel ?? r.responsavel ?? r.Responsável ?? ''),
+          status: 'Lead' as const,
+        })).filter(c => c.nome);
+        setPortfolio(prev => [...prev, ...imported]);
+        toast.success(`${imported.length} clínica(s) importada(s) do Excel`);
+      } catch (err) {
+        toast.error('Erro ao ler arquivo Excel');
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleAddClinic = () => {
+    if (!newClinic.nome || !newClinic.bairro || !newClinic.cidade) {
+      toast.error('Preencha nome, bairro e cidade');
+      return;
+    }
+    setPortfolio(prev => [...prev, { ...newClinic, id: crypto.randomUUID() }]);
+    toast.success('Clínica adicionada ao portfólio');
+    setAddClinicOpen(false);
+    setNewClinic({ nome: '', tipo: 'Clínica', bairro: '', cidade: '', telefone: '', responsavel: '', status: 'Lead' });
+  };
+
+  const handleRemoveClinic = (id: string) => {
+    setPortfolio(prev => prev.filter(c => c.id !== id));
+    toast.success('Clínica removida');
+  };
+
+  const handleCopyAiRoute = async () => {
+    if (!aiRoute) return;
+    await navigator.clipboard.writeText(aiRoute);
+    toast.success('Roteiro copiado!');
+  };
+
+  const filteredPortfolio = portfolio.filter(c => {
+    const matchesSearch =
+      c.nome.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
+      c.bairro.toLowerCase().includes(portfolioSearch.toLowerCase());
+    const matchesStatus = portfolioStatusFilter === 'all' || c.status === portfolioStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const portfolioStatusBadge = (status: PortfolioClinic['status']) =>
+    status === 'Ativo' ? 'bg-green-100 text-green-700'
+    : status === 'Lead' ? 'bg-gray-100 text-gray-700'
+    : 'bg-red-100 text-red-700';
 
   const handleShare = () => {
     toast.success('Roteiro copiado! Cole no WhatsApp para compartilhar.');
@@ -249,12 +368,25 @@ export default function PartnersRota() {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <Button onClick={handleGenerate} className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:shadow-lg">
-              <Sparkles className="w-4 h-4" /> Gerar Roteiro Automático
+            <Button
+              onClick={() => { setOuterTab('ia'); handleGenerateAI(); }}
+              className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:shadow-lg"
+              disabled={aiLoading}
+            >
+              <Sparkles className="w-4 h-4" />
+              {aiLoading ? 'Gerando...' : 'Gerar Roteiro com IA'}
             </Button>
           </div>
         </div>
 
+        <Tabs value={outerTab} onValueChange={setOuterTab} className="w-full">
+          <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+            <TabsTrigger value="rota">📅 Rota Semanal</TabsTrigger>
+            <TabsTrigger value="portfolio">🏥 Portfólio de Clínicas</TabsTrigger>
+            <TabsTrigger value="ia">🤖 Roteiro com IA</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="rota" className="mt-6 space-y-6">
         {/* Metas */}
         <div>
           <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -466,6 +598,145 @@ export default function PartnersRota() {
             </Card>
           );
         })()}
+          </TabsContent>
+
+          <TabsContent value="portfolio" className="mt-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <Badge variant="secondary" className="text-sm">
+                {portfolio.length} clínica{portfolio.length === 1 ? '' : 's'} cadastrada{portfolio.length === 1 ? '' : 's'}
+              </Badge>
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleExcelImport}
+                />
+                <Button variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4" /> Importar Excel
+                </Button>
+                <Button className="gap-2 bg-gradient-to-r from-primary to-secondary text-white" onClick={() => setAddClinicOpen(true)}>
+                  <Plus className="w-4 h-4" /> Adicionar Clínica
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou bairro..."
+                  value={portfolioSearch}
+                  onChange={e => setPortfolioSearch(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={portfolioStatusFilter} onValueChange={setPortfolioStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48 h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="Lead">Lead</SelectItem>
+                  <SelectItem value="Ativo">Ativo</SelectItem>
+                  <SelectItem value="Inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {filteredPortfolio.length === 0 ? (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                Nenhuma clínica encontrada.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredPortfolio.map(c => (
+                  <Card key={c.id} className="shadow-sm">
+                    <CardContent className="pt-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">{c.nome}</p>
+                          <Badge variant="outline" className="mt-1 text-[10px]">{c.tipo}</Badge>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => toast.info('Edição em breve')}>
+                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRemoveClinic(c.id)} className="text-red-600">
+                              <Trash2 className="w-4 h-4 mr-2" /> Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3" /> {c.bairro}, {c.cidade}
+                      </p>
+                      {c.telefone && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Phone className="w-3 h-3" /> {c.telefone}
+                        </p>
+                      )}
+                      {c.responsavel && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Users className="w-3 h-3" /> {c.responsavel}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between pt-1">
+                        <Badge className={`${portfolioStatusBadge(c.status)} border-0`}>{c.status}</Badge>
+                        {c.ultimaVisita && (
+                          <span className="text-[10px] text-muted-foreground">Última visita: {c.ultimaVisita}</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ia" className="mt-6 space-y-4">
+            <div className="rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/10 via-secondary/5 to-transparent p-4">
+              <p className="text-sm text-foreground">
+                A IA analisa seu portfólio de clínicas e gera um roteiro semanal otimizado agrupando visitas por bairro para minimizar deslocamentos.
+              </p>
+            </div>
+
+            <div className="flex justify-center py-6">
+              <Button
+                size="lg"
+                onClick={handleGenerateAI}
+                disabled={aiLoading}
+                className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl"
+              >
+                {aiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                {aiLoading ? 'Gerando...' : '✨ Gerar Roteiro com Inteligência Artificial'}
+              </Button>
+            </div>
+
+            {aiRoute && (
+              <Card className="shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
+                  </CardTitle>
+                  <Button size="sm" variant="outline" className="gap-2" onClick={handleCopyAiRoute}>
+                    <Copy className="w-4 h-4" /> Copiar
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <pre className="whitespace-pre-wrap text-sm font-sans">{aiRoute}</pre>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Visit side sheet */}
         <Sheet open={!!openVisit} onOpenChange={(o) => {
@@ -615,6 +886,69 @@ export default function PartnersRota() {
             <DialogFooter>
               <Button variant="ghost" onClick={() => { setCobrarTarget(null); setCobrarNote(''); }}>Cancelar</Button>
               <Button onClick={handleSaveCobranca} className="gap-2"><Save className="w-4 h-4" /> Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Clinic dialog */}
+        <Dialog open={addClinicOpen} onOpenChange={setAddClinicOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" /> Adicionar Clínica
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Nome*</Label>
+                <Input value={newClinic.nome} onChange={e => setNewClinic(p => ({ ...p, nome: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tipo*</Label>
+                  <Select value={newClinic.tipo} onValueChange={(v) => setNewClinic(p => ({ ...p, tipo: v as PortfolioClinic['tipo'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Clínica">Clínica</SelectItem>
+                      <SelectItem value="Hospital">Hospital</SelectItem>
+                      <SelectItem value="Consultório">Consultório</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Status*</Label>
+                  <Select value={newClinic.status} onValueChange={(v) => setNewClinic(p => ({ ...p, status: v as PortfolioClinic['status'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Lead">Lead</SelectItem>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Bairro*</Label>
+                  <Input value={newClinic.bairro} onChange={e => setNewClinic(p => ({ ...p, bairro: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cidade*</Label>
+                  <Input value={newClinic.cidade} onChange={e => setNewClinic(p => ({ ...p, cidade: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Telefone</Label>
+                <Input value={newClinic.telefone} onChange={e => setNewClinic(p => ({ ...p, telefone: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Responsável</Label>
+                <Input value={newClinic.responsavel} onChange={e => setNewClinic(p => ({ ...p, responsavel: e.target.value }))} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setAddClinicOpen(false)}>Cancelar</Button>
+              <Button onClick={handleAddClinic} className="gap-2"><Save className="w-4 h-4" /> Salvar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
