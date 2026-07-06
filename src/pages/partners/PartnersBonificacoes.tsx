@@ -236,10 +236,21 @@ const PartnersBonificacoes = () => {
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
-                      <p className="text-sm text-muted-foreground">Sexta-feira, 04/07/2026</p>
-                      <p className="text-2xl font-bold text-primary">R$ 300,00</p>
+                      <p className="text-sm text-muted-foreground">{nextPixDate}</p>
+                      {isMockData ? (
+                        <>
+                          <p className="text-2xl font-bold text-muted-foreground">—</p>
+                          <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
+                        </>
+                      ) : (
+                        <p className="text-2xl font-bold text-primary">
+                          {nextPixTier ? nextPixTier.pix : 'R$ 0,00'}
+                        </p>
+                      )}
                     </div>
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Em 6 dias</Badge>
+                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                      {daysUntilPix === 0 ? 'Hoje' : `Em ${daysUntilPix} dia${daysUntilPix === 1 ? '' : 's'}`}
+                    </Badge>
                   </div>
                   <Button variant="outline" size="sm">Ver detalhes</Button>
                 </CardContent>
