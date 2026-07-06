@@ -834,6 +834,59 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_clinics: {
+        Row: {
+          bairro: string
+          cidade: string
+          created_at: string
+          id: string
+          nome: string
+          partner_id: string
+          responsavel: string | null
+          status: string
+          telefone: string | null
+          tipo: string
+          ultima_visita: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro: string
+          cidade: string
+          created_at?: string
+          id?: string
+          nome: string
+          partner_id: string
+          responsavel?: string | null
+          status?: string
+          telefone?: string | null
+          tipo: string
+          ultima_visita?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string
+          cidade?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          partner_id?: string
+          responsavel?: string | null
+          status?: string
+          telefone?: string | null
+          tipo?: string
+          ultima_visita?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_clinics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
