@@ -12,7 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 import { Users, Star, Building2, Award, Activity, UserPlus } from 'lucide-react';
-import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
+import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallbackTracked } from '@/lib/mock-data';
+import { MockDataBanner } from '@/components/MockDataBanner';
 import { toast } from 'sonner';
 
 const ESTADOS_BR = [
@@ -26,6 +27,7 @@ const RepresentantesDashboard = () => {
   const [partners, setPartners] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMockData, setIsMockData] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -40,8 +42,11 @@ const RepresentantesDashboard = () => {
       supabase.from('partners').select('*').order('created_at', { ascending: false }),
       supabase.from('partner_clinic_relations').select('*'),
     ]);
-    setPartners(withMockFallback(partnersRes.data, MOCK_PARTNERS));
-    setClinics(withMockFallback(clinicsRes.data, MOCK_CLINICS));
+    const p = withMockFallbackTracked(partnersRes.data, MOCK_PARTNERS);
+    const c = withMockFallbackTracked(clinicsRes.data, MOCK_CLINICS);
+    setPartners(p.data);
+    setClinics(c.data);
+    setIsMockData(p.isMock || c.isMock);
     setLoading(false);
   };
 
@@ -87,6 +92,7 @@ const RepresentantesDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <MockDataBanner show={isMockData} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Representantes</h1>
