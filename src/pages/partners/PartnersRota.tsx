@@ -598,6 +598,145 @@ export default function PartnersRota() {
             </Card>
           );
         })()}
+          </TabsContent>
+
+          <TabsContent value="portfolio" className="mt-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <Badge variant="secondary" className="text-sm">
+                {portfolio.length} clínica{portfolio.length === 1 ? '' : 's'} cadastrada{portfolio.length === 1 ? '' : 's'}
+              </Badge>
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleExcelImport}
+                />
+                <Button variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4" /> Importar Excel
+                </Button>
+                <Button className="gap-2 bg-gradient-to-r from-primary to-secondary text-white" onClick={() => setAddClinicOpen(true)}>
+                  <Plus className="w-4 h-4" /> Adicionar Clínica
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou bairro..."
+                  value={portfolioSearch}
+                  onChange={e => setPortfolioSearch(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={portfolioStatusFilter} onValueChange={setPortfolioStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48 h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="Lead">Lead</SelectItem>
+                  <SelectItem value="Ativo">Ativo</SelectItem>
+                  <SelectItem value="Inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {filteredPortfolio.length === 0 ? (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                Nenhuma clínica encontrada.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredPortfolio.map(c => (
+                  <Card key={c.id} className="shadow-sm">
+                    <CardContent className="pt-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">{c.nome}</p>
+                          <Badge variant="outline" className="mt-1 text-[10px]">{c.tipo}</Badge>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => toast.info('Edição em breve')}>
+                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRemoveClinic(c.id)} className="text-red-600">
+                              <Trash2 className="w-4 h-4 mr-2" /> Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3" /> {c.bairro}, {c.cidade}
+                      </p>
+                      {c.telefone && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Phone className="w-3 h-3" /> {c.telefone}
+                        </p>
+                      )}
+                      {c.responsavel && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Users className="w-3 h-3" /> {c.responsavel}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between pt-1">
+                        <Badge className={`${portfolioStatusBadge(c.status)} border-0`}>{c.status}</Badge>
+                        {c.ultimaVisita && (
+                          <span className="text-[10px] text-muted-foreground">Última visita: {c.ultimaVisita}</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ia" className="mt-6 space-y-4">
+            <div className="rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/10 via-secondary/5 to-transparent p-4">
+              <p className="text-sm text-foreground">
+                A IA analisa seu portfólio de clínicas e gera um roteiro semanal otimizado agrupando visitas por bairro para minimizar deslocamentos.
+              </p>
+            </div>
+
+            <div className="flex justify-center py-6">
+              <Button
+                size="lg"
+                onClick={handleGenerateAI}
+                disabled={aiLoading}
+                className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl"
+              >
+                {aiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                {aiLoading ? 'Gerando...' : '✨ Gerar Roteiro com Inteligência Artificial'}
+              </Button>
+            </div>
+
+            {aiRoute && (
+              <Card className="shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
+                  </CardTitle>
+                  <Button size="sm" variant="outline" className="gap-2" onClick={handleCopyAiRoute}>
+                    <Copy className="w-4 h-4" /> Copiar
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <pre className="whitespace-pre-wrap text-sm font-sans">{aiRoute}</pre>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Visit side sheet */}
         <Sheet open={!!openVisit} onOpenChange={(o) => {
