@@ -392,7 +392,24 @@ const AuditoriaSenhas = () => {
                 <div className="mt-6 space-y-4 text-sm">
                   <div>
                     <div className="text-xs text-muted-foreground">Trace ID</div>
-                    <div className="font-mono text-xs break-all" data-testid="detail-trace-id">{selectedRow.id}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-mono text-xs break-all flex-1" data-testid="detail-trace-id">{selectedRow.id}</div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(selectedRow.id, `trace-${selectedRow.id}`)}
+                        aria-label="Copiar Trace ID"
+                        data-testid="copy-trace-id"
+                        aria-live="polite"
+                      >
+                        {copiedKey === `trace-${selectedRow.id}` ? (
+                          <><Check className="w-3.5 h-3.5 mr-1 text-success" /> Copiado</>
+                        ) : (
+                          <><Copy className="w-3.5 h-3.5 mr-1" /> Copiar</>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">Data/Hora</div>
@@ -423,7 +440,26 @@ const AuditoriaSenhas = () => {
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">IP</div>
-                    <div className="font-mono text-xs">{selectedRow.ip_address ?? '—'}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-mono text-xs flex-1" data-testid="detail-ip">{selectedRow.ip_address ?? '—'}</div>
+                      {selectedRow.ip_address && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(selectedRow.ip_address!, `ip-${selectedRow.id}`)}
+                          aria-label="Copiar IP"
+                          data-testid="copy-ip"
+                          aria-live="polite"
+                        >
+                          {copiedKey === `ip-${selectedRow.id}` ? (
+                            <><Check className="w-3.5 h-3.5 mr-1 text-success" /> Copiado</>
+                          ) : (
+                            <><Copy className="w-3.5 h-3.5 mr-1" /> Copiar</>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {selectedRow.user_agent && (
                     <div>
