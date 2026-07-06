@@ -40,9 +40,17 @@ function toNumber(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-// ---------- Card 1: Comissão do Representante ----------
-function CardComissaoRepresentante() {
-  const KEY = 'taxa_comissao_representante';
+// ---------- Reusable rate card ----------
+function RateCard({
+  configKey,
+  title,
+  description,
+}: {
+  configKey: string;
+  title: string;
+  description: string;
+}) {
+  const KEY = configKey;
   const { data, isLoading } = useSystemConfigFull(KEY);
   const update = useUpdateSystemConfig();
   const [ratePct, setRatePct] = useState<string>('');
@@ -68,8 +76,8 @@ function CardComissaoRepresentante() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Comissão do Representante</CardTitle>
-        <CardDescription>Percentual pago sobre produção paga das clínicas do portfólio.</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
@@ -77,9 +85,9 @@ function CardComissaoRepresentante() {
         ) : (
           <>
             <div className="max-w-xs space-y-2">
-              <Label htmlFor="rate">Taxa (%)</Label>
+              <Label htmlFor={`rate-${KEY}`}>Taxa (%)</Label>
               <Input
-                id="rate"
+                id={`rate-${KEY}`}
                 type="number"
                 step="0.01"
                 min={0}
@@ -316,7 +324,21 @@ export default function AdminParametros() {
           </div>
         </div>
 
-        <CardComissaoRepresentante />
+        <RateCard
+          configKey="taxa_comissao_representante"
+          title="Comissão do Representante"
+          description="Percentual pago ao representante sobre produção paga das clínicas do portfólio."
+        />
+        <RateCard
+          configKey="taxa_bonificacao_direta"
+          title="Bonificação Direta (Partner)"
+          description="Percentual pago ao partner sobre o valor líquido de contratos pagos das clínicas diretas."
+        />
+        <RateCard
+          configKey="taxa_bonificacao_rede"
+          title="Bonificação de Rede (Override)"
+          description="Percentual override pago ao Master Partner sobre a produção da rede indicada."
+        />
         <CardMimoRepresentante />
         <CardMimoAtendente />
       </div>
