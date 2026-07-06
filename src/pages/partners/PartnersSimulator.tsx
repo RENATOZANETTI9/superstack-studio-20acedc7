@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, Target, DollarSign, Info, Lock, EyeOff, ArrowDown, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { isAdminRole, isPartnerRole, TYPE_COLORS, PARTNER_RULES, formatCurrency } from '@/lib/partner-rules';
+import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -26,13 +27,25 @@ const PartnersSimulator = () => {
   const [weights, setWeights] = useState(PARTNER_RULES.SEH_WEIGHTS);
   const [rates, setRates] = useState({ direct: PARTNER_RULES.COMMISSION_RATE_DIRECT, override: PARTNER_RULES.COMMISSION_RATE_OVERRIDE });
 
-  useEffect(() => { loadConfig(); }, []);
+  const { data: directCfg } = useSystemConfig('taxa_bonificacao_direta');
+  const { data: overrideCfg } = useSystemConfig('taxa_bonificacao_rede');
+
+  useEffect(() => { loadSehWeights(); }, []);
+
+  useEffect(() => {
+    const d = (directCfg as any)?.rate;
+    const o = (overrideCfg as any)?.rate;
+    setRates((prev) => ({
+      direct: typeof d === 'number' ? d : prev.direct,
+      override: typeof o === 'number' ? o : prev.override,
+    }));
+  }, [directCfg, overrideCfg]);
 
   useEffect(() => {
     setConsultationsMonth(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
   }, [clinics]);
 
-  const loadConfig = async () => {
+  const loadSehWeights = async () => {
     const { data: sehConfig } = await supabase
       .from('partner_system_config')
       .select('config_value')
@@ -44,15 +57,6 @@ const PartnersSimulator = () => {
         setWeights({ volume: w.volume, conversion: w.conversion });
       }
     }
-
-    const { data: rateConfigs } = await supabase
-      .from('partner_system_config')
-      .select('config_key, config_value')
-      .eq('category', 'COMMISSION_RATES');
-    const r: any = {};
-    (rateConfigs || []).forEach((c: any) => { r[c.config_key] = c.config_value?.rate || 0; });
-    if (r.commission_rate_direct) setRates(prev => ({ ...prev, direct: r.commission_rate_direct }));
-    if (r.commission_rate_override) setRates(prev => ({ ...prev, override: r.commission_rate_override }));
   };
 
   // SEH Calculation
