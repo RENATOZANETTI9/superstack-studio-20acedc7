@@ -52,10 +52,10 @@ export const TYPE_COLORS: Record<string, string> = {
 
 /** Unified Mimo tiers — single source of truth (weekly, paid by partner). */
 export const MIMO_TIERS = [
-  { min: 20, max: 34, label: 'Mimo Tipo 1', level: 1 },
-  { min: 35, max: 49, label: 'Mimo Tipo 2', level: 2 },
-  { min: 50, max: 69, label: 'Mimo Tipo 3', level: 3 },
-  { min: 70, max: Infinity, label: 'Mimo Tipo 4', level: 4 },
+  { min: 25, max: 60, label: 'Mimo Tipo 1', level: 1 },
+  { min: 61, max: 100, label: 'Mimo Tipo 2', level: 2 },
+  { min: 101, max: 200, label: 'Mimo Tipo 3', level: 3 },
+  { min: 201, max: Infinity, label: 'Mimo Tipo 4', level: 4 },
 ] as const;
 
 export type MimoTier = typeof MIMO_TIERS[number];
