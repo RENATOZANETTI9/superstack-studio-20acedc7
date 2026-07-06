@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import PartnerCharts from '@/components/partners/PartnerCharts';
 import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
 import { MOCK_PARTNERS, MOCK_CLINICS, MOCK_METRICS_DAILY, MOCK_ALERTS, MOCK_COMMISSIONS, withMockFallback } from '@/lib/mock-data';
+import { isRepresentanteRole } from '@/lib/partner-rules';
 import { toast } from 'sonner';
 
 type Period = 'hoje' | '7d' | '30d' | '90d';
@@ -79,7 +80,7 @@ function alertSeverityStyles(type: string, severity: string) {
 }
 
 const PartnersDashboard = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   usePartnerAlertRealtime();
   const [partners, setPartners] = useState<any[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
@@ -95,14 +96,28 @@ const PartnersDashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [partnersRes, clinicsRes, metricsRes, alertsRes, commissionsRes] = await Promise.all([
-      supabase.from('partners').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('partner_clinic_relations').select('*'),
+
+    const partnerRes = await supabase
+      .from('partners')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false });
+    const partnerData = withMockFallback(partnerRes.data, MOCK_PARTNERS);
+    setPartners(partnerData);
+
+    const isRep = isRepresentanteRole(role as any);
+    const partnerId = partnerData[0]?.id;
+    const clinicsBase = supabase.from('partner_clinic_relations').select('*');
+    const clinicsRes = (isRep && partnerId)
+      ? await clinicsBase.eq('partner_id', partnerId)
+      : await clinicsBase;
+
+    const [metricsRes, alertsRes, commissionsRes] = await Promise.all([
       supabase.from('partner_metrics_daily').select('*').order('metric_date', { ascending: false }).limit(200),
       supabase.from('partner_alerts').select('*').is('resolved_at', null).order('alert_date', { ascending: false }).limit(10),
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(50),
     ]);
-    setPartners(withMockFallback(partnersRes.data, MOCK_PARTNERS));
+
     setClinics(withMockFallback(clinicsRes.data, MOCK_CLINICS));
     setMetrics(withMockFallback(metricsRes.data, MOCK_METRICS_DAILY));
     setAlerts(withMockFallback(alertsRes.data, MOCK_ALERTS));
