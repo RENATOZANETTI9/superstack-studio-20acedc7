@@ -447,7 +447,7 @@ const MimoAtivoTab = () => (
                 <TableRow key={t.label}>
                   <TableCell className="font-medium">{t.label}</TableCell>
                   <TableCell>{formatMimoRange(t.min, t.max)}</TableCell>
-                  <TableCell>{BRINDES[t.level]}</TableCell>
+                  <TableCell>{BRINDE_DESCRIPTIONS[t.level]}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
