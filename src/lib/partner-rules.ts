@@ -30,13 +30,13 @@ export const PARTNER_RULES = {
   /** SEH reference values */
   SEH_REFERENCE: {
     /** Simulations per clinic per day */
-    SIMULATIONS_PER_DAY: 5,
+    SIMULATIONS_PER_DAY: 10,
     /** Working days per month */
-    WORKING_DAYS: 20,
+    WORKING_DAYS: 22,
     /** Approval rate reference */
     APPROVAL_RATE: 0.10,
     /** Paid rate (of total simulations) reference */
-    PAID_RATE: 0.10,
+    PAID_RATE: 0.20,
     /** Average ticket */
     AVG_TICKET: 3500,
   },
