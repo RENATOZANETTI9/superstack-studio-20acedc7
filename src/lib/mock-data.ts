@@ -124,3 +124,16 @@ export function withMockFallback<T>(realData: T[] | null | undefined, mockData: 
   const data = realData || [];
   return data.length > 0 ? data : mockData;
 }
+
+/**
+ * Same as {@link withMockFallback} but also returns a flag indicating whether
+ * the mock data was substituted for empty/absent real data. Use this when the
+ * UI needs to show a demonstration-mode banner.
+ */
+export function withMockFallbackTracked<T>(
+  realData: T[] | null | undefined,
+  mockData: T[],
+): { data: T[]; isMock: boolean } {
+  const isEmpty = !realData || realData.length === 0;
+  return { data: isEmpty ? mockData : realData!, isMock: isEmpty };
+}
