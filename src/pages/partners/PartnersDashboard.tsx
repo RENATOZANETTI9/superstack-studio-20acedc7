@@ -15,7 +15,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PartnerCharts from '@/components/partners/PartnerCharts';
 import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
-import { MOCK_PARTNERS, MOCK_CLINICS, MOCK_METRICS_DAILY, MOCK_ALERTS, MOCK_COMMISSIONS, withMockFallback } from '@/lib/mock-data';
+import { MOCK_PARTNERS, MOCK_CLINICS, MOCK_METRICS_DAILY, MOCK_ALERTS, MOCK_COMMISSIONS, withMockFallbackTracked } from '@/lib/mock-data';
+import { MockDataBanner } from '@/components/MockDataBanner';
 import { isRepresentanteRole } from '@/lib/partner-rules';
 import { toast } from 'sonner';
 
@@ -88,6 +89,7 @@ const PartnersDashboard = () => {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMockData, setIsMockData] = useState(false);
   const [period, setPeriod] = useState<Period>('7d');
   const [contactAlert, setContactAlert] = useState<any | null>(null);
   const [contactNote, setContactNote] = useState('');
@@ -102,7 +104,8 @@ const PartnersDashboard = () => {
       .select('*')
       .eq('user_id', user?.id)
       .order('created_at', { ascending: false });
-    const partnerData = withMockFallback(partnerRes.data, MOCK_PARTNERS);
+    const partnersTracked = withMockFallbackTracked(partnerRes.data, MOCK_PARTNERS);
+    const partnerData = partnersTracked.data;
     setPartners(partnerData);
 
     const isRep = isRepresentanteRole(role as any);
@@ -118,10 +121,18 @@ const PartnersDashboard = () => {
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(50),
     ]);
 
-    setClinics(withMockFallback(clinicsRes.data, MOCK_CLINICS));
-    setMetrics(withMockFallback(metricsRes.data, MOCK_METRICS_DAILY));
-    setAlerts(withMockFallback(alertsRes.data, MOCK_ALERTS));
-    setCommissions(withMockFallback(commissionsRes.data, MOCK_COMMISSIONS));
+    const clinicsTracked = withMockFallbackTracked(clinicsRes.data, MOCK_CLINICS);
+    const metricsTracked = withMockFallbackTracked(metricsRes.data, MOCK_METRICS_DAILY);
+    const alertsTracked = withMockFallbackTracked(alertsRes.data, MOCK_ALERTS);
+    const commissionsTracked = withMockFallbackTracked(commissionsRes.data, MOCK_COMMISSIONS);
+    setClinics(clinicsTracked.data);
+    setMetrics(metricsTracked.data);
+    setAlerts(alertsTracked.data);
+    setCommissions(commissionsTracked.data);
+    setIsMockData(
+      partnersTracked.isMock || clinicsTracked.isMock || metricsTracked.isMock ||
+      alertsTracked.isMock || commissionsTracked.isMock,
+    );
     setLoading(false);
   };
 
@@ -155,6 +166,7 @@ const PartnersDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-4 sm:space-y-6">
+        <MockDataBanner show={isMockData} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Meu Painel · Partners</h1>

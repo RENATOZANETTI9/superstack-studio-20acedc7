@@ -202,8 +202,21 @@ export default function PartnersRota() {
       });
       if (error) throw error;
       setAiRoute(data?.roteiro || 'Roteiro não disponível.');
-    } catch (err) {
-      toast.error('Erro ao gerar roteiro. Verifique a configuração da Edge Function.');
+    } catch (err: any) {
+      const msg = String(err?.message || err || '');
+      if (
+        msg.includes('OPENAI_API_KEY') ||
+        msg.includes('not configured') ||
+        msg.includes('secret') ||
+        msg.includes('FunctionsFetchError')
+      ) {
+        toast.error(
+          'Roteiro IA não configurado ainda. Peça ao administrador para adicionar OPENAI_API_KEY nos secrets do Supabase.',
+          { duration: 8000 },
+        );
+      } else {
+        toast.error('Erro ao gerar roteiro. Tente novamente em instantes.');
+      }
     } finally {
       setAiLoading(false);
     }
@@ -734,6 +747,17 @@ export default function PartnersRota() {
                   <pre className="whitespace-pre-wrap text-sm font-sans">{aiRoute}</pre>
                 </CardContent>
               </Card>
+            )}
+
+            {!aiRoute && !aiLoading && (
+              <div className="text-center text-muted-foreground py-12">
+                <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-medium">Nenhum roteiro gerado ainda</p>
+                <p className="text-xs mt-1 opacity-60">
+                  Clique em "Gerar Roteiro com IA" para criar seu roteiro da semana.
+                </p>
+                <p className="text-xs mt-1 opacity-40">Requer OPENAI_API_KEY configurado no Supabase.</p>
+              </div>
             )}
           </TabsContent>
         </Tabs>

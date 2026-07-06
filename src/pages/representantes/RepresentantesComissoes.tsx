@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarSign, TrendingUp, Users, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { MOCK_PARTNERS, MOCK_COMMISSIONS, withMockFallback } from '@/lib/mock-data';
+import { MOCK_PARTNERS, MOCK_COMMISSIONS, withMockFallbackTracked } from '@/lib/mock-data';
+import { MockDataBanner } from '@/components/MockDataBanner';
 import { useToast } from '@/hooks/use-toast';
 import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 
@@ -19,6 +20,7 @@ const RepresentantesComissoes = () => {
   const [partners, setPartners] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMockData, setIsMockData] = useState(false);
   const [filterPartner, setFilterPartner] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -30,8 +32,11 @@ const RepresentantesComissoes = () => {
       supabase.from('partners').select('*').order('created_at', { ascending: false }),
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(100),
     ]);
-    setPartners(withMockFallback(pRes.data, MOCK_PARTNERS));
-    setCommissions(withMockFallback(cRes.data, MOCK_COMMISSIONS));
+    const p = withMockFallbackTracked(pRes.data, MOCK_PARTNERS);
+    const c = withMockFallbackTracked(cRes.data, MOCK_COMMISSIONS);
+    setPartners(p.data);
+    setCommissions(c.data);
+    setIsMockData(p.isMock || c.isMock);
     setLoading(false);
   };
 
@@ -72,6 +77,7 @@ const RepresentantesComissoes = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <MockDataBanner show={isMockData} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Comissões & Bonificações</h1>

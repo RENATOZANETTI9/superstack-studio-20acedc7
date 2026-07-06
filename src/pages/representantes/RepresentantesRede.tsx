@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Users, Building2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
+import { MOCK_PARTNERS, MOCK_CLINICS, withMockFallbackTracked } from '@/lib/mock-data';
+import { MockDataBanner } from '@/components/MockDataBanner';
 import { useRepresentanteGuard } from '@/hooks/useRepresentanteGuard';
 
 const RepresentantesRede = () => {
@@ -17,6 +18,7 @@ const RepresentantesRede = () => {
   const [clinics, setClinics] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [isMockData, setIsMockData] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -26,8 +28,11 @@ const RepresentantesRede = () => {
       supabase.from('partners').select('*').order('created_at', { ascending: false }),
       supabase.from('partner_clinic_relations').select('*'),
     ]);
-    setPartners(withMockFallback(pRes.data, MOCK_PARTNERS));
-    setClinics(withMockFallback(cRes.data, MOCK_CLINICS));
+    const p = withMockFallbackTracked(pRes.data, MOCK_PARTNERS);
+    const c = withMockFallbackTracked(cRes.data, MOCK_CLINICS);
+    setPartners(p.data);
+    setClinics(c.data);
+    setIsMockData(p.isMock || c.isMock);
     setLoading(false);
   };
 
@@ -39,6 +44,7 @@ const RepresentantesRede = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <MockDataBanner show={isMockData} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Rede & Hierarquia</h1>
