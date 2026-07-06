@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   KeyRound, RefreshCw, ShieldAlert, CheckCircle2, XCircle, ShieldOff, Repeat,
-  ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Eye,
+  ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Eye, Copy, Check,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,6 +71,29 @@ const AuditoriaSenhas = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyToClipboard = async (value: string, key: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedKey(key);
+      window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1600);
+    } catch {
+      setCopiedKey(null);
+    }
+  };
+
   // Estado sincronizado com a URL (fonte de verdade: searchParams)
   const filter = searchParams.get('q') ?? '';
   const actionFilter = (searchParams.get('action') as ActionFilter) || 'all';
@@ -80,13 +103,13 @@ const AuditoriaSenhas = () => {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
   const selectedId = searchParams.get('event');
 
-  const updateParams = (patch: Record<string, string | null>) => {
+  const updateParams = (patch: Record<string, string | null>, opts?: { replace?: boolean }) => {
     const next = new URLSearchParams(searchParams);
     for (const [k, v] of Object.entries(patch)) {
       if (v === null || v === '' || v === 'all') next.delete(k);
       else next.set(k, v);
     }
-    setSearchParams(next, { replace: true });
+    setSearchParams(next, { replace: opts?.replace ?? false });
   };
 
   const [rows, setRows] = useState<AuditRow[]>([]);
@@ -214,7 +237,7 @@ const AuditoriaSenhas = () => {
               <Input
                 placeholder="Filtrar por e-mail..."
                 value={filter}
-                onChange={(e) => updateParams({ q: e.target.value || null, page: null })}
+                onChange={(e) => updateParams({ q: e.target.value || null, page: null }, { replace: true })}
                 className="max-w-xs"
                 data-testid="filter-input"
               />
@@ -369,7 +392,24 @@ const AuditoriaSenhas = () => {
                 <div className="mt-6 space-y-4 text-sm">
                   <div>
                     <div className="text-xs text-muted-foreground">Trace ID</div>
-                    <div className="font-mono text-xs break-all" data-testid="detail-trace-id">{selectedRow.id}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-mono text-xs break-all flex-1" data-testid="detail-trace-id">{selectedRow.id}</div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(selectedRow.id, `trace-${selectedRow.id}`)}
+                        aria-label="Copiar Trace ID"
+                        data-testid="copy-trace-id"
+                        aria-live="polite"
+                      >
+                        {copiedKey === `trace-${selectedRow.id}` ? (
+                          <><Check className="w-3.5 h-3.5 mr-1 text-success" /> Copiado</>
+                        ) : (
+                          <><Copy className="w-3.5 h-3.5 mr-1" /> Copiar</>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">Data/Hora</div>
@@ -400,7 +440,26 @@ const AuditoriaSenhas = () => {
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">IP</div>
-                    <div className="font-mono text-xs">{selectedRow.ip_address ?? '—'}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-mono text-xs flex-1" data-testid="detail-ip">{selectedRow.ip_address ?? '—'}</div>
+                      {selectedRow.ip_address && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(selectedRow.ip_address!, `ip-${selectedRow.id}`)}
+                          aria-label="Copiar IP"
+                          data-testid="copy-ip"
+                          aria-live="polite"
+                        >
+                          {copiedKey === `ip-${selectedRow.id}` ? (
+                            <><Check className="w-3.5 h-3.5 mr-1 text-success" /> Copiado</>
+                          ) : (
+                            <><Copy className="w-3.5 h-3.5 mr-1" /> Copiar</>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {selectedRow.user_agent && (
                     <div>
