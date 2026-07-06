@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   KeyRound, RefreshCw, ShieldAlert, CheckCircle2, XCircle, ShieldOff, Repeat,
-  ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Eye,
+  ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Eye, Copy, Check,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,6 +71,29 @@ const AuditoriaSenhas = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyToClipboard = async (value: string, key: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedKey(key);
+      window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1600);
+    } catch {
+      setCopiedKey(null);
+    }
+  };
+
   // Estado sincronizado com a URL (fonte de verdade: searchParams)
   const filter = searchParams.get('q') ?? '';
   const actionFilter = (searchParams.get('action') as ActionFilter) || 'all';
@@ -86,7 +109,7 @@ const AuditoriaSenhas = () => {
       if (v === null || v === '' || v === 'all') next.delete(k);
       else next.set(k, v);
     }
-    setSearchParams(next, { replace: true });
+    setSearchParams(next);
   };
 
   const [rows, setRows] = useState<AuditRow[]>([]);
