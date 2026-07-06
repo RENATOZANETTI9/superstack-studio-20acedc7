@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { MOCK_COMMISSIONS, MOCK_INCENTIVES, MOCK_CLINICS, withMockFallback } from '@/lib/mock-data';
+import { MOCK_COMMISSIONS, MOCK_INCENTIVES, MOCK_CLINICS, withMockFallbackTracked } from '@/lib/mock-data';
+import { MockDataBanner } from '@/components/MockDataBanner';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,7 @@ const PartnersBonificacoes = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [incentives, setIncentives] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMockData, setIsMockData] = useState(false);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [filterClinic, setFilterClinic] = useState('ALL');
@@ -56,10 +58,17 @@ const PartnersBonificacoes = () => {
       supabase.from('partner_clinic_relations').select('clinic_external_id, clinic_name, partner_id'),
     ]);
 
-    setCommissions(withMockFallback(comRes.data, MOCK_COMMISSIONS));
-    setIncentives(withMockFallback(incRes.data, MOCK_INCENTIVES));
+    const com = withMockFallbackTracked(comRes.data, MOCK_COMMISSIONS);
+    const inc = withMockFallbackTracked(incRes.data, MOCK_INCENTIVES);
+    const clin = withMockFallbackTracked(
+      clinicRes.data,
+      MOCK_CLINICS.map(c => ({ clinic_external_id: c.clinic_external_id, clinic_name: c.clinic_name, partner_id: c.partner_id })),
+    );
+    setCommissions(com.data);
+    setIncentives(inc.data);
     setMyPartner(partnerRes.data);
-    setClinicRelations(withMockFallback(clinicRes.data, MOCK_CLINICS.map(c => ({ clinic_external_id: c.clinic_external_id, clinic_name: c.clinic_name, partner_id: c.partner_id }))));
+    setClinicRelations(clin.data);
+    setIsMockData(com.isMock || inc.isMock || clin.isMock);
     setLoading(false);
   }, [user]);
 
@@ -168,6 +177,7 @@ const PartnersBonificacoes = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <MockDataBanner show={isMockData} />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Bonificações e Incentivos</h1>
           <p className="text-muted-foreground">Gestão de bonificações de partners e incentivos de atendentes Help Ude</p>
