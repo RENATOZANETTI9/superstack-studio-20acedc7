@@ -27,6 +27,7 @@ import PartnersRota from "./pages/partners/PartnersRota";
 import PartnersClinicas from "./pages/partners/PartnersClinicas";
 import PartnersClinicProfile from "./pages/partners/PartnersClinicProfile";
 import PartnersComissoesAdmin from "./pages/partners/PartnersComissoesAdmin";
+import AdminParametros from "./pages/admin/AdminParametros";
 import RepresentantesDashboard from "./pages/representantes/RepresentantesDashboard";
 import RepresentantesRede from "./pages/representantes/RepresentantesRede";
 import RepresentantesComissoes from "./pages/representantes/RepresentantesComissoes";
@@ -111,6 +112,7 @@ const App = () => (
             <Route element={<ProtectedRoute allowedRoles={['master', 'admin']} />}>
               <Route path="/dashboard/representantes/adm" element={<RepresentantesADM />} />
               <Route path="/dashboard/partners/comissoes-admin" element={<PartnersComissoesAdmin />} />
+              <Route path="/dashboard/admin/parametros" element={<AdminParametros />} />
             </Route>
             {/* Catch-all for unknown /dashboard/representantes/* URLs */}
             <Route path="/dashboard/representantes/*" element={<RepresentantesCatchAll />} />
