@@ -149,7 +149,8 @@ function CardMimoRepresentante() {
     if (t.max_volume != null && t.max_volume < 0) errs.max = 'Valor negativo inválido.';
     if (t.min_volume != null && t.max_volume != null && t.min_volume > t.max_volume)
       errs.max = 'Máximo deve ser ≥ mínimo.';
-    if (!t.brinde || !t.brinde.trim()) errs.brinde = 'Descreva o brinde.';
+    if (!t.brinde || !t.brinde.trim())
+      errs.brinde = `Descreva o brinde da faixa ${t.label}.`;
     if (Object.keys(errs).length) tierErrors[k] = errs;
   }
   const hasErrors = Object.keys(tierErrors).length > 0;
@@ -267,7 +268,8 @@ function CardMimoAtendente() {
     if (t.max_producao != null && t.max_producao < 0) errs.max = 'Valor negativo inválido.';
     if (t.min_producao != null && t.max_producao != null && t.min_producao > t.max_producao)
       errs.max = 'Máximo deve ser ≥ mínimo.';
-    if (!t.mimo || !t.mimo.trim()) errs.mimo = 'Descreva o brinde.';
+    if (!t.mimo || !t.mimo.trim())
+      errs.mimo = `Descreva o brinde da faixa ${ATD_LABELS[k]}.`;
     if (Object.keys(errs).length) tierErrors[k] = errs;
   }
   const hasErrors = Object.keys(tierErrors).length > 0;
