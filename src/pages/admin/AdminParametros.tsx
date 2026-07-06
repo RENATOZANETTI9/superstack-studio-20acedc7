@@ -60,13 +60,22 @@ function RateCard({
     if (rate != null) setRatePct(String((rate * 100).toFixed(4).replace(/\.?0+$/, '')));
   }, [data]);
 
+  const parsed = toNumber(ratePct);
+  const error =
+    ratePct === ''
+      ? 'Informe a taxa.'
+      : parsed == null
+        ? 'Valor numérico inválido.'
+        : parsed < 0 || parsed > 100
+          ? 'A taxa deve estar entre 0 e 100.'
+          : null;
+
   const save = () => {
-    const pct = toNumber(ratePct);
-    if (pct == null || pct < 0 || pct > 100) {
-      toast.error('Informe uma taxa válida entre 0 e 100.');
+    if (error || parsed == null) {
+      toast.error(error ?? 'Informe uma taxa válida entre 0 e 100.');
       return;
     }
-    const newValue = { ...(data?.config_value as any), rate: pct / 100 };
+    const newValue = { ...(data?.config_value as any), rate: parsed / 100 };
     update.mutate({ configKey: KEY, value: newValue }, {
       onSuccess: () => toast.success('Taxa de comissão atualizada.'),
       onError: (e: any) => toast.error(e?.message ?? 'Erro ao salvar.'),
@@ -94,12 +103,15 @@ function RateCard({
                 max={100}
                 value={ratePct}
                 onChange={(e) => setRatePct(e.target.value)}
+                aria-invalid={!!error}
+                className={error ? 'border-destructive focus-visible:ring-destructive' : ''}
               />
+              {error && <p className="text-xs text-destructive">{error}</p>}
               <p className="text-xs text-muted-foreground">
-                Atual: {ratePct ? `${Number(ratePct).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}%` : '—'}
+                Atual: {parsed != null && !error ? `${parsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}%` : '—'}
               </p>
             </div>
-            <Button onClick={save} disabled={update.isPending}>
+            <Button onClick={save} disabled={update.isPending || !!error}>
               {update.isPending ? 'Salvando…' : 'Salvar'}
             </Button>
             <LastEdited updatedAt={data?.updated_at} updatedBy={data?.updated_by} />
