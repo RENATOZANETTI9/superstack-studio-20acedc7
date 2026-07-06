@@ -71,14 +71,14 @@ const PartnersSimulator = () => {
   const approvedContracts = Math.round(consultationsMonth * (approvalRate / 100));
   const paidContracts = Math.round(approvedContracts * (paidRate / 100));
   const totalPaidValue = paidContracts * avgTicket;
-  const directCommission = totalPaidValue * rates.direct;
+  const directCommission = totalPaidValue * PARTNER_RULES.SIMULATOR_COMMISSION_RATE;
   const yearlyProjection = directCommission * 12;
 
   // Funnel data
   const funnelSteps = [
     { label: 'Simulações/Mês', value: consultationsMonth, color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50' },
-    { label: 'Aprovados (10%)', value: approvedContracts, color: 'bg-amber-500', textColor: 'text-amber-700', bgLight: 'bg-amber-50' },
-    { label: 'Pagos (10%)', value: paidContracts, color: 'bg-green-500', textColor: 'text-green-700', bgLight: 'bg-green-50' },
+    { label: `Aprovados (${ref.APPROVAL_RATE * 100}%)`, value: approvedContracts, color: 'bg-amber-500', textColor: 'text-amber-700', bgLight: 'bg-amber-50' },
+    { label: `Pagos (${ref.PAID_RATE * 100}%)`, value: paidContracts, color: 'bg-green-500', textColor: 'text-green-700', bgLight: 'bg-green-50' },
     { label: 'Valor Total', value: totalPaidValue, color: 'bg-emerald-600', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', isCurrency: true },
   ];
 
@@ -266,7 +266,7 @@ const PartnersSimulator = () => {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">Projeção Financeira</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Taxa: {(rates.direct * 100).toFixed(1)}%</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Taxa simulada: {(PARTNER_RULES.SIMULATOR_COMMISSION_RATE * 100).toFixed(2)}%</p>
                   </div>
                 </div>
                 <div className="space-y-2 sm:space-y-3">
