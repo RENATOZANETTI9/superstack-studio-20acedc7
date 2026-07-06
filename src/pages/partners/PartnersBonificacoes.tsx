@@ -161,6 +161,20 @@ const PartnersBonificacoes = () => {
   const totalOverride = filteredCommissions.filter(c => c.commission_type === 'OVERRIDE').reduce((s, c) => s + Number(c.commission_amount), 0);
   const totalPix = pixIncentives.reduce((s, i) => s + Number(i.incentive_amount || 0), 0);
 
+  // Próximo pagamento PIX (data + valor)
+  const nextPixDate = format(endOfMonth(new Date()), 'dd/MM/yyyy', { locale: ptBR });
+  const daysUntilPix = Math.max(
+    0,
+    Math.ceil((endOfMonth(new Date()).getTime() - Date.now()) / 86400000),
+  );
+  const currentMonthKey = format(new Date(), 'yyyy-MM');
+  const paidThisMonth = commissions
+    .filter(c => (c.reference_month || '').startsWith(currentMonthKey))
+    .reduce((s, c) => s + Number(c.net_paid_amount || 0), 0);
+  const nextPixTier = PARTNER_RULES.PIX_TIERS.find(
+    t => paidThisMonth >= t.min && paidThisMonth <= t.max,
+  );
+
   const clinicNameMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const [id, info] of Object.entries(clinicMap)) {
