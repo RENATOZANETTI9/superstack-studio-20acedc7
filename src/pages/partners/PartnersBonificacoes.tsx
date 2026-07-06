@@ -455,7 +455,7 @@ const MimoAtivoTab = () => (
           <CardTitle className="text-base">Campanhas de Mimo — Semana 27</CardTitle>
           <Badge className="bg-green-100 text-green-700 hover:bg-green-100">ATIVA</Badge>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Período: 30/06 a 04/07/2026 · Meta: 50 simulações por clínica para atingir Tipo 2</p>
+        <p className="text-xs text-muted-foreground mt-1">Período: 30/06 a 04/07/2026 · Meta: 50 simulações por clínica para atingir Prata</p>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
