@@ -103,13 +103,13 @@ const AuditoriaSenhas = () => {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
   const selectedId = searchParams.get('event');
 
-  const updateParams = (patch: Record<string, string | null>) => {
+  const updateParams = (patch: Record<string, string | null>, opts?: { replace?: boolean }) => {
     const next = new URLSearchParams(searchParams);
     for (const [k, v] of Object.entries(patch)) {
       if (v === null || v === '' || v === 'all') next.delete(k);
       else next.set(k, v);
     }
-    setSearchParams(next);
+    setSearchParams(next, { replace: opts?.replace ?? false });
   };
 
   const [rows, setRows] = useState<AuditRow[]>([]);
@@ -237,7 +237,7 @@ const AuditoriaSenhas = () => {
               <Input
                 placeholder="Filtrar por e-mail..."
                 value={filter}
-                onChange={(e) => updateParams({ q: e.target.value || null, page: null })}
+                onChange={(e) => updateParams({ q: e.target.value || null, page: null }, { replace: true })}
                 className="max-w-xs"
                 data-testid="filter-input"
               />
