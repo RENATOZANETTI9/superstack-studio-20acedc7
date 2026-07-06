@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     email,
     phone: '(11) 98888-0001',
     type: 'PARTNER',
-    person_type: 'PF',
+    person_type: 'CPF',
     status: 'ACTIVE',
     current_level: 'PRATA',
     region_state: 'SP',
