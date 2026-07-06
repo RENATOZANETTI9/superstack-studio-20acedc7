@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -152,6 +153,7 @@ const STATUS_BADGE: Record<VisitStatus, string> = {
 };
 
 export default function PartnersRota() {
+  const { user } = useAuth();
   const [weekOffset, setWeekOffset] = useState(0);
   const [days, setDays] = useState(INITIAL_DAYS);
   const [activeTab, setActiveTab] = useState<string>('seg');
@@ -192,6 +194,34 @@ export default function PartnersRota() {
 
   const { label: weekLabel, monday } = getWeekDates(weekOffset);
   const DAYS = getDays(monday);
+
+  useEffect(() => {
+    const loadPortfolio = async () => {
+      if (!user?.id) return;
+      const { data: partnerData } = await supabase
+        .from('partners').select('id').eq('user_id', user.id).single();
+      if (!partnerData?.id) return;
+      const { data: clinics } = await supabase
+        .from('portfolio_clinics')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .order('created_at');
+      if (clinics && clinics.length > 0) {
+        setPortfolio(clinics.map((c: any) => ({
+          id: c.id,
+          nome: c.nome,
+          tipo: c.tipo as PortfolioClinic['tipo'],
+          bairro: c.bairro,
+          cidade: c.cidade,
+          telefone: c.telefone || '',
+          responsavel: c.responsavel || '',
+          status: c.status as PortfolioClinic['status'],
+          ultimaVisita: c.ultima_visita || undefined,
+        })));
+      }
+    };
+    loadPortfolio();
+  }, [user?.id]);
 
   const handleGenerateAI = async () => {
     setAiLoading(true);
@@ -253,18 +283,36 @@ export default function PartnersRota() {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleAddClinic = () => {
+  const handleAddClinic = async () => {
     if (!newClinic.nome || !newClinic.bairro || !newClinic.cidade) {
       toast.error('Preencha nome, bairro e cidade');
       return;
     }
-    setPortfolio(prev => [...prev, { ...newClinic, id: crypto.randomUUID() }]);
+    const { data: partnerData } = await supabase
+      .from('partners').select('id').eq('user_id', user?.id).single();
+    if (!partnerData?.id) { toast.error('Parceiro não encontrado.'); return; }
+    const { data: inserted, error } = await supabase
+      .from('portfolio_clinics')
+      .insert({
+        partner_id: partnerData.id,
+        nome: newClinic.nome,
+        tipo: newClinic.tipo,
+        bairro: newClinic.bairro,
+        cidade: newClinic.cidade,
+        telefone: newClinic.telefone || null,
+        responsavel: newClinic.responsavel || null,
+      })
+      .select().single();
+    if (error || !inserted) { toast.error('Erro ao salvar clínica.'); return; }
+    setPortfolio(prev => [...prev, { ...newClinic, id: inserted.id }]);
     toast.success('Clínica adicionada ao portfólio');
     setAddClinicOpen(false);
     setNewClinic({ nome: '', tipo: 'Clínica', bairro: '', cidade: '', telefone: '', responsavel: '', status: 'Lead' });
   };
 
-  const handleRemoveClinic = (id: string) => {
+  const handleRemoveClinic = async (id: string) => {
+    const { error } = await supabase.from('portfolio_clinics').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover clínica.'); return; }
     setPortfolio(prev => prev.filter(c => c.id !== id));
     toast.success('Clínica removida');
   };
