@@ -8,17 +8,29 @@ const cors = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
-  const setupToken = Deno.env.get('SETUP_TOKEN');
-  const provided = req.headers.get('x-setup-token');
-  if (!setupToken || provided !== setupToken) {
+  const url = Deno.env.get('SUPABASE_URL')!;
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin = createClient(url, key);
+
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
-
-  const url = Deno.env.get('SUPABASE_URL')!;
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(url, key);
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user: caller }, error: callerErr } = await admin.auth.getUser(token);
+  if (callerErr || !caller) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401, headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
+  const { data: callerRole } = await admin.from('user_roles').select('role').eq('user_id', caller.id).maybeSingle();
+  if (!callerRole || (callerRole.role !== 'admin' && callerRole.role !== 'master')) {
+    return new Response(JSON.stringify({ error: 'forbidden' }), {
+      status: 403, headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
 
   const email = 'representante@teste.com';
   const password = 'Rep@12345';
