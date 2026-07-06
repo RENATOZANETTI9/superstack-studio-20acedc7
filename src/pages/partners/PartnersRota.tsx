@@ -283,18 +283,36 @@ export default function PartnersRota() {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleAddClinic = () => {
+  const handleAddClinic = async () => {
     if (!newClinic.nome || !newClinic.bairro || !newClinic.cidade) {
       toast.error('Preencha nome, bairro e cidade');
       return;
     }
-    setPortfolio(prev => [...prev, { ...newClinic, id: crypto.randomUUID() }]);
+    const { data: partnerData } = await supabase
+      .from('partners').select('id').eq('user_id', user?.id).single();
+    if (!partnerData?.id) { toast.error('Parceiro não encontrado.'); return; }
+    const { data: inserted, error } = await supabase
+      .from('portfolio_clinics')
+      .insert({
+        partner_id: partnerData.id,
+        nome: newClinic.nome,
+        tipo: newClinic.tipo,
+        bairro: newClinic.bairro,
+        cidade: newClinic.cidade,
+        telefone: newClinic.telefone || null,
+        responsavel: newClinic.responsavel || null,
+      })
+      .select().single();
+    if (error || !inserted) { toast.error('Erro ao salvar clínica.'); return; }
+    setPortfolio(prev => [...prev, { ...newClinic, id: inserted.id }]);
     toast.success('Clínica adicionada ao portfólio');
     setAddClinicOpen(false);
     setNewClinic({ nome: '', tipo: 'Clínica', bairro: '', cidade: '', telefone: '', responsavel: '', status: 'Lead' });
   };
 
-  const handleRemoveClinic = (id: string) => {
+  const handleRemoveClinic = async (id: string) => {
+    const { error } = await supabase.from('portfolio_clinics').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover clínica.'); return; }
     setPortfolio(prev => prev.filter(c => c.id !== id));
     toast.success('Clínica removida');
   };
