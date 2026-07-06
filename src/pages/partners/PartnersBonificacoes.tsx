@@ -12,7 +12,9 @@ import { CalendarClock, Download, Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { isAdminRole, MIMO_TIERS, getMimoTier } from '@/lib/partner-rules';
+import { isAdminRole, MIMO_TIERS, getMimoTier, BRINDE_DESCRIPTIONS, PARTNER_RULES } from '@/lib/partner-rules';
+import { endOfMonth, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import BonificacaoFilters from '@/components/partners/BonificacaoFilters';
 import BonificacaoSummaryCards from '@/components/partners/BonificacaoSummaryCards';
 import BonificacaoTiersInfo from '@/components/partners/BonificacaoTiersInfo';
@@ -403,13 +405,6 @@ const PixPorAtendenteTab = () => {
       </CardContent>
     </Card>
   );
-};
-
-const BRINDES: Record<number, string> = {
-  1: 'Brinde Básico (caneta personalizada)',
-  2: 'Brinde Intermediário (kit café)',
-  3: 'Brinde Premium (mochila)',
-  4: 'Brinde Elite (smartwatch)',
 };
 
 const formatMimoRange = (min: number, max: number) =>
