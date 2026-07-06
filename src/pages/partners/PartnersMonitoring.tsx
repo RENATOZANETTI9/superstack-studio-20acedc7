@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { MOCK_ALERTS, MOCK_COMMISSIONS, MOCK_CONFIG_HISTORY, withMockFallback } from '@/lib/mock-data';
+import { MOCK_ALERTS, MOCK_COMMISSIONS, MOCK_CONFIG_HISTORY, withMockFallbackTracked } from '@/lib/mock-data';
+import { MockDataBanner } from '@/components/MockDataBanner';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,7 @@ const PartnersMonitoring = () => {
   const [configHistory, setConfigHistory] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMockData, setIsMockData] = useState(false);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -38,9 +40,13 @@ const PartnersMonitoring = () => {
       supabase.from('partner_config_history').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(100),
     ]);
-    setAlerts(withMockFallback(alertsRes.data, MOCK_ALERTS));
-    setConfigHistory(withMockFallback(historyRes.data, MOCK_CONFIG_HISTORY));
-    setCommissions(withMockFallback(commsRes.data, MOCK_COMMISSIONS));
+    const a = withMockFallbackTracked(alertsRes.data, MOCK_ALERTS);
+    const h = withMockFallbackTracked(historyRes.data, MOCK_CONFIG_HISTORY);
+    const c = withMockFallbackTracked(commsRes.data, MOCK_COMMISSIONS);
+    setAlerts(a.data);
+    setConfigHistory(h.data);
+    setCommissions(c.data);
+    setIsMockData(a.isMock || h.isMock || c.isMock);
     setLoading(false);
   };
 
@@ -82,6 +88,7 @@ const PartnersMonitoring = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <MockDataBanner show={isMockData} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Monitoramento & Auditoria</h1>
