@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import {
   MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
-  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck
+  Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck,
+  Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +45,24 @@ interface PlannedVisit {
   phone?: string;
   status: VisitStatus;
 }
+
+interface PortfolioClinic {
+  id: string;
+  nome: string;
+  tipo: 'Clínica' | 'Hospital' | 'Consultório';
+  bairro: string;
+  cidade: string;
+  telefone: string;
+  responsavel: string;
+  status: 'Lead' | 'Ativo' | 'Inativo';
+  ultimaVisita?: string;
+}
+
+const INITIAL_PORTFOLIO: PortfolioClinic[] = [
+  { id: 'p1', nome: 'Clínica Savassi Odonto', tipo: 'Clínica', bairro: 'Savassi', cidade: 'Belo Horizonte', telefone: '(31) 99876-1122', responsavel: 'Dra. Marina', status: 'Ativo', ultimaVisita: '02/07/2026' },
+  { id: 'p2', nome: 'Hospital Lourdes Saúde', tipo: 'Hospital', bairro: 'Lourdes', cidade: 'Belo Horizonte', telefone: '(31) 99654-3344', responsavel: 'Dr. Ricardo', status: 'Lead' },
+  { id: 'p3', nome: 'Consultório Centro BH', tipo: 'Consultório', bairro: 'Centro', cidade: 'Belo Horizonte', telefone: '(31) 98877-2211', responsavel: 'Patrícia Lima', status: 'Inativo', ultimaVisita: '15/05/2026' },
+];
 
 const INITIAL_DAYS: Record<string, PlannedVisit[]> = {
   seg: [
@@ -149,12 +173,107 @@ export default function PartnersRota() {
   const [cobrarTarget, setCobrarTarget] = useState<{ id: string; clinic: string } | null>(null);
   const [cobrarNote, setCobrarNote] = useState('');
 
+  // Outer tabs
+  const [outerTab, setOuterTab] = useState<string>('rota');
+
+  // Portfolio
+  const [portfolio, setPortfolio] = useState<PortfolioClinic[]>(INITIAL_PORTFOLIO);
+  const [portfolioSearch, setPortfolioSearch] = useState('');
+  const [portfolioStatusFilter, setPortfolioStatusFilter] = useState<string>('all');
+  const [addClinicOpen, setAddClinicOpen] = useState(false);
+  const [newClinic, setNewClinic] = useState<Omit<PortfolioClinic, 'id'>>({
+    nome: '', tipo: 'Clínica', bairro: '', cidade: '', telefone: '', responsavel: '', status: 'Lead',
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // AI
+  const [aiRoute, setAiRoute] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   const { label: weekLabel, monday } = getWeekDates(weekOffset);
   const DAYS = getDays(monday);
 
-  const handleGenerate = () => {
-    toast.success('Roteiro gerado com base nas metas da semana!');
+  const handleGenerateAI = async () => {
+    setAiLoading(true);
+    setAiRoute(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-ai-route', {
+        body: { clinicas: portfolio, semana: weekLabel },
+      });
+      if (error) throw error;
+      setAiRoute(data?.roteiro || 'Roteiro não disponível.');
+    } catch (err) {
+      toast.error('Erro ao gerar roteiro. Verifique a configuração da Edge Function.');
+    } finally {
+      setAiLoading(false);
+    }
   };
+
+  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+        const imported: PortfolioClinic[] = rows.map((r) => ({
+          id: crypto.randomUUID(),
+          nome: String(r.Nome ?? r.nome ?? ''),
+          tipo: (r.Tipo ?? r.tipo ?? 'Clínica') as PortfolioClinic['tipo'],
+          bairro: String(r.Bairro ?? r.bairro ?? ''),
+          cidade: String(r.Cidade ?? r.cidade ?? ''),
+          telefone: String(r.Telefone ?? r.telefone ?? ''),
+          responsavel: String(r.Responsavel ?? r.responsavel ?? r.Responsável ?? ''),
+          status: 'Lead',
+        })).filter(c => c.nome);
+        setPortfolio(prev => [...prev, ...imported]);
+        toast.success(`${imported.length} clínica(s) importada(s) do Excel`);
+      } catch (err) {
+        toast.error('Erro ao ler arquivo Excel');
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleAddClinic = () => {
+    if (!newClinic.nome || !newClinic.bairro || !newClinic.cidade) {
+      toast.error('Preencha nome, bairro e cidade');
+      return;
+    }
+    setPortfolio(prev => [...prev, { ...newClinic, id: crypto.randomUUID() }]);
+    toast.success('Clínica adicionada ao portfólio');
+    setAddClinicOpen(false);
+    setNewClinic({ nome: '', tipo: 'Clínica', bairro: '', cidade: '', telefone: '', responsavel: '', status: 'Lead' });
+  };
+
+  const handleRemoveClinic = (id: string) => {
+    setPortfolio(prev => prev.filter(c => c.id !== id));
+    toast.success('Clínica removida');
+  };
+
+  const handleCopyAiRoute = async () => {
+    if (!aiRoute) return;
+    await navigator.clipboard.writeText(aiRoute);
+    toast.success('Roteiro copiado!');
+  };
+
+  const filteredPortfolio = portfolio.filter(c => {
+    const matchesSearch =
+      c.nome.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
+      c.bairro.toLowerCase().includes(portfolioSearch.toLowerCase());
+    const matchesStatus = portfolioStatusFilter === 'all' || c.status === portfolioStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const portfolioStatusBadge = (status: PortfolioClinic['status']) =>
+    status === 'Ativo' ? 'bg-green-100 text-green-700'
+    : status === 'Lead' ? 'bg-gray-100 text-gray-700'
+    : 'bg-red-100 text-red-700';
 
   const handleShare = () => {
     toast.success('Roteiro copiado! Cole no WhatsApp para compartilhar.');
@@ -249,12 +368,25 @@ export default function PartnersRota() {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <Button onClick={handleGenerate} className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:shadow-lg">
-              <Sparkles className="w-4 h-4" /> Gerar Roteiro Automático
+            <Button
+              onClick={() => { setOuterTab('ia'); handleGenerateAI(); }}
+              className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:shadow-lg"
+              disabled={aiLoading}
+            >
+              <Sparkles className="w-4 h-4" />
+              {aiLoading ? 'Gerando...' : 'Gerar Roteiro com IA'}
             </Button>
           </div>
         </div>
 
+        <Tabs value={outerTab} onValueChange={setOuterTab} className="w-full">
+          <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+            <TabsTrigger value="rota">📅 Rota Semanal</TabsTrigger>
+            <TabsTrigger value="portfolio">🏥 Portfólio de Clínicas</TabsTrigger>
+            <TabsTrigger value="ia">🤖 Roteiro com IA</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="rota" className="mt-6 space-y-6">
         {/* Metas */}
         <div>
           <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
