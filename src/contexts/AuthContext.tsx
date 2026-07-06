@@ -11,6 +11,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isMaster: boolean;
+  mustChangePassword: boolean;
+  refreshMustChangePassword: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   createUser: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -37,6 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const fetchUserRole = async (userId: string) => {
     const { data, error } = await supabase
@@ -52,6 +55,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const fetchMustChangePassword = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('must_change_password')
+      .eq('user_id', userId)
+      .maybeSingle();
+    setMustChangePassword(!!(data as any)?.must_change_password);
+  };
+
+  const refreshMustChangePassword = async () => {
+    if (user?.id) await fetchMustChangePassword(user.id);
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -63,9 +79,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Defer Supabase calls with setTimeout to prevent deadlock
           setTimeout(() => {
             fetchUserRole(session.user.id);
+            fetchMustChangePassword(session.user.id);
           }, 0);
         } else {
           setRole(null);
+          setMustChangePassword(false);
         }
       }
     );
@@ -77,6 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (session?.user) {
         fetchUserRole(session.user.id);
+        fetchMustChangePassword(session.user.id);
       }
       setIsLoading(false);
     });
@@ -194,6 +213,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: !!user,
         isLoading,
         isMaster: role === 'master' || role === 'admin',
+        mustChangePassword,
+        refreshMustChangePassword,
         login,
         logout,
         createUser,

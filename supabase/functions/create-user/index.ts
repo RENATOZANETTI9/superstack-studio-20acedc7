@@ -93,6 +93,16 @@ Deno.serve(async (req) => {
       console.error('Error assigning role:', roleError);
     }
 
+    // Force password reset on first login (admin created the account with a provisional password).
+    const { error: mustChangeErr } = await supabaseAdmin
+      .from('profiles')
+      .update({ must_change_password: true })
+      .eq('user_id', newUser.user.id);
+
+    if (mustChangeErr) {
+      console.error('Error setting must_change_password:', mustChangeErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, user: { id: newUser.user.id, email: newUser.user.email } }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
