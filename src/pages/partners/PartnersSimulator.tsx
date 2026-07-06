@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,21 +25,24 @@ const PartnersSimulator = () => {
   const [paidRate, setPaidRate] = useState(ref.PAID_RATE * 100);
   const [avgTicket, setAvgTicket] = useState(ref.AVG_TICKET);
   const [weights, setWeights] = useState(PARTNER_RULES.SEH_WEIGHTS);
-  const [rates, setRates] = useState({ direct: PARTNER_RULES.COMMISSION_RATE_DIRECT, override: PARTNER_RULES.COMMISSION_RATE_OVERRIDE });
 
+  // Fonte única: system config no banco. Recalcula automaticamente ao carregar/atualizar.
   const { data: directCfg } = useSystemConfig('taxa_bonificacao_direta');
   const { data: overrideCfg } = useSystemConfig('taxa_bonificacao_rede');
+  const { data: repCfg } = useSystemConfig('taxa_comissao_representante');
 
-  useEffect(() => { loadSehWeights(); }, []);
-
-  useEffect(() => {
+  const rates = useMemo(() => {
     const d = (directCfg as any)?.rate;
     const o = (overrideCfg as any)?.rate;
-    setRates((prev) => ({
-      direct: typeof d === 'number' ? d : prev.direct,
-      override: typeof o === 'number' ? o : prev.override,
-    }));
-  }, [directCfg, overrideCfg]);
+    const r = (repCfg as any)?.rate;
+    return {
+      direct: typeof d === 'number' ? d : PARTNER_RULES.COMMISSION_RATE_DIRECT,
+      override: typeof o === 'number' ? o : PARTNER_RULES.COMMISSION_RATE_OVERRIDE,
+      representante: typeof r === 'number' ? r : 0,
+    };
+  }, [directCfg, overrideCfg, repCfg]);
+
+  useEffect(() => { loadSehWeights(); }, []);
 
   useEffect(() => {
     setConsultationsMonth(clinics * ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS);
