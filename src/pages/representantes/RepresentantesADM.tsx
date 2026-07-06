@@ -83,13 +83,13 @@ interface MimoAudit {
 }
 
 const MOCK_MIMOS_AUDIT: MimoAudit[] = [
-  { id: 'm1', representante: 'Roberto Ribeiro', clinic: 'Clínica Dental Plus', semana: 'Sem 4 / Jun', faixa: 'Mimo Tipo 3', status: 'PENDENTE' },
-  { id: 'm2', representante: 'Roberto Ribeiro', clinic: 'OdontoVida Premium', semana: 'Sem 4 / Jun', faixa: 'Mimo Tipo 2', status: 'PENDENTE' },
-  { id: 'm3', representante: 'Carlos H. Lima', clinic: 'Clínica Carioca', semana: 'Sem 3 / Jun', faixa: 'Mimo Tipo 1', status: 'PENDENTE' },
-  { id: 'm4', representante: 'Ana Paula Ferreira', clinic: 'Clínica Paulista', semana: 'Sem 4 / Jun', faixa: 'Mimo Tipo 2', status: 'ENTREGUE_COM_FOTO' },
-  { id: 'm5', representante: 'Fernanda Costa', clinic: 'OdontoCampinas', semana: 'Sem 4 / Jun', faixa: 'Mimo Tipo 3', status: 'ENTREGUE_SEM_FOTO' },
-  { id: 'm6', representante: 'Carlos H. Lima', clinic: 'Dental Rio', semana: 'Sem 4 / Jun', faixa: 'Mimo Tipo 1', status: 'PENDENTE' },
-  { id: 'm7', representante: 'Roberto Ribeiro', clinic: 'Clínica BH Sorriso', semana: 'Sem 3 / Jun', faixa: 'Mimo Tipo 2', status: 'PENDENTE' },
+  { id: 'm1', representante: 'Roberto Ribeiro', clinic: 'Clínica Dental Plus', semana: 'Sem 4 / Jun', faixa: 'Ouro', status: 'PENDENTE' },
+  { id: 'm2', representante: 'Roberto Ribeiro', clinic: 'OdontoVida Premium', semana: 'Sem 4 / Jun', faixa: 'Prata', status: 'PENDENTE' },
+  { id: 'm3', representante: 'Carlos H. Lima', clinic: 'Clínica Carioca', semana: 'Sem 3 / Jun', faixa: 'Bronze', status: 'PENDENTE' },
+  { id: 'm4', representante: 'Ana Paula Ferreira', clinic: 'Clínica Paulista', semana: 'Sem 4 / Jun', faixa: 'Prata', status: 'ENTREGUE_COM_FOTO' },
+  { id: 'm5', representante: 'Fernanda Costa', clinic: 'OdontoCampinas', semana: 'Sem 4 / Jun', faixa: 'Ouro', status: 'ENTREGUE_SEM_FOTO' },
+  { id: 'm6', representante: 'Carlos H. Lima', clinic: 'Dental Rio', semana: 'Sem 4 / Jun', faixa: 'Bronze', status: 'PENDENTE' },
+  { id: 'm7', representante: 'Roberto Ribeiro', clinic: 'Clínica BH Sorriso', semana: 'Sem 3 / Jun', faixa: 'Prata', status: 'PENDENTE' },
 ];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────

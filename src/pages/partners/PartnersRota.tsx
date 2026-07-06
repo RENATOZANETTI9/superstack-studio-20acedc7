@@ -85,9 +85,9 @@ const INITIAL_DAYS: Record<string, PlannedVisit[]> = {
 
 const GIFT_ROUTE_INITIAL = {
   achieved: [
-    { id: 'g1', clinic: 'Clínica Dental Plus', simulations: 62, gift: 'Mimo Tipo 3', receptionist: 'Maria Silva', delivered: false },
-    { id: 'g2', clinic: 'Clínica BH Sorriso', simulations: 45, gift: 'Mimo Tipo 2', receptionist: 'Ana Lima', delivered: false },
-    { id: 'g3', clinic: 'Centro Odonto Minas', simulations: 35, gift: 'Mimo Tipo 2', receptionist: 'Carla Souza', delivered: false },
+    { id: 'g1', clinic: 'Clínica Dental Plus', simulations: 62, gift: 'Ouro', receptionist: 'Maria Silva', delivered: false },
+    { id: 'g2', clinic: 'Clínica BH Sorriso', simulations: 45, gift: 'Prata', receptionist: 'Ana Lima', delivered: false },
+    { id: 'g3', clinic: 'Centro Odonto Minas', simulations: 35, gift: 'Prata', receptionist: 'Carla Souza', delivered: false },
   ],
   missed: [
     { id: 'm1', clinic: 'Clínica Saúde Total', simulations: 18 },

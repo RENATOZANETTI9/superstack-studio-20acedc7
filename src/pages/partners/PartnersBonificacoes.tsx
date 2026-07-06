@@ -12,7 +12,9 @@ import { CalendarClock, Download, Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { isAdminRole, MIMO_TIERS, getMimoTier } from '@/lib/partner-rules';
+import { isAdminRole, MIMO_TIERS, getMimoTier, BRINDE_DESCRIPTIONS, PARTNER_RULES } from '@/lib/partner-rules';
+import { endOfMonth, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import BonificacaoFilters from '@/components/partners/BonificacaoFilters';
 import BonificacaoSummaryCards from '@/components/partners/BonificacaoSummaryCards';
 import BonificacaoTiersInfo from '@/components/partners/BonificacaoTiersInfo';
@@ -159,6 +161,20 @@ const PartnersBonificacoes = () => {
   const totalOverride = filteredCommissions.filter(c => c.commission_type === 'OVERRIDE').reduce((s, c) => s + Number(c.commission_amount), 0);
   const totalPix = pixIncentives.reduce((s, i) => s + Number(i.incentive_amount || 0), 0);
 
+  // Próximo pagamento PIX (data + valor)
+  const nextPixDate = format(endOfMonth(new Date()), 'dd/MM/yyyy', { locale: ptBR });
+  const daysUntilPix = Math.max(
+    0,
+    Math.ceil((endOfMonth(new Date()).getTime() - Date.now()) / 86400000),
+  );
+  const currentMonthKey = format(new Date(), 'yyyy-MM');
+  const paidThisMonth = commissions
+    .filter(c => (c.reference_month || '').startsWith(currentMonthKey))
+    .reduce((s, c) => s + Number(c.net_paid_amount || 0), 0);
+  const nextPixTier = PARTNER_RULES.PIX_TIERS.find(
+    t => paidThisMonth >= t.min && paidThisMonth <= t.max,
+  );
+
   const clinicNameMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const [id, info] of Object.entries(clinicMap)) {
@@ -220,10 +236,21 @@ const PartnersBonificacoes = () => {
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
-                      <p className="text-sm text-muted-foreground">Sexta-feira, 04/07/2026</p>
-                      <p className="text-2xl font-bold text-primary">R$ 300,00</p>
+                      <p className="text-sm text-muted-foreground">{nextPixDate}</p>
+                      {isMockData ? (
+                        <>
+                          <p className="text-2xl font-bold text-muted-foreground">—</p>
+                          <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
+                        </>
+                      ) : (
+                        <p className="text-2xl font-bold text-primary">
+                          {nextPixTier ? nextPixTier.pix : 'R$ 0,00'}
+                        </p>
+                      )}
                     </div>
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Em 6 dias</Badge>
+                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                      {daysUntilPix === 0 ? 'Hoje' : `Em ${daysUntilPix} dia${daysUntilPix === 1 ? '' : 's'}`}
+                    </Badge>
                   </div>
                   <Button variant="outline" size="sm">Ver detalhes</Button>
                 </CardContent>
@@ -405,13 +432,6 @@ const PixPorAtendenteTab = () => {
   );
 };
 
-const BRINDES: Record<number, string> = {
-  1: 'Brinde Básico (caneta personalizada)',
-  2: 'Brinde Intermediário (kit café)',
-  3: 'Brinde Premium (mochila)',
-  4: 'Brinde Elite (smartwatch)',
-};
-
 const formatMimoRange = (min: number, max: number) =>
   Number.isFinite(max) ? `${min}-${max} sims` : `${min}+ sims`;
 
@@ -435,7 +455,7 @@ const MimoAtivoTab = () => (
           <CardTitle className="text-base">Campanhas de Mimo — Semana 27</CardTitle>
           <Badge className="bg-green-100 text-green-700 hover:bg-green-100">ATIVA</Badge>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Período: 30/06 a 04/07/2026 · Meta: 50 simulações por clínica para atingir Tipo 2</p>
+        <p className="text-xs text-muted-foreground mt-1">Período: 30/06 a 04/07/2026 · Meta: 50 simulações por clínica para atingir Prata</p>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -452,7 +472,7 @@ const MimoAtivoTab = () => (
                 <TableRow key={t.label}>
                   <TableCell className="font-medium">{t.label}</TableCell>
                   <TableCell>{formatMimoRange(t.min, t.max)}</TableCell>
-                  <TableCell>{BRINDES[t.level]}</TableCell>
+                  <TableCell>{BRINDE_DESCRIPTIONS[t.level]}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
