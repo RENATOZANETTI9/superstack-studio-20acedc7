@@ -140,15 +140,24 @@ function CardMimoRepresentante() {
     setTiers((prev) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
   };
 
+  const tierErrors: Record<string, { min?: string; max?: string; brinde?: string }> = {};
+  for (const k of REP_TIER_KEYS) {
+    const t = tiers[k];
+    if (!t) continue;
+    const errs: { min?: string; max?: string; brinde?: string } = {};
+    if (t.min_volume == null || t.min_volume < 0) errs.min = 'Volume mínimo obrigatório (≥ 0).';
+    if (t.max_volume != null && t.max_volume < 0) errs.max = 'Valor negativo inválido.';
+    if (t.min_volume != null && t.max_volume != null && t.min_volume > t.max_volume)
+      errs.max = 'Máximo deve ser ≥ mínimo.';
+    if (!t.brinde || !t.brinde.trim()) errs.brinde = 'Descreva o brinde.';
+    if (Object.keys(errs).length) tierErrors[k] = errs;
+  }
+  const hasErrors = Object.keys(tierErrors).length > 0;
+
   const save = () => {
-    // validate min<=max per tier when max set
-    for (const k of REP_TIER_KEYS) {
-      const t = tiers[k];
-      if (!t) continue;
-      if (t.max_volume != null && t.min_volume != null && t.min_volume > t.max_volume) {
-        toast.error(`Faixa ${t.label}: volume mínimo maior que o máximo.`);
-        return;
-      }
+    if (hasErrors) {
+      toast.error('Corrija os campos destacados antes de salvar.');
+      return;
     }
     update.mutate({ configKey: KEY, value: tiers }, {
       onSuccess: () => toast.success('Faixas de MIMO atualizadas.'),
@@ -171,6 +180,7 @@ function CardMimoRepresentante() {
               {REP_TIER_KEYS.map((k) => {
                 const t = tiers[k];
                 if (!t) return null;
+                const errs = tierErrors[k] ?? {};
                 return (
                   <div key={k} className="border rounded-lg p-4 space-y-3">
                     <p className="font-semibold">{t.label}</p>
@@ -181,7 +191,10 @@ function CardMimoRepresentante() {
                           type="number"
                           value={t.min_volume ?? ''}
                           onChange={(e) => setField(k, 'min_volume', toNumber(e.target.value))}
+                          aria-invalid={!!errs.min}
+                          className={errs.min ? 'border-destructive focus-visible:ring-destructive' : ''}
                         />
+                        {errs.min && <p className="text-xs text-destructive">{errs.min}</p>}
                       </div>
                       <div className="space-y-1">
                         <Label>Volume máximo (R$)</Label>
@@ -190,8 +203,12 @@ function CardMimoRepresentante() {
                           placeholder="Sem limite"
                           value={t.max_volume ?? ''}
                           onChange={(e) => setField(k, 'max_volume', toNumber(e.target.value))}
+                          aria-invalid={!!errs.max}
+                          className={errs.max ? 'border-destructive focus-visible:ring-destructive' : ''}
                         />
-                        {t.max_volume == null && (
+                        {errs.max ? (
+                          <p className="text-xs text-destructive">{errs.max}</p>
+                        ) : t.max_volume == null && (
                           <p className="text-xs text-muted-foreground">Sem limite</p>
                         )}
                       </div>
@@ -202,13 +219,16 @@ function CardMimoRepresentante() {
                         rows={2}
                         value={t.brinde ?? ''}
                         onChange={(e) => setField(k, 'brinde', e.target.value)}
+                        aria-invalid={!!errs.brinde}
+                        className={errs.brinde ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
+                      {errs.brinde && <p className="text-xs text-destructive">{errs.brinde}</p>}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <Button onClick={save} disabled={update.isPending}>
+            <Button onClick={save} disabled={update.isPending || hasErrors}>
               {update.isPending ? 'Salvando…' : 'Salvar'}
             </Button>
             <LastEdited updatedAt={data?.updated_at} updatedBy={data?.updated_by} />
@@ -238,14 +258,24 @@ function CardMimoAtendente() {
     setTiers((prev) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
   };
 
+  const tierErrors: Record<string, { min?: string; max?: string; mimo?: string }> = {};
+  for (const k of ATD_TIER_KEYS) {
+    const t = tiers[k];
+    if (!t) continue;
+    const errs: { min?: string; max?: string; mimo?: string } = {};
+    if (t.min_producao == null || t.min_producao < 0) errs.min = 'Produção mínima obrigatória (≥ 0).';
+    if (t.max_producao != null && t.max_producao < 0) errs.max = 'Valor negativo inválido.';
+    if (t.min_producao != null && t.max_producao != null && t.min_producao > t.max_producao)
+      errs.max = 'Máximo deve ser ≥ mínimo.';
+    if (!t.mimo || !t.mimo.trim()) errs.mimo = 'Descreva o brinde.';
+    if (Object.keys(errs).length) tierErrors[k] = errs;
+  }
+  const hasErrors = Object.keys(tierErrors).length > 0;
+
   const save = () => {
-    for (const k of ATD_TIER_KEYS) {
-      const t = tiers[k];
-      if (!t) continue;
-      if (t.max_producao != null && t.min_producao != null && t.min_producao > t.max_producao) {
-        toast.error(`Faixa ${ATD_LABELS[k]}: produção mínima maior que a máxima.`);
-        return;
-      }
+    if (hasErrors) {
+      toast.error('Corrija os campos destacados antes de salvar.');
+      return;
     }
     update.mutate({ configKey: KEY, value: tiers }, {
       onSuccess: () => toast.success('Faixas do atendente atualizadas.'),
@@ -268,6 +298,7 @@ function CardMimoAtendente() {
               {ATD_TIER_KEYS.map((k) => {
                 const t = tiers[k];
                 if (!t) return null;
+                const errs = tierErrors[k] ?? {};
                 return (
                   <div key={k} className="border rounded-lg p-4 space-y-3">
                     <p className="font-semibold">{ATD_LABELS[k]}</p>
@@ -278,7 +309,10 @@ function CardMimoAtendente() {
                           type="number"
                           value={t.min_producao ?? ''}
                           onChange={(e) => setField(k, 'min_producao', toNumber(e.target.value))}
+                          aria-invalid={!!errs.min}
+                          className={errs.min ? 'border-destructive focus-visible:ring-destructive' : ''}
                         />
+                        {errs.min && <p className="text-xs text-destructive">{errs.min}</p>}
                       </div>
                       <div className="space-y-1">
                         <Label>Produção máxima (R$)</Label>
@@ -287,8 +321,12 @@ function CardMimoAtendente() {
                           placeholder="Sem limite"
                           value={t.max_producao ?? ''}
                           onChange={(e) => setField(k, 'max_producao', toNumber(e.target.value))}
+                          aria-invalid={!!errs.max}
+                          className={errs.max ? 'border-destructive focus-visible:ring-destructive' : ''}
                         />
-                        {t.max_producao == null && (
+                        {errs.max ? (
+                          <p className="text-xs text-destructive">{errs.max}</p>
+                        ) : t.max_producao == null && (
                           <p className="text-xs text-muted-foreground">Sem limite</p>
                         )}
                       </div>
@@ -299,13 +337,16 @@ function CardMimoAtendente() {
                         rows={2}
                         value={t.mimo ?? ''}
                         onChange={(e) => setField(k, 'mimo', e.target.value)}
+                        aria-invalid={!!errs.mimo}
+                        className={errs.mimo ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
+                      {errs.mimo && <p className="text-xs text-destructive">{errs.mimo}</p>}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <Button onClick={save} disabled={update.isPending}>
+            <Button onClick={save} disabled={update.isPending || hasErrors}>
               {update.isPending ? 'Salvando…' : 'Salvar'}
             </Button>
             <LastEdited updatedAt={data?.updated_at} updatedBy={data?.updated_by} />
