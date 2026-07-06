@@ -128,8 +128,8 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 pt-1">
                     {[
-                      { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
-                      { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
+                      ...(!isRepresentante ? [{ title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' }] : []),
+                      ...(!isRepresentante ? [{ title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' }] : []),
                       { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
                       ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                       ...(isAdmin ? [{ title: 'Auditoria de senhas', icon: Shield, path: '/dashboard/usuarios/auditoria-senhas' }] : []),
@@ -254,8 +254,8 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
             {!collapsed && (
               <CollapsibleContent className="space-y-1 pt-1">
                 {[
-                  { title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' },
-                  { title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' },
+                  ...(!isRepresentante ? [{ title: 'Permissões', icon: Key, path: '/dashboard/usuarios/permissoes' }] : []),
+                  ...(!isRepresentante ? [{ title: 'Hierarquias', icon: GitBranch, path: '/dashboard/usuarios/hierarquias' }] : []),
                   { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
                   ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                   ...(isAdmin ? [{ title: 'Auditoria de senhas', icon: Shield, path: '/dashboard/usuarios/auditoria-senhas' }] : []),
