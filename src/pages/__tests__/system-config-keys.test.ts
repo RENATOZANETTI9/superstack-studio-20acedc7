@@ -1,9 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
 
-const ROOT = process.cwd();
-const read = (p: string) => fs.readFileSync(path.resolve(ROOT, p), 'utf8');
+// Carrega cada arquivo como string via Vite (sem depender de @types/node).
+const sources = import.meta.glob(
+  [
+    '../admin/AdminParametros.tsx',
+    '../partners/PartnersSimulator.tsx',
+    '../../../supabase/functions/compute-commission/index.ts',
+    '../../../supabase/functions/monthly-commission-job/index.ts',
+  ],
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>;
+
+const bySuffix = (suffix: string): string => {
+  const entry = Object.entries(sources).find(([k]) => k.endsWith(suffix));
+  if (!entry) throw new Error(`Fonte não encontrada: ${suffix}`);
+  return entry[1];
+};
 
 /**
  * Guardrail suite — mantém o sistema fiel às chaves canônicas do banco
