@@ -781,34 +781,6 @@ export default function PartnersRota() {
               </Button>
             </div>
 
-            {/* TEMP: Botão de homologação da Edge Function generate-ai-route */}
-            <div className="flex justify-center">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  console.log('[AI Route TEST] invoking generate-ai-route…');
-                  const { data, error } = await supabase.functions.invoke('generate-ai-route', {
-                    body: {
-                      clinicas: [
-                        { nome: 'Clínica São Lucas', tipo: 'Clínica', bairro: 'Savassi', cidade: 'Belo Horizonte', status: 'Lead' },
-                        { nome: 'Hospital Mater Dei', tipo: 'Hospital', bairro: 'Santo Agostinho', cidade: 'Belo Horizonte', status: 'Ativo' },
-                        { nome: 'Consultório Dr. Pires', tipo: 'Consultório', bairro: 'Funcionários', cidade: 'Belo Horizonte', status: 'Inativo' },
-                      ],
-                      semana: '07/07/2026 a 11/07/2026',
-                    },
-                  });
-                  console.log('[AI Route TEST] result:', JSON.stringify(data));
-                  console.log('[AI Route TEST] error:', JSON.stringify(error));
-                  if (error) toast.error('Teste IA falhou — veja console.');
-                  else toast.success('Teste IA OK — veja console para o roteiro.');
-                }}
-                className="gap-2 text-xs"
-              >
-                🧪 Testar Edge Function (homologação)
-              </Button>
-            </div>
-
             {aiRoute && (
               <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
