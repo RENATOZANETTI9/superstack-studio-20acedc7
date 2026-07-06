@@ -153,6 +153,7 @@ const STATUS_BADGE: Record<VisitStatus, string> = {
 };
 
 export default function PartnersRota() {
+  const { user } = useAuth();
   const [weekOffset, setWeekOffset] = useState(0);
   const [days, setDays] = useState(INITIAL_DAYS);
   const [activeTab, setActiveTab] = useState<string>('seg');
