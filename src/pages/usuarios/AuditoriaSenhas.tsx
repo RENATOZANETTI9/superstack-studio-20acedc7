@@ -380,12 +380,18 @@ const AuditoriaSenhas = () => {
         </Card>
 
         <Sheet open={!!selectedRow} onOpenChange={(open) => { if (!open) updateParams({ event: null }); }}>
-          <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto" data-testid="event-detail-sheet">
+          <SheetContent
+            side="right"
+            className="w-full sm:max-w-lg overflow-y-auto focus:outline-none"
+            data-testid="event-detail-sheet"
+            aria-labelledby="event-detail-title"
+            aria-describedby="event-detail-desc"
+          >
             {selectedRow && (
               <>
                 <SheetHeader>
-                  <SheetTitle>Detalhes do evento</SheetTitle>
-                  <SheetDescription>
+                  <SheetTitle id="event-detail-title">Detalhes do evento</SheetTitle>
+                  <SheetDescription id="event-detail-desc">
                     Informações sanitizadas — tokens, e-mails secundários e hashes são mascarados.
                   </SheetDescription>
                 </SheetHeader>
