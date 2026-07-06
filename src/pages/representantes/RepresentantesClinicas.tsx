@@ -1,5 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { isRepresentanteRole } from '@/lib/partner-rules';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +74,29 @@ const NEIGHBORHOODS = ['Centro', 'Savassi', 'Lourdes', 'Buritis'];
 
 export default function PartnersClinicas() {
   const navigate = useNavigate();
+  const { user, role } = useAuth();
+  const [realClinics, setRealClinics] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    const loadClinicas = async () => {
+      if (!isRepresentanteRole(role as any) || !user?.id) return;
+      const { data: partnerData } = await supabase
+        .from('partners')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      if (!partnerData?.id) return;
+      const { data: relations } = await supabase
+        .from('partner_clinic_relations')
+        .select('*')
+        .eq('partner_id', partnerData.id);
+      if (relations && relations.length > 0) {
+        setRealClinics(relations);
+      }
+    };
+    loadClinicas();
+  }, [user?.id, role]);
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
@@ -199,6 +225,16 @@ export default function PartnersClinicas() {
             <Building2 className="w-7 h-7 text-primary" /> Minhas Clínicas
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Monitoramento em tempo real de simulações e ativações</p>
+          {isRepresentanteRole(role as any) && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge className="bg-primary/10 text-primary border-0">
+                🏥 Exibindo apenas suas clínicas cadastradas
+              </Badge>
+              {realClinics !== null && (
+                <span className="text-xs text-muted-foreground">{realClinics.length} clínica(s) no Supabase</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* KPIs */}
