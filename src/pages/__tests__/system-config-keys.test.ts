@@ -63,8 +63,8 @@ describe('PartnersSimulator — lê taxas via useSystemConfig, não hardcoded', 
     expect(src).not.toMatch(/SIMULATOR_COMMISSION_RATE/);
   });
 
-  it('cálculo de directCommission usa rates.direct (fonte: banco)', () => {
-    expect(src).toMatch(/directCommission\s*=\s*totalPaidValue\s*\*\s*rates\.direct/);
+  it('cálculo de directCommission usa rates.representante (fonte: taxa_comissao_representante no banco)', () => {
+    expect(src).toMatch(/directCommission\s*=\s*totalPaidValue\s*\*\s*rates\.representante/);
   });
 });
 
