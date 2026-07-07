@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 /**
  * Garante que o PartnersSimulator lê `taxa_comissao_representante` do
@@ -49,26 +50,24 @@ vi.mock('@/hooks/useSystemConfig', () => ({
 
 import PartnersSimulator from '@/pages/partners/PartnersSimulator';
 
+const renderSim = () =>
+  render(
+    <MemoryRouter>
+      <TooltipProvider>
+        <PartnersSimulator />
+      </TooltipProvider>
+    </MemoryRouter>
+  );
+
 describe('PartnersSimulator — taxa dinâmica do representante', () => {
   it('exibe 0,80% quando taxa_comissao_representante.rate = 0.008', () => {
-    render(
-      <MemoryRouter>
-        <PartnersSimulator />
-      </MemoryRouter>
-    );
+    renderSim();
     // Rótulo visível ao usuário: "Taxa: 0,80%"
     expect(screen.getByText(/Taxa:\s*0,80%/)).toBeInTheDocument();
   });
 
   it('usa a taxa do representante no cálculo (5 clínicas · defaults)', () => {
-    // clinics=5, SIMULATIONS/day×WORKING_DAYS aprox — o valor exato depende
-    // das constantes; validamos apenas que a projeção usa 0.008 (não 0.016)
-    // comparando presença de "Taxa: 0,80%" e ausência de "Taxa: 1,60%".
-    render(
-      <MemoryRouter>
-        <PartnersSimulator />
-      </MemoryRouter>
-    );
+    renderSim();
     expect(screen.queryByText(/Taxa:\s*1,60%/)).not.toBeInTheDocument();
     expect(screen.getByText(/Taxa:\s*0,80%/)).toBeInTheDocument();
   });
