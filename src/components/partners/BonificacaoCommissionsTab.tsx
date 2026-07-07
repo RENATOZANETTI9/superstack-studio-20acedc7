@@ -6,6 +6,7 @@ import { DollarSign, CheckCircle2 } from 'lucide-react';
 import { COMMISSION_STATUS_LABELS, COMMISSION_STATUS_COLORS, formatCurrency } from '@/lib/partner-rules';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logCommissionStatusChange } from '@/lib/commission-audit';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -24,6 +25,9 @@ const BonificacaoCommissionsTab = ({ items, hasActiveFilters, isAdmin, getClinic
 
   const handleMarkPaid = async () => {
     if (!confirmId) return;
+    const current = items.find((c: any) => c.id === confirmId);
+    const oldStatus = current?.status ?? null;
+    const commissionId = confirmId;
     const { error } = await supabase
       .from('partner_commissions')
       .update({ status: 'PAID', paid_at: new Date().toISOString() })
@@ -32,6 +36,7 @@ const BonificacaoCommissionsTab = ({ items, hasActiveFilters, isAdmin, getClinic
     if (error) {
       toast.error('Erro ao dar baixa: ' + error.message);
     } else {
+      await logCommissionStatusChange({ commissionId, oldStatus, newStatus: 'PAID' });
       toast.success('Bonificação marcada como paga');
       onRefresh();
     }
