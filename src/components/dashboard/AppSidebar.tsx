@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
-  Shield, User, Menu, X, Key, GitBranch, UserCircle,
+  Shield, User, Menu, X, Key, KeyRound, GitBranch, UserCircle,
   UserPlus, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
   Building2, BarChart3, UserCheck
 , Settings2 } from 'lucide-react';
@@ -134,6 +134,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                       { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
                       ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                       ...(isAdmin ? [{ title: 'Auditoria de senhas', icon: Shield, path: '/dashboard/usuarios/auditoria-senhas' }] : []),
+                      ...(isAdmin ? [{ title: 'Acessos & Senhas', icon: KeyRound, path: '/dashboard/meu-acesso' }] : []),
                     ].map(sub => (
                       <Button key={sub.path} variant="ghost" onClick={() => handleNavigate(sub.path)}
                         className={cn('w-full justify-start gap-3 h-12 pl-14 text-base text-sidebar-foreground/80 hover:bg-sidebar-accent',
@@ -260,6 +261,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
                   { title: 'Usuários', icon: UserCircle, path: '/dashboard/usuarios/lista' },
                   ...(isAdmin ? [{ title: 'Auditoria', icon: Shield, path: '/dashboard/usuarios/auditoria' }] : []),
                   ...(isAdmin ? [{ title: 'Auditoria de senhas', icon: Shield, path: '/dashboard/usuarios/auditoria-senhas' }] : []),
+                  ...(isAdmin ? [{ title: 'Acessos & Senhas', icon: KeyRound, path: '/dashboard/meu-acesso' }] : []),
                 ].map(sub => (
                   <Button key={sub.path} variant="ghost" onClick={() => navigate(sub.path)}
                     className={cn('w-full justify-start gap-2 pl-11 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
