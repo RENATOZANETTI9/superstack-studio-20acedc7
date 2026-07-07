@@ -57,10 +57,10 @@ describe('PartnersSimulator — lê taxas via useSystemConfig, não hardcoded', 
     expect(src).toMatch(/useSystemConfig\(\s*['"]taxa_comissao_representante['"]\s*\)/);
   });
 
-  it('não usa mais SIMULATOR_COMMISSION_RATE no cálculo da projeção', () => {
-    // A constante ainda pode existir em partner-rules.ts como referência,
-    // mas o simulador não deve consumi-la diretamente.
-    expect(src).not.toMatch(/SIMULATOR_COMMISSION_RATE/);
+  it('não usa a antiga taxa hardcoded 0.0075 no cálculo da projeção', () => {
+    expect(src).not.toMatch(/0\.0075/);
+    // Só o fallback nomeado é permitido — nada de constante legada.
+    expect(src).not.toMatch(/SIMULATOR_COMMISSION_RATE(?!_FALLBACK)/);
   });
 
   it('cálculo de directCommission usa rates.representante (fonte: taxa_comissao_representante no banco)', () => {
