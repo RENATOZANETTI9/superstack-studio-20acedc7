@@ -15,7 +15,10 @@ const KEY: string | undefined = env.SUPABASE_SERVICE_ROLE_KEY;
 const hasEnv = !!(URL && KEY);
 
 describe.skipIf(!hasEnv)('audit logs — integração', () => {
-  const supabase = createClient(URL!, KEY!, { auth: { persistSession: false } });
+  // Guarda contra vitest avaliar o corpo mesmo com skip — só cria o client se as envs existirem.
+  const supabase = hasEnv
+    ? createClient(URL!, KEY!, { auth: { persistSession: false } })
+    : (null as any);
 
   it('system_config_change_log registra old_value e new_value corretos', async () => {
     const CONFIG_KEY = 'taxa_comissao_representante';
