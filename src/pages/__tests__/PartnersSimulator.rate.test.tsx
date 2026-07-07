@@ -62,10 +62,8 @@ const renderSim = () =>
 describe('PartnersSimulator — taxa dinâmica do representante', () => {
   it('exibe 0,80% quando taxa_comissao_representante.rate = 0.008', () => {
     renderSim();
-    // Rótulo visível ao usuário: "Taxa: 0,80%"
-    expect(
-      screen.getByText((_, node) => node?.textContent?.replace(/\s+/g, ' ').includes('Taxa: 0.80%') ?? false)
-    ).toBeInTheDocument();
+    // Rótulo visível ao usuário: "Taxa: 0.80%" (toFixed usa ponto).
+    expect(document.body.textContent ?? '').toContain('Taxa: 0.80%');
   });
 
   it('usa a taxa do representante no cálculo (5 clínicas · defaults)', () => {
