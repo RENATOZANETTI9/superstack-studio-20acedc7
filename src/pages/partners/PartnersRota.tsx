@@ -20,7 +20,7 @@ import {
 import {
   MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
   Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck,
-  Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2
+  Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2, Mic, MicOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -192,6 +192,20 @@ export default function PartnersRota() {
   const [aiRoute, setAiRoute] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // AI form fields
+  const [aiBairros, setAiBairros] = useState('');
+  const [aiEspecialidade, setAiEspecialidade] = useState('');
+  const [aiTipoLocal, setAiTipoLocal] = useState<string>('todos');
+  const [aiFaturamentoMedio, setAiFaturamentoMedio] = useState('');
+  const [aiClinicasPorDia, setAiClinicasPorDia] = useState<string>('4');
+  const [aiNotas, setAiNotas] = useState('');
+
+  // Voice recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const { label: weekLabel, monday } = getWeekDates(weekOffset);
   const DAYS = getDays(monday);
 
@@ -228,7 +242,16 @@ export default function PartnersRota() {
     setAiRoute(null);
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-route', {
-        body: { clinicas: portfolio, semana: weekLabel },
+        body: {
+          clinicas: portfolio,
+          semana: weekLabel,
+          bairros: aiBairros || undefined,
+          especialidade: aiEspecialidade || undefined,
+          tipoLocal: aiTipoLocal !== 'todos' ? aiTipoLocal : undefined,
+          faturamentoMedio: aiFaturamentoMedio || undefined,
+          clinicasPorDia: aiClinicasPorDia || undefined,
+          notasAdicionais: aiNotas || undefined,
+        },
       });
       if (error) throw error;
       setAiRoute(data?.roteiro || 'Roteiro não disponível.');
@@ -241,7 +264,7 @@ export default function PartnersRota() {
         msg.includes('FunctionsFetchError')
       ) {
         toast.error(
-          'Roteiro IA não configurado ainda. Peça ao administrador para adicionar OPENAI_API_KEY nos secrets do Supabase.',
+          'Roteiro IA não configurado ainda. Peça ao administrador para configurar a chave de IA.',
           { duration: 8000 },
         );
       } else {
@@ -249,6 +272,74 @@ export default function PartnersRota() {
       }
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        if (blob.size < 1024) {
+          toast.error('Gravação muito curta. Tente novamente.');
+          return;
+        }
+        await transcribeBlob(blob);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      console.error(err);
+      toast.error('Não foi possível acessar o microfone.');
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    setIsRecording(false);
+  };
+
+  const transcribeBlob = async (blob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      // base64 encode in chunks to avoid stack overflow
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+        body: { audio: base64, mimeType: blob.type },
+      });
+      if (error) throw error;
+      const text = (data?.text || '').trim();
+      if (!text) {
+        toast.error('Não foi possível transcrever o áudio.');
+        return;
+      }
+      setAiNotas((prev) => (prev ? `${prev}\n${text}` : text));
+      toast.success('Áudio transcrito!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao transcrever o áudio.');
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
