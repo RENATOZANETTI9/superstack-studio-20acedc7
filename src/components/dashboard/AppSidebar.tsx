@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileSearch, FileSignature, Users, LogOut, ChevronDown,
-  Shield, User, Menu, X, Key, GitBranch, UserCircle,
+  Shield, User, Menu, X, Key, KeyRound, GitBranch, UserCircle,
   UserPlus, DollarSign, Settings, Calculator, Activity, Megaphone, MapPin,
   Building2, BarChart3, UserCheck
 , Settings2 } from 'lucide-react';
