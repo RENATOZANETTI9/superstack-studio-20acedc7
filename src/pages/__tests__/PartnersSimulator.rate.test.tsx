@@ -25,7 +25,16 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 // Evita instanciar recharts/tooltips complexos no jsdom.
-vi.mock('recharts', () => new Proxy({}, { get: () => () => null }));
+vi.mock('recharts', () => {
+  const Any = () => null;
+  return {
+    __esModule: true,
+    default: Any,
+    BarChart: Any, Bar: Any, XAxis: Any, YAxis: Any,
+    CartesianGrid: Any, Tooltip: Any, Legend: Any,
+    ResponsiveContainer: ({ children }: any) => children ?? null,
+  };
+});
 
 vi.mock('@/hooks/useSystemConfig', () => ({
   useSystemConfig: (key: string) => {
