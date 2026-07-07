@@ -390,6 +390,44 @@ export type Database = {
           },
         ]
       }
+      partner_commission_status_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          commission_id: string | null
+          id: string
+          new_status: string
+          note: string | null
+          old_status: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          commission_id?: string | null
+          id?: string
+          new_status: string
+          note?: string | null
+          old_status?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          commission_id?: string | null
+          id?: string
+          new_status?: string
+          note?: string | null
+          old_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_status_log_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "partner_commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_commissions: {
         Row: {
           approved_at: string | null
@@ -1047,6 +1085,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_config_change_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          config_key: string
+          id: string
+          new_value: Json
+          old_value: Json | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          config_key: string
+          id?: string
+          new_value: Json
+          old_value?: Json | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          config_key?: string
+          id?: string
+          new_value?: Json
+          old_value?: Json | null
+        }
+        Relationships: []
       }
       used_recovery_tokens: {
         Row: {

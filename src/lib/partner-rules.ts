@@ -12,7 +12,8 @@ export const PARTNER_RULES = {
   /** Commission rates */
   COMMISSION_RATE_DIRECT: 0.008,   // 0.80%
   COMMISSION_RATE_OVERRIDE: 0.002, // 0.2%
-  SIMULATOR_COMMISSION_RATE: 0.0075, // 0.75% — used only in simulator projections
+  /** Fallback usado apenas se system_config ainda não carregou. Fonte oficial: taxa_comissao_representante */
+  SIMULATOR_COMMISSION_RATE_FALLBACK: 0.008, // 0.80% — fallback do simulador
   
   /** PIX tiers (monthly, paid by Help Ude) */
   PIX_TIERS: [

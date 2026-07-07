@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { COMMISSION_STATUS_LABELS, COMMISSION_STATUS_COLORS, formatCurrency, isAdminRole } from '@/lib/partner-rules';
+import { logCommissionStatusChange } from '@/lib/commission-audit';
 
 /**
  * Tela administrativa de visualização de comissões.
@@ -68,6 +69,8 @@ const PartnersComissoesAdmin = () => {
   const totalPendente = filtered.filter((c: any) => c.status !== 'PAID').reduce((s: number, c: any) => s + Number(c.commission_amount || 0), 0);
 
   const handleMarkPaid = async (id: string) => {
+    const current = commissions.find((c: any) => c.id === id);
+    const oldStatus = current?.status ?? null;
     const { error } = await supabase
       .from('partner_commissions')
       .update({ status: 'PAID', paid_at: new Date().toISOString() })
@@ -77,6 +80,7 @@ const PartnersComissoesAdmin = () => {
       toast({ title: 'Sem permissão para dar baixa', description: error.message, variant: 'destructive' });
       return;
     }
+    await logCommissionStatusChange({ commissionId: id, oldStatus, newStatus: 'PAID' });
     toast({ title: 'Comissão marcada como paga' });
     void fetchData();
   };

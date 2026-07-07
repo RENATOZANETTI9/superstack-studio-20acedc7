@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessMonitoring } from '@/lib/partner-rules';
+import { logCommissionStatusChange } from '@/lib/commission-audit';
 import {
   Activity, AlertTriangle, CheckCircle, Clock, Download,
   RefreshCw, Shield, TrendingUp, XCircle
@@ -218,8 +219,16 @@ const PartnersMonitoring = () => {
                             <td className="py-3 font-bold text-green-600">R$ {Number(c.commission_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td className="py-3"><Badge className={c.status === 'PAID' ? 'bg-green-100 text-green-800' : c.status === 'APPROVED' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}>{c.status === 'PAID' ? 'Pago' : c.status === 'APPROVED' ? 'Aprovado' : 'Calculado'}</Badge></td>
                             <td className="py-3">
-                              {c.status === 'CALCULATED' && <Button size="sm" variant="outline" onClick={async () => { await supabase.from('partner_commissions').update({ status: 'APPROVED', approved_at: new Date().toISOString() }).eq('id', c.id); fetchData(); }}>Aprovar</Button>}
-                              {c.status === 'APPROVED' && <Button size="sm" variant="default" onClick={async () => { await supabase.from('partner_commissions').update({ status: 'PAID', paid_at: new Date().toISOString() }).eq('id', c.id); fetchData(); }}>Pagar</Button>}
+                              {c.status === 'CALCULATED' && <Button size="sm" variant="outline" onClick={async () => {
+                                const { error } = await supabase.from('partner_commissions').update({ status: 'APPROVED', approved_at: new Date().toISOString() }).eq('id', c.id);
+                                if (!error) await logCommissionStatusChange({ commissionId: c.id, oldStatus: c.status, newStatus: 'APPROVED' });
+                                fetchData();
+                              }}>Aprovar</Button>}
+                              {c.status === 'APPROVED' && <Button size="sm" variant="default" onClick={async () => {
+                                const { error } = await supabase.from('partner_commissions').update({ status: 'PAID', paid_at: new Date().toISOString() }).eq('id', c.id);
+                                if (!error) await logCommissionStatusChange({ commissionId: c.id, oldStatus: c.status, newStatus: 'PAID' });
+                                fetchData();
+                              }}>Pagar</Button>}
                             </td>
                           </tr>
                         ))}
