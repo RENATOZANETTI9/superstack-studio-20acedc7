@@ -12,11 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const { clinicas, semana } = await req.json();
+    const {
+      clinicas,
+      semana,
+      bairros,
+      especialidade,
+      tipoLocal,
+      faturamentoMedio,
+      clinicasPorDia,
+      notasAdicionais,
+    } = await req.json();
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-    if (!openAIApiKey) {
-      return new Response(JSON.stringify({ roteiro: 'OPENAI_API_KEY não configurado. Adicione o secret na dashboard do Supabase.' }), {
+    if (!LOVABLE_API_KEY && !openAIApiKey) {
+      return new Response(JSON.stringify({ roteiro: 'Nenhuma chave de IA configurada.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -25,9 +36,17 @@ serve(async (req) => {
       `- ${c.nome} (${c.tipo}) | Bairro: ${c.bairro}, ${c.cidade} | Tel: ${c.telefone || '—'} | Status: ${c.status}`
     ).join('\n');
 
+    const orientacoes: string[] = [];
+    if (bairros) orientacoes.push(`- Bairros de foco: ${bairros}`);
+    if (especialidade) orientacoes.push(`- Especialidade prioritária: ${especialidade}`);
+    if (tipoLocal) orientacoes.push(`- Tipo de estabelecimento: ${tipoLocal}`);
+    if (faturamentoMedio) orientacoes.push(`- Faturamento médio alvo: ${faturamentoMedio}`);
+    if (clinicasPorDia) orientacoes.push(`- Meta de clínicas visitadas por dia: ${clinicasPorDia}`);
+    if (notasAdicionais) orientacoes.push(`- Observações do representante: ${notasAdicionais}`);
+
     const prompt = `Você é um especialista em otimização de rotas de vendas para o setor de saúde no Brasil.
 
-Crie um roteiro semanal otimizado para um representante comercial visitar as seguintes clínicas/hospitais.
+Crie um roteiro semanal otimizado para um representante comercial visitar clínicas/hospitais.
 Agrupe as visitas por bairro para minimizar deslocamentos. Priorize clínicas ativas e leads.
 
 Portfólio de clínicas:
@@ -35,26 +54,45 @@ ${clinicasStr || 'Nenhuma clínica cadastrada ainda.'}
 
 Semana: ${semana}
 
+Orientações do representante:
+${orientacoes.length ? orientacoes.join('\n') : '- (nenhuma orientação adicional fornecida)'}
+
 Formato da resposta:
 - Distribua de segunda a sexta
+- Respeite a meta de clínicas por dia informada, se houver
 - Para cada dia liste: clínica, bairro, objetivo da visita
+- Considere as orientações (bairros, especialidade, tipo, faturamento) para priorização
 - Finalize com um parágrafo "Estratégia da Semana"
 - Responda em português brasileiro
 - Use emojis para facilitar leitura`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const useGateway = !!LOVABLE_API_KEY;
+    const endpoint = useGateway
+      ? 'https://ai.gateway.lovable.dev/v1/chat/completions'
+      : 'https://api.openai.com/v1/chat/completions';
+    const authKey = useGateway ? LOVABLE_API_KEY! : openAIApiKey!;
+    const model = useGateway ? 'openai/gpt-5.5' : 'gpt-4o-mini';
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${authKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1500,
-        temperature: 0.7,
       }),
     });
+
+    if (!response.ok) {
+      const err = await response.text().catch(() => '');
+      console.error('AI upstream error', response.status, err);
+      return new Response(
+        JSON.stringify({ error: `Falha na IA (${response.status})`, details: err }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     const data = await response.json();
     const roteiro = data.choices?.[0]?.message?.content || 'Não foi possível gerar o roteiro.';
