@@ -20,7 +20,7 @@ import {
 import {
   MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
   Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck,
-  Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2
+  Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2, Mic, MicOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -192,6 +192,20 @@ export default function PartnersRota() {
   const [aiRoute, setAiRoute] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // AI form fields
+  const [aiBairros, setAiBairros] = useState('');
+  const [aiEspecialidade, setAiEspecialidade] = useState('');
+  const [aiTipoLocal, setAiTipoLocal] = useState<string>('todos');
+  const [aiFaturamentoMedio, setAiFaturamentoMedio] = useState('');
+  const [aiClinicasPorDia, setAiClinicasPorDia] = useState<string>('4');
+  const [aiNotas, setAiNotas] = useState('');
+
+  // Voice recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const { label: weekLabel, monday } = getWeekDates(weekOffset);
   const DAYS = getDays(monday);
 
@@ -228,7 +242,16 @@ export default function PartnersRota() {
     setAiRoute(null);
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-route', {
-        body: { clinicas: portfolio, semana: weekLabel },
+        body: {
+          clinicas: portfolio,
+          semana: weekLabel,
+          bairros: aiBairros || undefined,
+          especialidade: aiEspecialidade || undefined,
+          tipoLocal: aiTipoLocal !== 'todos' ? aiTipoLocal : undefined,
+          faturamentoMedio: aiFaturamentoMedio || undefined,
+          clinicasPorDia: aiClinicasPorDia || undefined,
+          notasAdicionais: aiNotas || undefined,
+        },
       });
       if (error) throw error;
       setAiRoute(data?.roteiro || 'Roteiro não disponível.');
@@ -241,7 +264,7 @@ export default function PartnersRota() {
         msg.includes('FunctionsFetchError')
       ) {
         toast.error(
-          'Roteiro IA não configurado ainda. Peça ao administrador para adicionar OPENAI_API_KEY nos secrets do Supabase.',
+          'Roteiro IA não configurado ainda. Peça ao administrador para configurar a chave de IA.',
           { duration: 8000 },
         );
       } else {
@@ -249,6 +272,74 @@ export default function PartnersRota() {
       }
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        if (blob.size < 1024) {
+          toast.error('Gravação muito curta. Tente novamente.');
+          return;
+        }
+        await transcribeBlob(blob);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      console.error(err);
+      toast.error('Não foi possível acessar o microfone.');
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    setIsRecording(false);
+  };
+
+  const transcribeBlob = async (blob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      // base64 encode in chunks to avoid stack overflow
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+        body: { audio: base64, mimeType: blob.type },
+      });
+      if (error) throw error;
+      const text = (data?.text || '').trim();
+      if (!text) {
+        toast.error('Não foi possível transcrever o áudio.');
+        return;
+      }
+      setAiNotas((prev) => (prev ? `${prev}\n${text}` : text));
+      toast.success('Áudio transcrito!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao transcrever o áudio.');
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -765,15 +856,122 @@ export default function PartnersRota() {
           <TabsContent value="ia" className="mt-6 space-y-4">
             <div className="rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/10 via-secondary/5 to-transparent p-4">
               <p className="text-sm text-foreground">
-                A IA analisa seu portfólio de clínicas e gera um roteiro semanal otimizado agrupando visitas por bairro para minimizar deslocamentos.
+                Preencha as orientações abaixo para que a IA gere um roteiro semanal personalizado. Todos os campos são opcionais — quanto mais informações, mais preciso o roteiro.
               </p>
             </div>
+
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" /> Orientações para a IA
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-bairros">Bairros de foco</Label>
+                    <Input
+                      id="ai-bairros"
+                      placeholder="Ex.: Savassi, Lourdes, Centro"
+                      value={aiBairros}
+                      onChange={(e) => setAiBairros(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-especialidade">Especialidade prioritária</Label>
+                    <Input
+                      id="ai-especialidade"
+                      placeholder="Ex.: Odontologia, Estética, Ortopedia"
+                      value={aiEspecialidade}
+                      onChange={(e) => setAiEspecialidade(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-tipo">Tipo de estabelecimento</Label>
+                    <Select value={aiTipoLocal} onValueChange={setAiTipoLocal}>
+                      <SelectTrigger id="ai-tipo">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="Clínica">Clínicas</SelectItem>
+                        <SelectItem value="Hospital">Hospitais</SelectItem>
+                        <SelectItem value="Consultório">Consultórios</SelectItem>
+                        <SelectItem value="Clínicas e Hospitais">Clínicas e Hospitais</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-faturamento">Faturamento médio da clínica</Label>
+                    <Input
+                      id="ai-faturamento"
+                      placeholder="Ex.: R$ 50 mil/mês, acima de R$ 100 mil"
+                      value={aiFaturamentoMedio}
+                      onChange={(e) => setAiFaturamentoMedio(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-clinicas-dia">Clínicas por dia (meta)</Label>
+                    <Input
+                      id="ai-clinicas-dia"
+                      type="number"
+                      min={1}
+                      max={15}
+                      placeholder="Ex.: 4"
+                      value={aiClinicasPorDia}
+                      onChange={(e) => setAiClinicasPorDia(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="ai-notas">Observações adicionais</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isRecording ? 'destructive' : 'outline'}
+                      className="gap-2 h-8"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={isTranscribing}
+                    >
+                      {isTranscribing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Transcrevendo...
+                        </>
+                      ) : isRecording ? (
+                        <>
+                          <MicOff className="w-4 h-4" /> Parar gravação
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="w-4 h-4" /> Falar
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="ai-notas"
+                    placeholder="Digite ou fale para transcrever automaticamente. Ex.: priorizar clínicas novas, evitar região Barreiro na quinta, focar em ativações."
+                    value={aiNotas}
+                    onChange={(e) => setAiNotas(e.target.value)}
+                    rows={4}
+                  />
+                  {isRecording && (
+                    <p className="text-xs text-destructive flex items-center gap-1.5">
+                      <span className="inline-block w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                      Gravando... clique em "Parar gravação" para transcrever.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="flex justify-center py-6">
               <Button
                 size="lg"
                 onClick={handleGenerateAI}
-                disabled={aiLoading}
+                disabled={aiLoading || isRecording || isTranscribing}
                 className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl"
               >
                 {aiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
