@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_route_generations: {
+        Row: {
+          created_at: string
+          params: Json | null
+          roteiro: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          params?: Json | null
+          roteiro: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          params?: Json | null
+          roteiro?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_route_item_status: {
+        Row: {
+          created_at: string
+          item_key: string
+          item_text: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item_key: string
+          item_text: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          item_key?: string
+          item_text?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       attendant_incentives: {
         Row: {
           audit_hash: string | null
