@@ -192,6 +192,14 @@ export default function PartnersRota() {
   const [aiRoute, setAiRoute] = useState<string | null>(null);
   const [aiRouteStatus, setAiRouteStatus] = useState<Record<number, 'conversamos' | 'nao' | 'pendente'>>({});
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiRouteFilter, setAiRouteFilter] = useState<'todos' | 'pendente' | 'conversamos' | 'nao'>('todos');
+  const [aiKeepMarks, setAiKeepMarks] = useState(true);
+  // Persistence: statuses stored in DB by item_key (trimmed line text).
+  const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
+  const [aiMetricsPeriod, setAiMetricsPeriod] = useState<'7' | '30' | 'all'>('30');
+  const [aiMetrics, setAiMetrics] = useState<{ total: number; pendente: number; conversamos: number; nao: number }>({
+    total: 0, pendente: 0, conversamos: 0, nao: 0,
+  });
 
   // AI form fields
   const [aiBairros, setAiBairros] = useState('');
