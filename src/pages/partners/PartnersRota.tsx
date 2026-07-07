@@ -192,6 +192,14 @@ export default function PartnersRota() {
   const [aiRoute, setAiRoute] = useState<string | null>(null);
   const [aiRouteStatus, setAiRouteStatus] = useState<Record<number, 'conversamos' | 'nao' | 'pendente'>>({});
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiRouteFilter, setAiRouteFilter] = useState<'todos' | 'pendente' | 'conversamos' | 'nao'>('todos');
+  const [aiKeepMarks, setAiKeepMarks] = useState(true);
+  // Persistence: statuses stored in DB by item_key (trimmed line text).
+  const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
+  const [aiMetricsPeriod, setAiMetricsPeriod] = useState<'7' | '30' | 'all'>('30');
+  const [aiMetrics, setAiMetrics] = useState<{ total: number; pendente: number; conversamos: number; nao: number }>({
+    total: 0, pendente: 0, conversamos: 0, nao: 0,
+  });
 
   // AI form fields
   const [aiBairros, setAiBairros] = useState('');
@@ -238,9 +246,83 @@ export default function PartnersRota() {
     loadPortfolio();
   }, [user?.id]);
 
+  // Helpers for AI route items
+  const isAiItemLine = (line: string) =>
+    /^\s*(\d+[\.\)]|[-•*])\s+/.test(line) && line.trim().length > 3;
+  const itemKey = (line: string) => line.trim().slice(0, 500);
+
+  // Load persisted generation + statuses
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      const [{ data: gen }, { data: statuses }] = await Promise.all([
+        supabase.from('ai_route_generations').select('roteiro').eq('user_id', user.id).maybeSingle(),
+        supabase.from('ai_route_item_status').select('item_key,status').eq('user_id', user.id),
+      ]);
+      const map: Record<string, 'conversamos' | 'nao' | 'pendente'> = {};
+      (statuses || []).forEach((s: any) => { map[s.item_key] = s.status; });
+      setAiStatusByKey(map);
+      if (gen?.roteiro) {
+        setAiRoute(gen.roteiro);
+        const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
+        gen.roteiro.split('\n').forEach((line: string, idx: number) => {
+          if (isAiItemLine(line)) {
+            const s = map[itemKey(line)];
+            if (s) idxMap[idx] = s;
+          }
+        });
+        setAiRouteStatus(idxMap);
+      }
+    };
+    load();
+  }, [user?.id]);
+
+  // Load metrics whenever period changes
+  useEffect(() => {
+    const loadMetrics = async () => {
+      if (!user?.id) return;
+      let q = supabase
+        .from('ai_route_item_status')
+        .select('status,updated_at')
+        .eq('user_id', user.id);
+      if (aiMetricsPeriod !== 'all') {
+        const days = Number(aiMetricsPeriod);
+        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        q = q.gte('updated_at', since);
+      }
+      const { data } = await q;
+      const rows = data || [];
+      const c = rows.filter(r => r.status === 'conversamos').length;
+      const n = rows.filter(r => r.status === 'nao').length;
+      const p = rows.filter(r => r.status === 'pendente').length;
+      setAiMetrics({ total: rows.length, pendente: p, conversamos: c, nao: n });
+    };
+    loadMetrics();
+  }, [user?.id, aiMetricsPeriod, aiStatusByKey]);
+
+  // Persist a single item status change
+  const updateItemStatus = async (
+    lineIdx: number,
+    line: string,
+    status: 'conversamos' | 'nao' | 'pendente',
+  ) => {
+    setAiRouteStatus(prev => ({ ...prev, [lineIdx]: status }));
+    const key = itemKey(line);
+    setAiStatusByKey(prev => ({ ...prev, [key]: status }));
+    if (!user?.id) return;
+    try {
+      await supabase.from('ai_route_item_status').upsert(
+        { user_id: user.id, item_key: key, item_text: line.trim(), status },
+        { onConflict: 'user_id,item_key' },
+      );
+    } catch {
+      // silent — UI already updated optimistically
+    }
+  };
+
   const handleGenerateAI = async () => {
     setAiLoading(true);
-    setAiRoute(null);
+    if (!aiKeepMarks) setAiRoute(null);
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-route', {
         body: {
@@ -255,8 +337,36 @@ export default function PartnersRota() {
         },
       });
       if (error) throw error;
-      setAiRoute(data?.roteiro || 'Roteiro não disponível.');
-      setAiRouteStatus({});
+      const roteiro: string = data?.roteiro || 'Roteiro não disponível.';
+      setAiRoute(roteiro);
+
+      // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
+      const baseMap = aiKeepMarks ? aiStatusByKey : {};
+      const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
+      roteiro.split('\n').forEach((line, idx) => {
+        if (isAiItemLine(line)) {
+          const s = baseMap[itemKey(line)];
+          if (s) idxMap[idx] = s;
+        }
+      });
+      setAiRouteStatus(idxMap);
+
+      if (user?.id) {
+        // Persist the generation
+        supabase.from('ai_route_generations').upsert(
+          { user_id: user.id, roteiro, params: {
+              bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
+              faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia,
+            } },
+          { onConflict: 'user_id' },
+        ).then(() => {});
+
+        // If not keeping marks, wipe status rows
+        if (!aiKeepMarks) {
+          await supabase.from('ai_route_item_status').delete().eq('user_id', user.id);
+          setAiStatusByKey({});
+        }
+      }
     } catch (err: any) {
       const msg = String(err?.message || err || '');
       if (
@@ -969,7 +1079,7 @@ export default function PartnersRota() {
               </CardContent>
             </Card>
 
-            <div className="flex justify-center py-6">
+            <div className="flex flex-col items-center gap-2 py-6">
               <Button
                 size="lg"
                 onClick={handleGenerateAI}
@@ -979,7 +1089,64 @@ export default function PartnersRota() {
                 {aiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
                 {aiLoading ? 'Gerando...' : '✨ Gerar Roteiro com Inteligência Artificial'}
               </Button>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ai-keep-marks"
+                  checked={aiKeepMarks}
+                  onCheckedChange={(c) => setAiKeepMarks(!!c)}
+                />
+                <Label htmlFor="ai-keep-marks" className="text-xs font-normal cursor-pointer text-muted-foreground">
+                  Manter marcações de "Conversamos / Não conversamos" ao regenerar
+                </Label>
+              </div>
             </div>
+
+            {/* Metrics panel */}
+            {aiMetrics.total > 0 && (
+              <Card className="shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="w-4 h-4 text-primary" /> Meu andamento
+                  </CardTitle>
+                  <Select value={aiMetricsPeriod} onValueChange={(v) => setAiMetricsPeriod(v as '7' | '30' | 'all')}>
+                    <SelectTrigger className="h-8 w-[160px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="all">Todo o período</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">Total de itens</p>
+                    <p className="text-2xl font-semibold">{aiMetrics.total}</p>
+                  </div>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                    <p className="text-xs text-amber-700">Pendentes</p>
+                    <p className="text-2xl font-semibold text-amber-700">{aiMetrics.pendente}</p>
+                  </div>
+                  <div className="rounded-lg border border-green-200 bg-green-50/50 p-3">
+                    <p className="text-xs text-green-700">Conversamos</p>
+                    <p className="text-2xl font-semibold text-green-700">{aiMetrics.conversamos}</p>
+                  </div>
+                  <div className="rounded-lg border border-red-200 bg-red-50/50 p-3">
+                    <p className="text-xs text-red-700">Não conversamos</p>
+                    <p className="text-2xl font-semibold text-red-700">{aiMetrics.nao}</p>
+                  </div>
+                  <div className="col-span-2 md:col-span-4 flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">Taxa de conversão (Conversamos / Total)</span>
+                    <span className="text-lg font-semibold text-primary">
+                      {aiMetrics.total > 0
+                        ? `${Math.round((aiMetrics.conversamos / aiMetrics.total) * 100)}%`
+                        : '—'}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {aiRoute && (
               <Card className="shadow-sm">
@@ -987,15 +1154,30 @@ export default function PartnersRota() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
                   </CardTitle>
-                  <Button size="sm" variant="outline" className="gap-2" onClick={handleCopyAiRoute}>
-                    <Copy className="w-4 h-4" /> Copiar
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Select value={aiRouteFilter} onValueChange={(v) => setAiRouteFilter(v as typeof aiRouteFilter)}>
+                      <SelectTrigger className="h-8 w-[170px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Mostrar todos</SelectItem>
+                        <SelectItem value="pendente">⏳ Só pendentes</SelectItem>
+                        <SelectItem value="conversamos">✅ Só conversamos</SelectItem>
+                        <SelectItem value="nao">❌ Só não conversamos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" variant="outline" className="gap-2" onClick={handleCopyAiRoute}>
+                      <Copy className="w-4 h-4" /> Copiar
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1.5 text-sm">
                     {aiRoute.split('\n').map((line, idx) => {
-                      const isItem = /^\s*(\d+[\.\)]|[-•*])\s+/.test(line) && line.trim().length > 3;
+                      const isItem = isAiItemLine(line);
                       if (!isItem) {
+                        // Hide non-item lines when a filter is active to keep the review focused.
+                        if (aiRouteFilter !== 'todos') return null;
                         return (
                           <div key={idx} className="whitespace-pre-wrap font-sans">
                             {line || '\u00A0'}
@@ -1003,6 +1185,7 @@ export default function PartnersRota() {
                         );
                       }
                       const current = aiRouteStatus[idx] || 'pendente';
+                      if (aiRouteFilter !== 'todos' && current !== aiRouteFilter) return null;
                       return (
                         <div
                           key={idx}
@@ -1012,7 +1195,7 @@ export default function PartnersRota() {
                           <Select
                             value={current}
                             onValueChange={(v) =>
-                              setAiRouteStatus((prev) => ({ ...prev, [idx]: v as 'conversamos' | 'nao' | 'pendente' }))
+                              updateItemStatus(idx, line, v as 'conversamos' | 'nao' | 'pendente')
                             }
                           >
                             <SelectTrigger
