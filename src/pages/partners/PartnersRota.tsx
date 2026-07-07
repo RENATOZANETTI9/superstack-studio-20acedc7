@@ -190,6 +190,7 @@ export default function PartnersRota() {
 
   // AI
   const [aiRoute, setAiRoute] = useState<string | null>(null);
+  const [aiRouteStatus, setAiRouteStatus] = useState<Record<number, 'conversamos' | 'nao' | 'pendente'>>({});
   const [aiLoading, setAiLoading] = useState(false);
 
   // AI form fields
@@ -255,6 +256,7 @@ export default function PartnersRota() {
       });
       if (error) throw error;
       setAiRoute(data?.roteiro || 'Roteiro não disponível.');
+      setAiRouteStatus({});
     } catch (err: any) {
       const msg = String(err?.message || err || '');
       if (
@@ -990,7 +992,50 @@ export default function PartnersRota() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <pre className="whitespace-pre-wrap text-sm font-sans">{aiRoute}</pre>
+                  <div className="space-y-1.5 text-sm">
+                    {aiRoute.split('\n').map((line, idx) => {
+                      const isItem = /^\s*(\d+[\.\)]|[-•*])\s+/.test(line) && line.trim().length > 3;
+                      if (!isItem) {
+                        return (
+                          <div key={idx} className="whitespace-pre-wrap font-sans">
+                            {line || '\u00A0'}
+                          </div>
+                        );
+                      }
+                      const current = aiRouteStatus[idx] || 'pendente';
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5"
+                        >
+                          <div className="flex-1 whitespace-pre-wrap font-sans">{line}</div>
+                          <Select
+                            value={current}
+                            onValueChange={(v) =>
+                              setAiRouteStatus((prev) => ({ ...prev, [idx]: v as 'conversamos' | 'nao' | 'pendente' }))
+                            }
+                          >
+                            <SelectTrigger
+                              className={`h-7 w-[150px] text-xs ${
+                                current === 'conversamos'
+                                  ? 'border-green-400 text-green-700'
+                                  : current === 'nao'
+                                  ? 'border-red-300 text-red-700'
+                                  : ''
+                              }`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pendente">⏳ Pendente</SelectItem>
+                              <SelectItem value="conversamos">✅ Conversamos</SelectItem>
+                              <SelectItem value="nao">❌ Não conversamos</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             )}
