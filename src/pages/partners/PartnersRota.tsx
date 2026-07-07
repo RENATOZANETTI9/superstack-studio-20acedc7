@@ -190,6 +190,7 @@ export default function PartnersRota() {
 
   // AI
   const [aiRoute, setAiRoute] = useState<string | null>(null);
+  const [aiRouteStatus, setAiRouteStatus] = useState<Record<number, 'conversamos' | 'nao' | 'pendente'>>({});
   const [aiLoading, setAiLoading] = useState(false);
 
   // AI form fields
