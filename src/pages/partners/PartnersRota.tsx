@@ -246,9 +246,83 @@ export default function PartnersRota() {
     loadPortfolio();
   }, [user?.id]);
 
+  // Helpers for AI route items
+  const isAiItemLine = (line: string) =>
+    /^\s*(\d+[\.\)]|[-•*])\s+/.test(line) && line.trim().length > 3;
+  const itemKey = (line: string) => line.trim().slice(0, 500);
+
+  // Load persisted generation + statuses
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      const [{ data: gen }, { data: statuses }] = await Promise.all([
+        supabase.from('ai_route_generations').select('roteiro').eq('user_id', user.id).maybeSingle(),
+        supabase.from('ai_route_item_status').select('item_key,status').eq('user_id', user.id),
+      ]);
+      const map: Record<string, 'conversamos' | 'nao' | 'pendente'> = {};
+      (statuses || []).forEach((s: any) => { map[s.item_key] = s.status; });
+      setAiStatusByKey(map);
+      if (gen?.roteiro) {
+        setAiRoute(gen.roteiro);
+        const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
+        gen.roteiro.split('\n').forEach((line: string, idx: number) => {
+          if (isAiItemLine(line)) {
+            const s = map[itemKey(line)];
+            if (s) idxMap[idx] = s;
+          }
+        });
+        setAiRouteStatus(idxMap);
+      }
+    };
+    load();
+  }, [user?.id]);
+
+  // Load metrics whenever period changes
+  useEffect(() => {
+    const loadMetrics = async () => {
+      if (!user?.id) return;
+      let q = supabase
+        .from('ai_route_item_status')
+        .select('status,updated_at')
+        .eq('user_id', user.id);
+      if (aiMetricsPeriod !== 'all') {
+        const days = Number(aiMetricsPeriod);
+        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        q = q.gte('updated_at', since);
+      }
+      const { data } = await q;
+      const rows = data || [];
+      const c = rows.filter(r => r.status === 'conversamos').length;
+      const n = rows.filter(r => r.status === 'nao').length;
+      const p = rows.filter(r => r.status === 'pendente').length;
+      setAiMetrics({ total: rows.length, pendente: p, conversamos: c, nao: n });
+    };
+    loadMetrics();
+  }, [user?.id, aiMetricsPeriod, aiStatusByKey]);
+
+  // Persist a single item status change
+  const updateItemStatus = async (
+    lineIdx: number,
+    line: string,
+    status: 'conversamos' | 'nao' | 'pendente',
+  ) => {
+    setAiRouteStatus(prev => ({ ...prev, [lineIdx]: status }));
+    const key = itemKey(line);
+    setAiStatusByKey(prev => ({ ...prev, [key]: status }));
+    if (!user?.id) return;
+    try {
+      await supabase.from('ai_route_item_status').upsert(
+        { user_id: user.id, item_key: key, item_text: line.trim(), status },
+        { onConflict: 'user_id,item_key' },
+      );
+    } catch {
+      // silent — UI already updated optimistically
+    }
+  };
+
   const handleGenerateAI = async () => {
     setAiLoading(true);
-    setAiRoute(null);
+    if (!aiKeepMarks) setAiRoute(null);
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-route', {
         body: {
@@ -263,8 +337,36 @@ export default function PartnersRota() {
         },
       });
       if (error) throw error;
-      setAiRoute(data?.roteiro || 'Roteiro não disponível.');
-      setAiRouteStatus({});
+      const roteiro: string = data?.roteiro || 'Roteiro não disponível.';
+      setAiRoute(roteiro);
+
+      // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
+      const baseMap = aiKeepMarks ? aiStatusByKey : {};
+      const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
+      roteiro.split('\n').forEach((line, idx) => {
+        if (isAiItemLine(line)) {
+          const s = baseMap[itemKey(line)];
+          if (s) idxMap[idx] = s;
+        }
+      });
+      setAiRouteStatus(idxMap);
+
+      if (user?.id) {
+        // Persist the generation
+        supabase.from('ai_route_generations').upsert(
+          { user_id: user.id, roteiro, params: {
+              bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
+              faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia,
+            } },
+          { onConflict: 'user_id' },
+        ).then(() => {});
+
+        // If not keeping marks, wipe status rows
+        if (!aiKeepMarks) {
+          await supabase.from('ai_route_item_status').delete().eq('user_id', user.id);
+          setAiStatusByKey({});
+        }
+      }
     } catch (err: any) {
       const msg = String(err?.message || err || '');
       if (
