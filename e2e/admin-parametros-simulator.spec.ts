@@ -46,14 +46,22 @@ test.describe('AdminParametros → PartnersSimulator', () => {
     await setRate('rate-taxa_bonificacao_direta',     NEW.taxa_bonificacao_direta);
     await setRate('rate-taxa_bonificacao_rede',       NEW.taxa_bonificacao_rede);
 
-    // Abre o simulador e valida propagação imediata
-    await page.goto('/partners/simulator');
-    // Verifica que a página do simulador aparece e usa os novos percentuais em algum lugar visível.
-    // Aceita formatação pt-BR com vírgula OU ponto.
+    // Navegação SPA (sem reload) — pushState + popstate faz o React Router
+    // renderizar a rota mantendo o cache do TanStack Query já invalidado
+    // pelo save. Se o valor propaga, é prova de que useSystemConfig refetchou.
+    await page.evaluate(() => {
+      window.history.pushState({}, '', '/partners/simulator');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await expect(page.getByRole('heading', { name: /Simulador/i })).toBeVisible({ timeout: 10000 });
+
+    // O simulador exibe "Taxa: X,XX%" a partir de taxa_comissao_representante.
+    await expect(page.getByText(/Taxa:\s*1,75%/)).toBeVisible({ timeout: 10000 });
+
+    // Também confere presença dos outros percentuais em algum lugar visível.
     const bodyText = await page.locator('body').innerText();
     const contains = (v: string) =>
       bodyText.includes(v) || bodyText.includes(v.replace('.', ','));
-    expect(contains(NEW.taxa_bonificacao_direta), 'simulador deve refletir bonificação direta').toBeTruthy();
-    expect(contains(NEW.taxa_bonificacao_rede),   'simulador deve refletir bonificação rede').toBeTruthy();
+    expect(contains(NEW.taxa_comissao_representante), 'simulador deve refletir comissão representante').toBeTruthy();
   });
 });

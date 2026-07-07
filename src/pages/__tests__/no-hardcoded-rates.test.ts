@@ -24,6 +24,8 @@ const ALLOWLIST_BASENAMES = new Set([
   'AdminParametros.mimo-validation.test.tsx',
   'system-config-integration.test.ts',
   'partner-rules.ts',
+  'audit-logs-integration.test.ts',
+  'PartnersSimulator.rate.test.tsx',
 ]);
 
 const KEYS = [
