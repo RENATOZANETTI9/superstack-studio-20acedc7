@@ -38,7 +38,7 @@ const PartnersSimulator = () => {
     return {
       direct: typeof d === 'number' ? d : PARTNER_RULES.COMMISSION_RATE_DIRECT,
       override: typeof o === 'number' ? o : PARTNER_RULES.COMMISSION_RATE_OVERRIDE,
-      representante: typeof r === 'number' ? r : 0,
+      representante: typeof r === 'number' ? r : PARTNER_RULES.SIMULATOR_COMMISSION_RATE_FALLBACK,
     };
   }, [directCfg, overrideCfg, repCfg]);
 
@@ -78,8 +78,9 @@ const PartnersSimulator = () => {
   const approvedContracts = Math.round(consultationsMonth * (approvalRate / 100));
   const paidContracts = Math.round(approvedContracts * (paidRate / 100));
   const totalPaidValue = paidContracts * avgTicket;
-  // Projeção usa a taxa de bonificação direta configurada em Parâmetros do Sistema.
-  const directCommission = totalPaidValue * rates.direct;
+  // Projeção usa a taxa de comissão do representante configurada em Parâmetros do Sistema
+  // (chave: taxa_comissao_representante). Fallback: PARTNER_RULES.SIMULATOR_COMMISSION_RATE_FALLBACK.
+  const directCommission = totalPaidValue * rates.representante;
   const yearlyProjection = directCommission * 12;
 
   // Funnel data
@@ -275,14 +276,14 @@ const PartnersSimulator = () => {
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">Projeção Financeira</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      Taxa: {(rates.direct * 100).toFixed(2)}%
+                      Taxa: {(rates.representante * 100).toFixed(2)}%
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <HelpCircle className="w-3.5 h-3.5 text-muted-foreground inline ml-1 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p>Taxa de bonificação direta configurada em Parâmetros do Sistema.</p>
+                            <p>Taxa de comissão do representante configurada em Parâmetros do Sistema.</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
