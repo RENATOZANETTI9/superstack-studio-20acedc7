@@ -256,6 +256,7 @@ export default function PartnersRota() {
       });
       if (error) throw error;
       setAiRoute(data?.roteiro || 'Roteiro não disponível.');
+      setAiRouteStatus({});
     } catch (err: any) {
       const msg = String(err?.message || err || '');
       if (
