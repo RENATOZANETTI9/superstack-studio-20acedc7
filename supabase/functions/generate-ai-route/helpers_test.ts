@@ -208,3 +208,17 @@ Deno.test("isCacheEntryFresh: false quando expires_at <= now (expirado)", () => 
 Deno.test("isCacheEntryFresh: false para timestamp inválido", () => {
   assertEquals(isCacheEntryFresh("not-a-date", new Date()), false);
 });
+
+// ─── validateFormat: mensagens claras ───────────────────────
+Deno.test("validateFormat: mensagens de erro são legíveis para humanos", () => {
+  const r = validateFormat("texto sem estrutura nenhuma");
+  assertEquals(r.valid, false);
+  // Cada issue deve ser uma frase não-vazia com palavras significativas
+  for (const issue of r.issues) {
+    assert(typeof issue === "string" && issue.length >= 5, `issue muito curta: ${issue}`);
+    assertMatch(issue, /[a-záéíóúçãõ]/i);
+  }
+  // Deve mencionar explicitamente o que está faltando
+  assert(r.issues.some(i => /cabeçalho/i.test(i)));
+  assert(r.issues.some(i => /numerad/i.test(i)));
+});
