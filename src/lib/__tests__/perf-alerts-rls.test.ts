@@ -18,17 +18,22 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  *  - ADMIN_EMAIL / ADMIN_PASS     (admin or master)
  */
 
-const url = import.meta.env.VITE_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+// Vite exposes env vars via import.meta.env; also read from a globalThis
+// process.env when running under Node/CI so we don't depend on @types/node.
+const env: Record<string, string | undefined> =
+  (globalThis as any).process?.env ?? {};
+const url =
+  (import.meta as any).env?.VITE_SUPABASE_URL ?? env.VITE_SUPABASE_URL;
 const anon =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const repEmail = process.env.REP_EMAIL;
-const repPass = process.env.REP_PASS;
-const rep2Email = process.env.REP2_EMAIL;
-const rep2Pass = process.env.REP2_PASS;
-const adminEmail = process.env.ADMIN_EMAIL;
-const adminPass = process.env.ADMIN_PASS;
+const repEmail = env.REP_EMAIL;
+const repPass = env.REP_PASS;
+const rep2Email = env.REP2_EMAIL;
+const rep2Pass = env.REP2_PASS;
+const adminEmail = env.ADMIN_EMAIL;
+const adminPass = env.ADMIN_PASS;
 
 const hasAll =
   !!url && !!anon &&
