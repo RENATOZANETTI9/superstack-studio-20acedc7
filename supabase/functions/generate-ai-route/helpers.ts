@@ -106,3 +106,20 @@ export function validateFormat(text: string): { valid: boolean; issues: string[]
   if (!/^\s*\d+[\.\)]\s+/m.test(text)) issues.push('Sem itens numerados "1."');
   return { valid: issues.length === 0, issues };
 }
+
+// ─── Cache helpers ──────────────────────────────────────────
+export const CACHE_TTL_DAYS = 7;
+export const CACHE_TTL_MS = CACHE_TTL_DAYS * 86400000;
+
+export function buildCacheKey(cidade: string, bairro: string, especialidade: string, tipo: string): string {
+  return `${cidade}|${bairro}|${especialidade}|${tipo}`.toLowerCase();
+}
+
+export function computeCacheExpiresAt(now: Date = new Date(), ttlMs: number = CACHE_TTL_MS): string {
+  return new Date(now.getTime() + ttlMs).toISOString();
+}
+
+export function isCacheEntryFresh(expiresAt: string, now: Date = new Date()): boolean {
+  const exp = new Date(expiresAt).getTime();
+  return Number.isFinite(exp) && exp > now.getTime();
+}
