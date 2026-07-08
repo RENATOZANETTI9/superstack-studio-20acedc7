@@ -12,6 +12,14 @@ import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  getReferenceMonth,
+  getWeekStartISO,
+  getWeekBuckets,
+  localDateKey,
+  measureQuery,
+  PERF_BUDGET_MS,
+} from './lib/period-helpers';
 
 const PartnersSimulator = () => {
   const { role } = useAuth();
@@ -353,15 +361,9 @@ const RealVsProjetadoTab = () => {
 
   // Local-timezone helpers (avoid UTC drift for month/week windows).
   const now = new Date();
-  const referenceMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const referenceMonth = getReferenceMonth(now);
   const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const localDateKey = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  // Start of the 7-day window in local time, converted to an ISO instant for the server filter.
-  const weekStartLocal = new Date();
-  weekStartLocal.setHours(0, 0, 0, 0);
-  weekStartLocal.setDate(weekStartLocal.getDate() - 6);
-  const weekStartISO = weekStartLocal.toISOString();
+  const weekStartISO = getWeekStartISO(now);
 
   useEffect(() => {
     let cancelled = false;
@@ -382,27 +384,38 @@ const RealVsProjetadoTab = () => {
 
       if (!pid) { setLoading(false); return; }
 
-      // Server-side filters: minimal payload, use new indexes.
-      const [monthRes, weekRes, portfolioRes] = await Promise.all([
-        supabase
-          .from('partner_commissions')
-          .select('status, commission_amount')
-          .eq('beneficiary_partner_id', pid)
-          .eq('reference_month', referenceMonth)
-          .in('status', ['CALCULATED', 'APPROVED', 'PAID']),
-        supabase
-          .from('partner_commissions')
-          .select('commission_amount, paid_at')
-          .eq('beneficiary_partner_id', pid)
-          .eq('status', 'PAID')
-          .gte('paid_at', weekStartISO),
-        supabase
-          .from('portfolio_clinics')
-          .select('id, nome, status')
-          .eq('partner_id', pid)
-          .order('created_at', { ascending: false })
-          .limit(10),
+      // Server-side filters: minimal payload, use new indexes. Each query is
+      // timed so we surface regressions (>PERF_BUDGET_MS) in the console.
+      const [monthTimed, weekTimed, portfolioTimed] = await Promise.all([
+        measureQuery('commissions.month', () =>
+          supabase
+            .from('partner_commissions')
+            .select('status, commission_amount')
+            .eq('beneficiary_partner_id', pid)
+            .eq('reference_month', referenceMonth)
+            .in('status', ['CALCULATED', 'APPROVED', 'PAID']),
+        ),
+        measureQuery('commissions.week', () =>
+          supabase
+            .from('partner_commissions')
+            .select('commission_amount, paid_at')
+            .eq('beneficiary_partner_id', pid)
+            .eq('status', 'PAID')
+            .gte('paid_at', weekStartISO),
+        ),
+        measureQuery('portfolio.clinics', () =>
+          supabase
+            .from('portfolio_clinics')
+            .select('id, nome, status')
+            .eq('partner_id', pid)
+            .order('created_at', { ascending: false })
+            .limit(10),
+        ),
       ]);
+      const monthRes = monthTimed.result;
+      const weekRes = weekTimed.result;
+      const portfolioRes = portfolioTimed.result;
+      void PERF_BUDGET_MS; // referenced for tree-shaking safety
 
       if (cancelled) return;
 
@@ -413,14 +426,7 @@ const RealVsProjetadoTab = () => {
       setMetrics({ calculated, paid: paidRows.length, paidAmount });
 
       // Weekly buckets keyed by local date (last 7 days including today).
-      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-      const week: Array<{ dia: string; Pago: number; dateKey: string }> = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
-        d.setDate(d.getDate() - i);
-        week.push({ dia: dayNames[d.getDay()], Pago: 0, dateKey: localDateKey(d) });
-      }
+      const week = getWeekBuckets(now).map(b => ({ ...b, Pago: 0 }));
       (weekRes.data || []).forEach((c: any) => {
         if (!c.paid_at) return;
         const key = localDateKey(new Date(c.paid_at));
