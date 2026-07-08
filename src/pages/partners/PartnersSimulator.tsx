@@ -16,9 +16,11 @@ import {
   getReferenceMonth,
   getWeekStartISO,
   getWeekBuckets,
+  getWeekStart,
   localDateKey,
   measureQuery,
   PERF_BUDGET_MS,
+  type PerfSample,
 } from './lib/period-helpers';
 
 const PartnersSimulator = () => {
@@ -358,12 +360,27 @@ const RealVsProjetadoTab = () => {
   const [metrics, setMetrics] = useState({ calculated: 0, paid: 0, paidAmount: 0 });
   const [weekData, setWeekData] = useState<Array<{ dia: string; Pago: number }>>([]);
   const [clinics, setClinics] = useState<Array<{ id: string; nome: string; status: string }>>([]);
+  const [timings, setTimings] = useState<PerfSample[]>([]);
 
   // Local-timezone helpers (avoid UTC drift for month/week windows).
   const now = new Date();
   const referenceMonth = getReferenceMonth(now);
   const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const weekStartISO = getWeekStartISO(now);
+  const weekStartLocal = getWeekStart(now);
+  const tzName =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+  const tzOffsetMin = -now.getTimezoneOffset();
+  const tzOffsetLabel = `${tzOffsetMin >= 0 ? '+' : '-'}${String(
+    Math.floor(Math.abs(tzOffsetMin) / 60),
+  ).padStart(2, '0')}:${String(Math.abs(tzOffsetMin) % 60).padStart(2, '0')}`;
+  const fmt = (d: Date) =>
+    d.toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  const monthStartLocal = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+  const monthEndLocal = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
   useEffect(() => {
     let cancelled = false;
@@ -386,6 +403,7 @@ const RealVsProjetadoTab = () => {
 
       // Server-side filters: minimal payload, use new indexes. Each query is
       // timed so we surface regressions (>PERF_BUDGET_MS) in the console.
+      const partnerTimed = { label: 'partners.by_user_id', ms: 0, overBudget: false } as PerfSample;
       const [monthTimed, weekTimed, portfolioTimed] = await Promise.all([
         measureQuery('commissions.month', async () =>
           await supabase
@@ -415,7 +433,24 @@ const RealVsProjetadoTab = () => {
       const monthRes = monthTimed.result;
       const weekRes = weekTimed.result;
       const portfolioRes = portfolioTimed.result;
-      void PERF_BUDGET_MS; // referenced for tree-shaking safety
+
+      const samples: PerfSample[] = [monthTimed.sample, weekTimed.sample, portfolioTimed.sample];
+      setTimings(samples);
+
+      // Persist every breach into perf_alerts for later auditing.
+      const breaches = samples.filter((s) => s.overBudget);
+      if (breaches.length > 0) {
+        void supabase.from('perf_alerts').insert(
+          breaches.map((b) => ({
+            user_id: user.id,
+            source: 'client:PartnersSimulator',
+            label: b.label,
+            duration_ms: b.ms,
+            budget_ms: PERF_BUDGET_MS,
+            context: { partnerId: pid, referenceMonth, weekStartISO, tz: tzName },
+          })),
+        );
+      }
 
       if (cancelled) return;
 
@@ -440,7 +475,8 @@ const RealVsProjetadoTab = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [user?.id, referenceMonth]);
+  }, [user?.id, referenceMonth, weekStartISO, tzName]);
+  void partnerTimed;
 
   if (loading) {
     return (
@@ -467,6 +503,58 @@ const RealVsProjetadoTab = () => {
 
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Período calculado (fuso do usuário)</CardTitle>
+          <CardDescription>
+            Valores usados para filtrar os contadores e o gráfico. Confira que
+            batem com o seu fuso horário atual.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-3 text-sm">
+            <div className="rounded-md border p-3 space-y-1">
+              <p className="text-xs text-muted-foreground">Fuso horário</p>
+              <p className="font-medium">{tzName}</p>
+              <p className="text-xs text-muted-foreground">UTC {tzOffsetLabel}</p>
+            </div>
+            <div className="rounded-md border p-3 space-y-1">
+              <p className="text-xs text-muted-foreground">Mês de referência</p>
+              <p className="font-medium">{referenceMonth}</p>
+              <p className="text-xs text-muted-foreground">
+                {fmt(monthStartLocal)} → {fmt(monthEndLocal)}
+              </p>
+            </div>
+            <div className="rounded-md border p-3 space-y-1">
+              <p className="text-xs text-muted-foreground">Janela semanal (7 dias)</p>
+              <p className="font-medium">
+                {localDateKey(weekStartLocal)} → {localDateKey(now)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                início local: {fmt(weekStartLocal)} · ISO enviado: {weekStartISO}
+              </p>
+            </div>
+          </div>
+          {timings.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-xs text-muted-foreground">Tempo das buscas:</span>
+              {timings.map((t) => (
+                <Badge
+                  key={t.label}
+                  variant={t.overBudget ? 'destructive' : 'outline'}
+                  className="text-xs"
+                >
+                  {t.label}: {t.ms.toFixed(0)}ms
+                </Badge>
+              ))}
+              <span className="text-xs text-muted-foreground">
+                (orçamento {PERF_BUDGET_MS}ms · alertas salvos em perf_alerts)
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base capitalize">Comissões · {monthLabel}</CardTitle>
