@@ -59,42 +59,16 @@ interface PortfolioClinic {
   ultimaVisita?: string;
 }
 
-const INITIAL_PORTFOLIO: PortfolioClinic[] = [
-  { id: 'p1', nome: 'Clínica Savassi Odonto', tipo: 'Clínica', bairro: 'Savassi', cidade: 'Belo Horizonte', telefone: '(31) 99876-1122', responsavel: 'Dra. Marina', status: 'Ativo', ultimaVisita: '02/07/2026' },
-  { id: 'p2', nome: 'Hospital Lourdes Saúde', tipo: 'Hospital', bairro: 'Lourdes', cidade: 'Belo Horizonte', telefone: '(31) 99654-3344', responsavel: 'Dr. Ricardo', status: 'Lead' },
-  { id: 'p3', nome: 'Consultório Centro BH', tipo: 'Consultório', bairro: 'Centro', cidade: 'Belo Horizonte', telefone: '(31) 98877-2211', responsavel: 'Patrícia Lima', status: 'Inativo', ultimaVisita: '15/05/2026' },
-];
+const INITIAL_PORTFOLIO: PortfolioClinic[] = [];
 
 const INITIAL_DAYS: Record<string, PlannedVisit[]> = {
-  seg: [
-    { id: 's1', clinic: 'Clínica BH Sorriso', address: 'Av. Afonso Pena 1230, BH', goal: 'Cadastro e ativação', responsible: 'Dra. Marina', phone: '(31) 99876-1122', status: 'Pendente' },
-    { id: 's2', clinic: 'Centro Odonto Minas', address: 'R. da Bahia 88, BH', goal: 'Relacionamento com recepção', responsible: 'Carla Souza', phone: '(31) 99654-3344', status: 'Pendente' },
-  ],
-  ter: [
-    { id: 't1', clinic: 'Clínica Saúde Total', address: 'Av. do Contorno 500, BH', goal: 'Treinar recepcionista', responsible: 'Patrícia Lima', phone: '(31) 98877-2211', status: 'Pendente' },
-    { id: 't2', clinic: 'Clínica Dental BH', address: 'R. Espírito Santo 200, BH', goal: 'Reativar simulações', responsible: 'Dr. Felipe', phone: '(31) 98765-9988', status: 'Pendente' },
-  ],
-  qua: [
-    { id: 'q1', clinic: 'OdontoVida Premium BH', address: 'Av. Raja Gabaglia 1000, BH', goal: 'Apresentar campanha', responsible: 'Júlia Mendes', phone: '(31) 97654-1010', status: 'Pendente' },
-    { id: 'q2', clinic: 'Clínica Sorriso Mineiro', address: 'R. Pernambuco 450, BH', goal: 'Treinar nova recepção', responsible: 'Ana Beatriz', phone: '(31) 99123-4567', status: 'Pendente' },
-  ],
-  qui: [
-    { id: 'qi1', clinic: 'Dental Plus Centro', address: 'Av. Amazonas 770, BH', goal: 'Renegociar metas', responsible: 'Roberta Lopes', phone: '(31) 98456-7788', status: 'Pendente' },
-  ],
-  sex: [],
+  seg: [], ter: [], qua: [], qui: [], sex: [],
 };
 
-const GIFT_ROUTE_INITIAL = {
-  achieved: [
-    { id: 'g1', clinic: 'Clínica Dental Plus', simulations: 62, gift: 'Ouro', receptionist: 'Maria Silva', delivered: false },
-    { id: 'g2', clinic: 'Clínica BH Sorriso', simulations: 45, gift: 'Prata', receptionist: 'Ana Lima', delivered: false },
-    { id: 'g3', clinic: 'Centro Odonto Minas', simulations: 35, gift: 'Prata', receptionist: 'Carla Souza', delivered: false },
-  ],
-  missed: [
-    { id: 'm1', clinic: 'Clínica Saúde Total', simulations: 18 },
-    { id: 'm2', clinic: 'Clínica Dental BH', simulations: 12 },
-  ],
-};
+const GIFT_ROUTE_INITIAL: {
+  achieved: { id: string; clinic: string; simulations: number; gift: string; receptionist: string; delivered: boolean }[];
+  missed: { id: string; clinic: string; simulations: number }[];
+} = { achieved: [], missed: [] };
 
 const DAY_META: { key: keyof typeof INITIAL_DAYS; label: string }[] = [
   { key: 'seg', label: 'Seg' },
@@ -180,6 +154,7 @@ export default function PartnersRota() {
 
   // Portfolio
   const [portfolio, setPortfolio] = useState<PortfolioClinic[]>(INITIAL_PORTFOLIO);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
   const [portfolioSearch, setPortfolioSearch] = useState('');
   const [portfolioStatusFilter, setPortfolioStatusFilter] = useState<string>('all');
   const [addClinicOpen, setAddClinicOpen] = useState(false);
@@ -220,27 +195,32 @@ export default function PartnersRota() {
 
   useEffect(() => {
     const loadPortfolio = async () => {
-      if (!user?.id) return;
-      const { data: partnerData } = await supabase
-        .from('partners').select('id').eq('user_id', user.id).single();
-      if (!partnerData?.id) return;
-      const { data: clinics } = await supabase
-        .from('portfolio_clinics')
-        .select('*')
-        .eq('partner_id', partnerData.id)
-        .order('created_at');
-      if (clinics && clinics.length > 0) {
-        setPortfolio(clinics.map((c: any) => ({
-          id: c.id,
-          nome: c.nome,
-          tipo: c.tipo as PortfolioClinic['tipo'],
-          bairro: c.bairro,
-          cidade: c.cidade,
-          telefone: c.telefone || '',
-          responsavel: c.responsavel || '',
-          status: c.status as PortfolioClinic['status'],
-          ultimaVisita: c.ultima_visita || undefined,
-        })));
+      setPortfolioLoading(true);
+      try {
+        if (!user?.id) return;
+        const { data: partnerData } = await supabase
+          .from('partners').select('id').eq('user_id', user.id).maybeSingle();
+        if (!partnerData?.id) return;
+        const { data: clinics } = await supabase
+          .from('portfolio_clinics')
+          .select('*')
+          .eq('partner_id', partnerData.id)
+          .order('created_at');
+        if (clinics && clinics.length > 0) {
+          setPortfolio(clinics.map((c: any) => ({
+            id: c.id,
+            nome: c.nome,
+            tipo: c.tipo as PortfolioClinic['tipo'],
+            bairro: c.bairro,
+            cidade: c.cidade,
+            telefone: c.telefone || '',
+            responsavel: c.responsavel || '',
+            status: c.status as PortfolioClinic['status'],
+            ultimaVisita: c.ultima_visita || undefined,
+          })));
+        }
+      } finally {
+        setPortfolioLoading(false);
       }
     };
     loadPortfolio();
@@ -514,30 +494,66 @@ export default function PartnersRota() {
     }
   };
 
-  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const { data: partnerData } = await supabase
+      .from('partners').select('id').eq('user_id', user?.id).maybeSingle();
+    if (!partnerData?.id) {
+      toast.error('Parceiro não encontrado. Não é possível importar.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: 'array' });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
-        const imported: PortfolioClinic[] = rows.map((r) => ({
-          id: crypto.randomUUID(),
-          nome: String(r.Nome ?? r.nome ?? ''),
-          tipo: (r.Tipo ?? r.tipo ?? 'Clínica') as PortfolioClinic['tipo'],
-          bairro: String(r.Bairro ?? r.bairro ?? ''),
-          cidade: String(r.Cidade ?? r.cidade ?? ''),
-          telefone: String(r.Telefone ?? r.telefone ?? ''),
-          responsavel: String(r.Responsavel ?? r.responsavel ?? r.Responsável ?? ''),
-          status: 'Lead' as const,
-        })).filter(c => c.nome);
-        setPortfolio(prev => [...prev, ...imported]);
-        toast.success(`${imported.length} clínica(s) importada(s) do Excel`);
+        const toInsert = rows
+          .map((r) => ({
+            partner_id: partnerData.id,
+            nome: String(r.Nome ?? r.nome ?? ''),
+            tipo: String(r.Tipo ?? r.tipo ?? 'Clínica'),
+            bairro: String(r.Bairro ?? r.bairro ?? ''),
+            cidade: String(r.Cidade ?? r.cidade ?? ''),
+            telefone: String(r.Telefone ?? r.telefone ?? '') || null,
+            responsavel: String(r.Responsavel ?? r.responsavel ?? r.Responsável ?? '') || null,
+          }))
+          .filter((c) => c.nome && c.bairro && c.cidade);
+
+        if (toInsert.length === 0) {
+          toast.error('Nenhuma clínica válida encontrada no arquivo (requer Nome, Bairro, Cidade).');
+          return;
+        }
+
+        const { data: inserted, error } = await supabase
+          .from('portfolio_clinics')
+          .insert(toInsert)
+          .select();
+
+        if (error) throw error;
+
+        const mapped: PortfolioClinic[] = (inserted || []).map((c: any) => ({
+          id: c.id,
+          nome: c.nome,
+          tipo: c.tipo as PortfolioClinic['tipo'],
+          bairro: c.bairro,
+          cidade: c.cidade,
+          telefone: c.telefone || '',
+          responsavel: c.responsavel || '',
+          status: c.status as PortfolioClinic['status'],
+          ultimaVisita: c.ultima_visita || undefined,
+        }));
+
+        setPortfolio((prev) => [...prev, ...mapped]);
+        toast.success(`${mapped.length} clínica(s) importada(s) e salvas no portfólio`);
       } catch (err) {
-        toast.error('Erro ao ler arquivo Excel');
+        console.error(err);
+        toast.error('Erro ao ler ou salvar arquivo Excel');
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
@@ -551,7 +567,7 @@ export default function PartnersRota() {
       return;
     }
     const { data: partnerData } = await supabase
-      .from('partners').select('id').eq('user_id', user?.id).single();
+      .from('partners').select('id').eq('user_id', user?.id).maybeSingle();
     if (!partnerData?.id) { toast.error('Parceiro não encontrado.'); return; }
     const { data: inserted, error } = await supabase
       .from('portfolio_clinics')
@@ -968,9 +984,15 @@ export default function PartnersRota() {
               </Select>
             </div>
 
-            {filteredPortfolio.length === 0 ? (
+            {portfolioLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredPortfolio.length === 0 ? (
               <div className="text-center py-12 text-sm text-muted-foreground">
-                Nenhuma clínica encontrada.
+                <Building2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Nenhuma clínica no portfólio</p>
+                <p className="text-xs mt-1 opacity-60">Adicione clínicas manualmente ou importe via Excel.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
