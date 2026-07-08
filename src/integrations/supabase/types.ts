@@ -1197,6 +1197,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tavily_cache: {
+        Row: {
+          bairro: string
+          cache_key: string
+          created_at: string
+          especialidade: string | null
+          expires_at: string
+          id: string
+          results: Json
+          tipo: string | null
+        }
+        Insert: {
+          bairro: string
+          cache_key: string
+          created_at?: string
+          especialidade?: string | null
+          expires_at?: string
+          id?: string
+          results: Json
+          tipo?: string | null
+        }
+        Update: {
+          bairro?: string
+          cache_key?: string
+          created_at?: string
+          especialidade?: string | null
+          expires_at?: string
+          id?: string
+          results?: Json
+          tipo?: string | null
+        }
+        Relationships: []
+      }
       used_recovery_tokens: {
         Row: {
           expires_at: string
