@@ -351,9 +351,17 @@ const RealVsProjetadoTab = () => {
   const [weekData, setWeekData] = useState<Array<{ dia: string; Pago: number }>>([]);
   const [clinics, setClinics] = useState<Array<{ id: string; nome: string; status: string }>>([]);
 
+  // Local-timezone helpers (avoid UTC drift for month/week windows).
   const now = new Date();
   const referenceMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const localDateKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // Start of the 7-day window in local time, converted to an ISO instant for the server filter.
+  const weekStartLocal = new Date();
+  weekStartLocal.setHours(0, 0, 0, 0);
+  weekStartLocal.setDate(weekStartLocal.getDate() - 6);
+  const weekStartISO = weekStartLocal.toISOString();
 
   useEffect(() => {
     let cancelled = false;
@@ -374,11 +382,20 @@ const RealVsProjetadoTab = () => {
 
       if (!pid) { setLoading(false); return; }
 
-      const [{ data: commissions }, { data: portfolio }] = await Promise.all([
+      // Server-side filters: minimal payload, use new indexes.
+      const [monthRes, weekRes, portfolioRes] = await Promise.all([
         supabase
           .from('partner_commissions')
-          .select('status, commission_amount, paid_at, reference_month')
-          .eq('beneficiary_partner_id', pid),
+          .select('status, commission_amount')
+          .eq('beneficiary_partner_id', pid)
+          .eq('reference_month', referenceMonth)
+          .in('status', ['CALCULATED', 'APPROVED', 'PAID']),
+        supabase
+          .from('partner_commissions')
+          .select('commission_amount, paid_at')
+          .eq('beneficiary_partner_id', pid)
+          .eq('status', 'PAID')
+          .gte('paid_at', weekStartISO),
         supabase
           .from('portfolio_clinics')
           .select('id, nome, status')
@@ -389,30 +406,30 @@ const RealVsProjetadoTab = () => {
 
       if (cancelled) return;
 
-      const monthRows = (commissions || []).filter((c: any) => c.reference_month === referenceMonth);
+      const monthRows = monthRes.data || [];
       const calculated = monthRows.filter((c: any) => c.status === 'CALCULATED' || c.status === 'APPROVED').length;
       const paidRows = monthRows.filter((c: any) => c.status === 'PAID');
       const paidAmount = paidRows.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0);
-
       setMetrics({ calculated, paid: paidRows.length, paidAmount });
 
-      // Weekly: last 7 days
+      // Weekly buckets keyed by local date (last 7 days including today).
       const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
       const week: Array<{ dia: string; Pago: number; dateKey: string }> = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
+        d.setHours(0, 0, 0, 0);
         d.setDate(d.getDate() - i);
-        week.push({ dia: dayNames[d.getDay()], Pago: 0, dateKey: d.toISOString().slice(0, 10) });
+        week.push({ dia: dayNames[d.getDay()], Pago: 0, dateKey: localDateKey(d) });
       }
-      (commissions || []).forEach((c: any) => {
-        if (c.status !== 'PAID' || !c.paid_at) return;
-        const key = new Date(c.paid_at).toISOString().slice(0, 10);
+      (weekRes.data || []).forEach((c: any) => {
+        if (!c.paid_at) return;
+        const key = localDateKey(new Date(c.paid_at));
         const bucket = week.find(w => w.dateKey === key);
         if (bucket) bucket.Pago += Number(c.commission_amount || 0);
       });
       setWeekData(week.map(({ dia, Pago }) => ({ dia, Pago })));
 
-      setClinics((portfolio || []) as any);
+      setClinics((portfolioRes.data || []) as any);
       setLoading(false);
     };
     load();
