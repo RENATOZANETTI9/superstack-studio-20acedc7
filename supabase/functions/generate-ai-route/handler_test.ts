@@ -240,7 +240,8 @@ Deno.test("integração: requisições concorrentes na mesma chave não corrompe
     { env: baseEnv(), fetch: stubFetch, admin },
   );
 
-  const results = await Promise.all([req(), req(), req(), req()]);
+  const N = 20;
+  const results = await Promise.all(Array.from({ length: N }, () => req()));
   const jsons = await Promise.all(results.map(r => r.json()));
 
   // Todas as respostas OK
@@ -257,9 +258,13 @@ Deno.test("integração: requisições concorrentes na mesma chave não corrompe
   const keysWritten = new Set(upserts.map(u => u.cache_key));
   assertEquals(keysWritten.size, 1);
   assertEquals([...keysWritten][0], key);
-  // TTL da entrada final é válido (~7d no futuro)
+  // TTL da entrada final é válido (~7d no futuro, com folga de +/- 60s)
   const finalExp = new Date(rows.get(key)!.expires_at).getTime();
-  assert(finalExp > Date.now() + CACHE_TTL_MS - 60_000);
+  const now = Date.now();
+  assert(finalExp > now + CACHE_TTL_MS - 60_000, `TTL curto demais: ${finalExp - now}ms`);
+  assert(finalExp < now + CACHE_TTL_MS + 60_000, `TTL longo demais: ${finalExp - now}ms`);
+  // Nenhuma resposta com source inconsistente entre a corrida
+  assertEquals(new Set(jsons.map(j => j.source)).size, 1);
 });
 
 Deno.test("integração: source é sempre um dos valores permitidos em todos os cenários", async () => {
