@@ -4,15 +4,35 @@ import {
   parseRoteiro,
   enrichStructured,
   validateFormat,
+  buildCacheKey,
+  computeCacheExpiresAt,
 } from "./helpers.ts";
 
-const corsHeaders = {
+export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+export interface HandlerDeps {
+  env: (k: string) => string | undefined;
+  fetch: typeof fetch;
+  admin: any | null;
+}
+
+function defaultDeps(): HandlerDeps {
+  const env = (k: string) => Deno.env.get(k);
+  const SUPABASE_URL = env('SUPABASE_URL');
+  const SERVICE_ROLE = env('SUPABASE_SERVICE_ROLE_KEY');
+  const admin = SUPABASE_URL && SERVICE_ROLE ? createClient(SUPABASE_URL, SERVICE_ROLE) : null;
+  return { env, fetch: fetch.bind(globalThis), admin };
+}
+
+export async function handleRequest(req: Request, depsOverride?: Partial<HandlerDeps>): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const base = defaultDeps();
+  const deps: HandlerDeps = { ...base, ...depsOverride };
+  const { env, fetch: fetchFn, admin } = deps;
 
   try {
     const {
@@ -21,11 +41,9 @@ Deno.serve(async (req) => {
       notasAdicionais = '', cidade = 'Belo Horizonte',
     } = await req.json();
 
-    const TAVILY_KEY = Deno.env.get('TAVILY_API_KEY');
-    const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const TAVILY_KEY = env('TAVILY_API_KEY');
+    const LOVABLE_KEY = env('LOVABLE_API_KEY');
+    const OPENAI_KEY = env('OPENAI_API_KEY');
 
     if (!LOVABLE_KEY && !OPENAI_KEY) {
       return new Response(
@@ -33,8 +51,6 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const admin = SUPABASE_URL && SERVICE_ROLE ? createClient(SUPABASE_URL, SERVICE_ROLE) : null;
 
     // ── 1. TAVILY com cache por (bairro, especialidade, tipo) ────────────────
     let clinicasInternetStr = '';
@@ -51,7 +67,7 @@ Deno.serve(async (req) => {
       const tavilyResults: string[] = [];
 
       for (const bairro of bairrosList) {
-        const cacheKey = `${cidade}|${bairro}|${esp}|${tipo}`.toLowerCase();
+        const cacheKey = buildCacheKey(cidade, bairro, esp, tipo);
         let cached: any[] | null = null;
 
         // Tenta cache
@@ -76,7 +92,7 @@ Deno.serve(async (req) => {
         // Busca Tavily
         if (!TAVILY_KEY) continue;
         try {
-          const tavilyRes = await fetch('https://api.tavily.com/search', {
+          const tavilyRes = await fetchFn('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -94,7 +110,7 @@ Deno.serve(async (req) => {
           if (admin && results.length > 0) {
             await admin.from('tavily_cache').upsert({
               cache_key: cacheKey, bairro, especialidade: esp, tipo,
-              results, expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+              results, expires_at: computeCacheExpiresAt(),
             }, { onConflict: 'cache_key' });
           }
         } catch (err) {
@@ -166,7 +182,7 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
     const apiKey = LOVABLE_KEY || OPENAI_KEY;
     const model = LOVABLE_KEY ? 'openai/gpt-5-mini' : 'gpt-4o-mini';
 
-    const gptRes = await fetch(apiUrl, {
+    const gptRes = await fetchFn(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_completion_tokens: 3000 }),
@@ -212,4 +228,6 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-});
+}
+
+Deno.serve((req) => handleRequest(req));

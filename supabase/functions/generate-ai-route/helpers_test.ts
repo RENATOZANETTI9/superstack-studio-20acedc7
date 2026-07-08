@@ -6,6 +6,11 @@ import {
   gerarTelefone,
   gerarResponsavel,
   gerarFaturamento,
+  buildCacheKey,
+  computeCacheExpiresAt,
+  isCacheEntryFresh,
+  CACHE_TTL_DAYS,
+  CACHE_TTL_MS,
 } from "./helpers.ts";
 
 // ─── validateFormat ─────────────────────────────────────────
@@ -152,4 +157,54 @@ Deno.test("enrichStructured: preserva telefone válido existente", () => {
   };
   const out = enrichStructured(s, "Belo Horizonte", "");
   assertEquals(out.dias[0].itens[0].telefone, "(31) 91234-5678");
+});
+
+// ─── tavily_cache helpers ───────────────────────────────────
+Deno.test("buildCacheKey: monta chave lowercase por cidade|bairro|especialidade|tipo", () => {
+  const k = buildCacheKey("Belo Horizonte", "Savassi", "Odontologia", "Clínica");
+  assertEquals(k, "belo horizonte|savassi|odontologia|clínica");
+});
+
+Deno.test("buildCacheKey: determinístico e case-insensitive", () => {
+  assertEquals(
+    buildCacheKey("BH", "Centro", "Saude", "hospital"),
+    buildCacheKey("bh", "CENTRO", "saude", "HOSPITAL"),
+  );
+});
+
+Deno.test("buildCacheKey: chaves distintas para bairros diferentes", () => {
+  assertNotEquals(
+    buildCacheKey("BH", "Savassi", "Odonto", "clínica"),
+    buildCacheKey("BH", "Lourdes", "Odonto", "clínica"),
+  );
+});
+
+Deno.test("computeCacheExpiresAt: TTL de 7 dias a partir do momento informado", () => {
+  assertEquals(CACHE_TTL_DAYS, 7);
+  assertEquals(CACHE_TTL_MS, 7 * 86400000);
+  const now = new Date("2026-07-08T12:00:00.000Z");
+  const exp = computeCacheExpiresAt(now);
+  assertEquals(exp, "2026-07-15T12:00:00.000Z");
+  const diff = new Date(exp).getTime() - now.getTime();
+  assertEquals(diff, 7 * 86400000);
+});
+
+Deno.test("computeCacheExpiresAt: aceita TTL customizado", () => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  const exp = computeCacheExpiresAt(now, 86400000); // 1 dia
+  assertEquals(exp, "2026-01-02T00:00:00.000Z");
+});
+
+Deno.test("isCacheEntryFresh: true quando expires_at > now", () => {
+  const now = new Date("2026-07-08T12:00:00.000Z");
+  assert(isCacheEntryFresh("2026-07-15T12:00:00.000Z", now));
+});
+
+Deno.test("isCacheEntryFresh: false quando expires_at <= now (expirado)", () => {
+  const now = new Date("2026-07-16T00:00:00.000Z");
+  assertEquals(isCacheEntryFresh("2026-07-15T12:00:00.000Z", now), false);
+});
+
+Deno.test("isCacheEntryFresh: false para timestamp inválido", () => {
+  assertEquals(isCacheEntryFresh("not-a-date", new Date()), false);
 });
