@@ -1284,6 +1284,30 @@ export default function PartnersRota() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
+                    {aiSource && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          aiSource === 'tavily'
+                            ? 'ml-1 border-green-300 bg-green-50 text-green-700'
+                            : aiSource === 'tavily_cache'
+                              ? 'ml-1 border-blue-300 bg-blue-50 text-blue-700'
+                              : 'ml-1 border-amber-300 bg-amber-50 text-amber-700'
+                        }
+                        title={
+                          aiSource === 'tavily'
+                            ? 'Clínicas encontradas na internet (Tavily)'
+                            : aiSource === 'tavily_cache'
+                              ? 'Clínicas do cache (Tavily) — busca recente reutilizada'
+                              : 'Nenhum dado externo — sugestões geradas pela IA'
+                        }
+                        aria-label={`Origem do roteiro: ${aiSource}`}
+                      >
+                        {aiSource === 'tavily' && '🌐 Tavily'}
+                        {aiSource === 'tavily_cache' && '💾 Cache'}
+                        {aiSource === 'suggested' && '✨ Sugestões IA'}
+                      </Badge>
+                    )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <Select value={aiRouteFilter} onValueChange={(v) => setAiRouteFilter(v as typeof aiRouteFilter)}>
@@ -1303,6 +1327,21 @@ export default function PartnersRota() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {!aiFormatValid && aiFormatIssues.length > 0 && (
+                    <div
+                      role="alert"
+                      className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                    >
+                      <div className="font-semibold mb-1">
+                        ⚠️ O roteiro pode não renderizar corretamente:
+                      </div>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        {aiFormatIssues.map((i, k) => (
+                          <li key={k}>{i}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {/* Bulk actions bar */}
                   <div className="flex flex-wrap items-center gap-2 mb-3 rounded-md border bg-muted/20 px-2.5 py-2 text-xs">
                     <div className="flex items-center gap-2">
