@@ -343,99 +343,194 @@ const PartnersSimulator = () => {
   );
 };
 
-const METRICAS = [
-  { label: 'Simulações', real: 127, meta: 150 },
-  { label: 'Propostas', real: 43, meta: 50 },
-  { label: 'Pagamentos', real: 28, meta: 35 },
-  { label: 'Conversão Sim→Pag', real: 22, meta: 25, unit: '%' },
-];
+const RealVsProjetadoTab = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState({ calculated: 0, paid: 0, paidAmount: 0 });
+  const [weekData, setWeekData] = useState<Array<{ dia: string; Pago: number }>>([]);
+  const [clinics, setClinics] = useState<Array<{ id: string; nome: string; status: string }>>([]);
 
-const SEMANA = [
-  { dia: 'Seg', Realizado: 22, Meta: 25 },
-  { dia: 'Ter', Realizado: 19, Meta: 25 },
-  { dia: 'Qua', Realizado: 28, Meta: 25 },
-  { dia: 'Qui', Realizado: 31, Meta: 25 },
-  { dia: 'Sex', Realizado: 27, Meta: 25 },
-  { dia: 'Sáb', Realizado: 0, Meta: 0 },
-];
+  const now = new Date();
+  const referenceMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-const TOP_CLINICAS = [
-  { nome: 'Dental Plus', sims: 62, vs: '+12%', trend: '↑' },
-  { nome: 'OdontoVida Premium', sims: 35, vs: '+8%', trend: '↑' },
-  { nome: 'Sorriso Mineiro', sims: 28, vs: '-3%', trend: '↘' },
-];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!user?.id) { setLoading(false); return; }
+      setLoading(true);
 
-const RealVsProjetadoTab = () => (
-  <div className="space-y-4">
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Comparativo · Realizado vs. Meta — Junho 2026</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 grid-cols-2">
-          {METRICAS.map(m => {
-            const pct = Math.round((m.real / m.meta) * 100);
-            return (
-              <div key={m.label} className="rounded-lg border p-3 bg-card shadow-sm space-y-1">
-                <p className="text-xs text-muted-foreground">{m.label}</p>
-                <p className="text-lg font-bold">{m.real}{m.unit || ''} <span className="text-xs text-muted-foreground font-normal">/ {m.meta}{m.unit || ''}</span></p>
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">{pct}%</Badge>
+      const { data: partnerRow } = await supabase
+        .from('partners')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+
+      const pid = partnerRow?.id ?? null;
+      if (cancelled) return;
+      setPartnerId(pid);
+
+      if (!pid) { setLoading(false); return; }
+
+      const [{ data: commissions }, { data: portfolio }] = await Promise.all([
+        supabase
+          .from('partner_commissions')
+          .select('status, commission_amount, paid_at, reference_month')
+          .eq('beneficiary_partner_id', pid),
+        supabase
+          .from('portfolio_clinics')
+          .select('id, nome, status')
+          .eq('partner_id', pid)
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
+
+      if (cancelled) return;
+
+      const monthRows = (commissions || []).filter((c: any) => c.reference_month === referenceMonth);
+      const calculated = monthRows.filter((c: any) => c.status === 'CALCULATED' || c.status === 'APPROVED').length;
+      const paidRows = monthRows.filter((c: any) => c.status === 'PAID');
+      const paidAmount = paidRows.reduce((sum: number, c: any) => sum + Number(c.commission_amount || 0), 0);
+
+      setMetrics({ calculated, paid: paidRows.length, paidAmount });
+
+      // Weekly: last 7 days
+      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const week: Array<{ dia: string; Pago: number; dateKey: string }> = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        week.push({ dia: dayNames[d.getDay()], Pago: 0, dateKey: d.toISOString().slice(0, 10) });
+      }
+      (commissions || []).forEach((c: any) => {
+        if (c.status !== 'PAID' || !c.paid_at) return;
+        const key = new Date(c.paid_at).toISOString().slice(0, 10);
+        const bucket = week.find(w => w.dateKey === key);
+        if (bucket) bucket.Pago += Number(c.commission_amount || 0);
+      });
+      setWeekData(week.map(({ dia, Pago }) => ({ dia, Pago })));
+
+      setClinics((portfolio || []) as any);
+      setLoading(false);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [user?.id, referenceMonth]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Carregando dados reais…
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!partnerId) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Nenhum perfil de partner vinculado a este usuário.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasMonthData = metrics.calculated > 0 || metrics.paid > 0 || metrics.paidAmount > 0;
+  const hasWeekData = weekData.some(w => w.Pago > 0);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base capitalize">Comissões · {monthLabel}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!hasMonthData ? (
+            <p className="text-sm text-muted-foreground py-6 text-center capitalize">
+              Sem comissões registradas em {monthLabel}
+            </p>
+          ) : (
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+              <div className="rounded-lg border p-3 bg-card shadow-sm space-y-1">
+                <p className="text-xs text-muted-foreground">Comissões calculadas</p>
+                <p className="text-lg font-bold">{metrics.calculated}</p>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              <div className="rounded-lg border p-3 bg-card shadow-sm space-y-1">
+                <p className="text-xs text-muted-foreground">Comissões pagas</p>
+                <p className="text-lg font-bold">{metrics.paid}</p>
+              </div>
+              <div className="rounded-lg border p-3 bg-card shadow-sm space-y-1 col-span-2 sm:col-span-1">
+                <p className="text-xs text-muted-foreground">Valor pago no mês</p>
+                <p className="text-lg font-bold text-green-600">R$ {formatCurrency(metrics.paidAmount)}</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Performance Semanal</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={SEMANA}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="dia" />
-              <YAxis />
-              <RTooltip />
-              <Legend />
-              <Bar dataKey="Realizado" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Meta" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Performance Semanal (últimos 7 dias)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!hasWeekData ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              Nenhuma comissão paga esta semana
+            </p>
+          ) : (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weekData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="dia" />
+                  <YAxis />
+                  <RTooltip formatter={(v: any) => `R$ ${formatCurrency(Number(v))}`} />
+                  <Legend />
+                  <Bar dataKey="Pago" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Top 3 Clínicas da Semana</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Clínica</TableHead>
-              <TableHead className="text-right">Simulações</TableHead>
-              <TableHead className="text-right">Vs. Semana Ant.</TableHead>
-              <TableHead className="text-center">Tendência</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {TOP_CLINICAS.map(c => (
-              <TableRow key={c.nome}>
-                <TableCell className="font-medium">{c.nome}</TableCell>
-                <TableCell className="text-right">{c.sims}</TableCell>
-                <TableCell className="text-right">{c.vs}</TableCell>
-                <TableCell className="text-center text-lg">{c.trend}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  </div>
-);
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Clínicas do Portfolio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {clinics.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Nenhuma clínica no portfolio ainda
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Clínica</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clinics.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.nome}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="outline" className="capitalize">{c.status || '—'}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default PartnersSimulator;
