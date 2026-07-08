@@ -167,6 +167,9 @@ export default function PartnersRota() {
   const [aiRoute, setAiRoute] = useState<string | null>(null);
   const [aiRouteStatus, setAiRouteStatus] = useState<Record<number, 'conversamos' | 'nao' | 'pendente'>>({});
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiSource, setAiSource] = useState<'tavily' | 'tavily_cache' | 'suggested' | null>(null);
+  const [aiFormatIssues, setAiFormatIssues] = useState<string[]>([]);
+  const [aiFormatValid, setAiFormatValid] = useState<boolean>(true);
   const [aiRouteFilter, setAiRouteFilter] = useState<'todos' | 'pendente' | 'conversamos' | 'nao'>('todos');
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
@@ -374,6 +377,11 @@ export default function PartnersRota() {
       if (error) throw error;
       const roteiro: string = data?.roteiro || 'Roteiro não disponível.';
       setAiRoute(roteiro);
+      const src = data?.source as 'tavily' | 'tavily_cache' | 'suggested' | undefined;
+      setAiSource(src && ['tavily', 'tavily_cache', 'suggested'].includes(src) ? src : 'suggested');
+      const issues: string[] = Array.isArray(data?.meta?.format_issues) ? data.meta.format_issues : [];
+      setAiFormatIssues(issues);
+      setAiFormatValid(data?.meta?.format_valid !== false);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
       const baseExact = aiKeepMarks ? aiStatusByKey : {};
