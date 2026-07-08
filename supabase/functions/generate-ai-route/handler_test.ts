@@ -217,3 +217,98 @@ Deno.test("integração: sem AI key configurada → 500 com mensagem", async () 
   const j = await res.json();
   assert(j.error && /AI key/i.test(j.error));
 });
+
+Deno.test("integração: requisições concorrentes na mesma chave não corrompem o cache", async () => {
+  const cidade = "Belo Horizonte", bairro = "Savassi", esp = "Odontologia", tipo = "clínica";
+  const key = buildCacheKey(cidade, bairro, esp, tipo);
+  const { admin, rows, upserts } = makeFakeAdmin();
+
+  let tavilyCalls = 0;
+  const stubFetch = (async (url: string | URL) => {
+    const u = String(url);
+    if (u.includes("tavily.com")) {
+      tavilyCalls++;
+      return new Response(JSON.stringify({
+        results: [{ title: `Clínica Real ${tavilyCalls}`, content: "desc" }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    return llmResponse(VALID_ROTEIRO);
+  }) as unknown as typeof fetch;
+
+  const req = () => handleRequest(
+    makeReq({ cidade, bairros: bairro, especialidade: esp, tipoLocal: tipo }),
+    { env: baseEnv(), fetch: stubFetch, admin },
+  );
+
+  const results = await Promise.all([req(), req(), req(), req()]);
+  const jsons = await Promise.all(results.map(r => r.json()));
+
+  // Todas as respostas OK
+  for (const r of results) assertEquals(r.status, 200);
+  // Todas com source coerente (nenhuma inconsistência)
+  for (const j of jsons) {
+    assert(["tavily", "tavily_cache", "suggested"].includes(j.source), `source inesperado: ${j.source}`);
+    assertEquals(j.source, "tavily");
+  }
+  // Cache termina com UMA única entrada para a chave (upsert idempotente)
+  assertEquals(rows.size, 1);
+  assert(rows.has(key));
+  // Todas as escritas foram na MESMA chave — sem duplicatas de key
+  const keysWritten = new Set(upserts.map(u => u.cache_key));
+  assertEquals(keysWritten.size, 1);
+  assertEquals([...keysWritten][0], key);
+  // TTL da entrada final é válido (~7d no futuro)
+  const finalExp = new Date(rows.get(key)!.expires_at).getTime();
+  assert(finalExp > Date.now() + CACHE_TTL_MS - 60_000);
+});
+
+Deno.test("integração: source é sempre um dos valores permitidos em todos os cenários", async () => {
+  const allowed = new Set(["tavily", "tavily_cache", "suggested"]);
+
+  // Cenário A: sem bairros → nunca consulta Tavily → 'suggested'
+  {
+    const { admin } = makeFakeAdmin();
+    const stubFetch = (async () => llmResponse(VALID_ROTEIRO)) as unknown as typeof fetch;
+    const res = await handleRequest(
+      makeReq({ cidade: "BH", bairros: "" }),
+      { env: baseEnv(), fetch: stubFetch, admin },
+    );
+    const j = await res.json();
+    assert(allowed.has(j.source));
+    assertEquals(j.source, "suggested");
+  }
+
+  // Cenário B: Tavily retorna resultados → 'tavily'
+  {
+    const { admin } = makeFakeAdmin();
+    const stubFetch = (async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("tavily.com")) {
+        return new Response(JSON.stringify({ results: [{ title: "X", content: "y" }] }),
+          { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return llmResponse(VALID_ROTEIRO);
+    }) as unknown as typeof fetch;
+    const res = await handleRequest(
+      makeReq({ cidade: "BH", bairros: "Savassi" }),
+      { env: baseEnv(), fetch: stubFetch, admin },
+    );
+    const j = await res.json();
+    assert(allowed.has(j.source));
+    assertEquals(j.source, "tavily");
+  }
+
+  // Cenário C: sem TAVILY_API_KEY e sem cache → 'suggested'
+  {
+    const { admin } = makeFakeAdmin();
+    const stubFetch = (async () => llmResponse(VALID_ROTEIRO)) as unknown as typeof fetch;
+    const env = (k: string) => (k === "LOVABLE_API_KEY" ? "test" : undefined);
+    const res = await handleRequest(
+      makeReq({ cidade: "BH", bairros: "Savassi" }),
+      { env, fetch: stubFetch, admin },
+    );
+    const j = await res.json();
+    assert(allowed.has(j.source));
+    assertEquals(j.source, "suggested");
+  }
+});
