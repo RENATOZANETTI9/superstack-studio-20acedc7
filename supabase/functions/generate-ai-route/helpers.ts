@@ -50,7 +50,7 @@ export function parseRoteiro(text: string): RoteiroStructured {
       const header = line.replace(/^#+\s*/, '');
       if (/dicas/i.test(header)) { inDicas = true; currentDay = null; currentItem = null; continue; }
       inDicas = false;
-      const [dia, data] = header.split(/\s*[—–-]\s*/, 2);
+      const [dia, data] = header.split(/\s+[—–-]\s+/, 2);
       currentDay = { dia: dia.trim(), data: data?.trim(), itens: [] };
       currentItem = null;
       dias.push(currentDay);
