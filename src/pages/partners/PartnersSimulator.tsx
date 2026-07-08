@@ -403,7 +403,6 @@ const RealVsProjetadoTab = () => {
 
       // Server-side filters: minimal payload, use new indexes. Each query is
       // timed so we surface regressions (>PERF_BUDGET_MS) in the console.
-      const partnerTimed = { label: 'partners.by_user_id', ms: 0, overBudget: false } as PerfSample;
       const [monthTimed, weekTimed, portfolioTimed] = await Promise.all([
         measureQuery('commissions.month', async () =>
           await supabase
@@ -476,7 +475,6 @@ const RealVsProjetadoTab = () => {
     load();
     return () => { cancelled = true; };
   }, [user?.id, referenceMonth, weekStartISO, tzName]);
-  void partnerTimed;
 
   if (loading) {
     return (
