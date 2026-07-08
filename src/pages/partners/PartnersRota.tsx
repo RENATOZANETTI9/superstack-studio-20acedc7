@@ -196,10 +196,10 @@ export default function PartnersRota() {
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
   const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
-  const [aiMetricsPeriod, setAiMetricsPeriod] = useState<'7' | '30' | 'all'>('30');
-  const [aiMetrics, setAiMetrics] = useState<{ total: number; pendente: number; conversamos: number; nao: number }>({
-    total: 0, pendente: 0, conversamos: 0, nao: 0,
-  });
+  // Fuzzy fallback: normalized-text -> status (survives small wording changes on regeneration)
+  const [aiNormStatusByKey, setAiNormStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
+  const [aiClinicFilter, setAiClinicFilter] = useState<string>('all');
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
   // AI form fields
   const [aiBairros, setAiBairros] = useState('');
@@ -250,6 +250,36 @@ export default function PartnersRota() {
   const isAiItemLine = (line: string) =>
     /^\s*(\d+[\.\)]|[-•*])\s+/.test(line) && line.trim().length > 3;
   const itemKey = (line: string) => line.trim().slice(0, 500);
+  // Normalized key: strips bullets/numbers, punctuation, casing and extra spaces
+  // so that "1. **Clínica X** — visitar" ≈ "- Clínica X | Visitar"
+  const normItemKey = (line: string) =>
+    line
+      .toLowerCase()
+      .replace(/^\s*(\d+[\.\)]|[-•*])\s+/, '')
+      .replace(/\*+/g, '')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200);
+
+  // Extract a clinic label from an AI-generated line by matching known portfolio names.
+  const extractClinicName = (line: string): string | null => {
+    const lower = line.toLowerCase();
+    let best: string | null = null;
+    for (const c of portfolio) {
+      if (c.nome && lower.includes(c.nome.toLowerCase())) {
+        if (!best || c.nome.length > best.length) best = c.nome;
+      }
+    }
+    return best;
+  };
+
+  // Resolve a status for a line: exact key -> normalized key fallback.
+  const resolveStatusForLine = (
+    line: string,
+    exact: Record<string, 'conversamos' | 'nao' | 'pendente'>,
+    norm: Record<string, 'conversamos' | 'nao' | 'pendente'>,
+  ) => exact[itemKey(line)] ?? norm[normItemKey(line)];
 
   // Load persisted generation + statuses
   useEffect(() => {
@@ -260,14 +290,19 @@ export default function PartnersRota() {
         supabase.from('ai_route_item_status').select('item_key,status').eq('user_id', user.id),
       ]);
       const map: Record<string, 'conversamos' | 'nao' | 'pendente'> = {};
-      (statuses || []).forEach((s: any) => { map[s.item_key] = s.status; });
+      const normMap: Record<string, 'conversamos' | 'nao' | 'pendente'> = {};
+      (statuses || []).forEach((s: any) => {
+        map[s.item_key] = s.status;
+        normMap[normItemKey(s.item_key)] = s.status;
+      });
       setAiStatusByKey(map);
+      setAiNormStatusByKey(normMap);
       if (gen?.roteiro) {
         setAiRoute(gen.roteiro);
         const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
         gen.roteiro.split('\n').forEach((line: string, idx: number) => {
           if (isAiItemLine(line)) {
-            const s = map[itemKey(line)];
+            const s = resolveStatusForLine(line, map, normMap);
             if (s) idxMap[idx] = s;
           }
         });
@@ -276,29 +311,6 @@ export default function PartnersRota() {
     };
     load();
   }, [user?.id]);
-
-  // Load metrics whenever period changes
-  useEffect(() => {
-    const loadMetrics = async () => {
-      if (!user?.id) return;
-      let q = supabase
-        .from('ai_route_item_status')
-        .select('status,updated_at')
-        .eq('user_id', user.id);
-      if (aiMetricsPeriod !== 'all') {
-        const days = Number(aiMetricsPeriod);
-        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-        q = q.gte('updated_at', since);
-      }
-      const { data } = await q;
-      const rows = data || [];
-      const c = rows.filter(r => r.status === 'conversamos').length;
-      const n = rows.filter(r => r.status === 'nao').length;
-      const p = rows.filter(r => r.status === 'pendente').length;
-      setAiMetrics({ total: rows.length, pendente: p, conversamos: c, nao: n });
-    };
-    loadMetrics();
-  }, [user?.id, aiMetricsPeriod, aiStatusByKey]);
 
   // Persist a single item status change
   const updateItemStatus = async (
@@ -309,6 +321,7 @@ export default function PartnersRota() {
     setAiRouteStatus(prev => ({ ...prev, [lineIdx]: status }));
     const key = itemKey(line);
     setAiStatusByKey(prev => ({ ...prev, [key]: status }));
+    setAiNormStatusByKey(prev => ({ ...prev, [normItemKey(line)]: status }));
     if (!user?.id) return;
     try {
       await supabase.from('ai_route_item_status').upsert(
@@ -318,6 +331,48 @@ export default function PartnersRota() {
     } catch {
       // silent — UI already updated optimistically
     }
+  };
+
+  // Bulk mark selected items
+  const bulkMarkSelected = async (status: 'conversamos' | 'nao' | 'pendente') => {
+    if (!aiRoute || selectedItems.size === 0) return;
+    const lines = aiRoute.split('\n');
+    const targets: { idx: number; line: string }[] = [];
+    selectedItems.forEach(idx => {
+      const line = lines[idx];
+      if (line != null && isAiItemLine(line)) targets.push({ idx, line });
+    });
+    if (targets.length === 0) return;
+    // Optimistic UI update
+    setAiRouteStatus(prev => {
+      const next = { ...prev };
+      targets.forEach(t => { next[t.idx] = status; });
+      return next;
+    });
+    setAiStatusByKey(prev => {
+      const next = { ...prev };
+      targets.forEach(t => { next[itemKey(t.line)] = status; });
+      return next;
+    });
+    setAiNormStatusByKey(prev => {
+      const next = { ...prev };
+      targets.forEach(t => { next[normItemKey(t.line)] = status; });
+      return next;
+    });
+    if (user?.id) {
+      try {
+        await supabase.from('ai_route_item_status').upsert(
+          targets.map(t => ({
+            user_id: user.id, item_key: itemKey(t.line), item_text: t.line.trim(), status,
+          })),
+          { onConflict: 'user_id,item_key' },
+        );
+      } catch {
+        // silent
+      }
+    }
+    setSelectedItems(new Set());
+    toast.success(`${targets.length} item(ns) marcados`);
   };
 
   const handleGenerateAI = async () => {
@@ -341,15 +396,18 @@ export default function PartnersRota() {
       setAiRoute(roteiro);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
-      const baseMap = aiKeepMarks ? aiStatusByKey : {};
+      const baseExact = aiKeepMarks ? aiStatusByKey : {};
+      const baseNorm = aiKeepMarks ? aiNormStatusByKey : {};
       const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
       roteiro.split('\n').forEach((line, idx) => {
         if (isAiItemLine(line)) {
-          const s = baseMap[itemKey(line)];
+          const s = resolveStatusForLine(line, baseExact, baseNorm);
           if (s) idxMap[idx] = s;
         }
       });
       setAiRouteStatus(idxMap);
+      setSelectedItems(new Set());
+      setAiClinicFilter('all');
 
       if (user?.id) {
         // Persist the generation
@@ -365,6 +423,7 @@ export default function PartnersRota() {
         if (!aiKeepMarks) {
           await supabase.from('ai_route_item_status').delete().eq('user_id', user.id);
           setAiStatusByKey({});
+          setAiNormStatusByKey({});
         }
       }
     } catch (err: any) {
@@ -1101,54 +1160,96 @@ export default function PartnersRota() {
               </div>
             </div>
 
-            {/* Metrics panel */}
-            {aiMetrics.total > 0 && (
-              <Card className="shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="w-4 h-4 text-primary" /> Meu andamento
-                  </CardTitle>
-                  <Select value={aiMetricsPeriod} onValueChange={(v) => setAiMetricsPeriod(v as '7' | '30' | 'all')}>
-                    <SelectTrigger className="h-8 w-[160px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">Últimos 7 dias</SelectItem>
-                      <SelectItem value="30">Últimos 30 dias</SelectItem>
-                      <SelectItem value="all">Todo o período</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                    <p className="text-xs text-muted-foreground">Total de itens</p>
-                    <p className="text-2xl font-semibold">{aiMetrics.total}</p>
-                  </div>
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-                    <p className="text-xs text-amber-700">Pendentes</p>
-                    <p className="text-2xl font-semibold text-amber-700">{aiMetrics.pendente}</p>
-                  </div>
-                  <div className="rounded-lg border border-green-200 bg-green-50/50 p-3">
-                    <p className="text-xs text-green-700">Conversamos</p>
-                    <p className="text-2xl font-semibold text-green-700">{aiMetrics.conversamos}</p>
-                  </div>
-                  <div className="rounded-lg border border-red-200 bg-red-50/50 p-3">
-                    <p className="text-xs text-red-700">Não conversamos</p>
-                    <p className="text-2xl font-semibold text-red-700">{aiMetrics.nao}</p>
-                  </div>
-                  <div className="col-span-2 md:col-span-4 flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
-                    <span className="text-xs text-muted-foreground">Taxa de conversão (Conversamos / Total)</span>
-                    <span className="text-lg font-semibold text-primary">
-                      {aiMetrics.total > 0
-                        ? `${Math.round((aiMetrics.conversamos / aiMetrics.total) * 100)}%`
-                        : '—'}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {aiRoute && (() => {
+              const allLines = aiRoute.split('\n');
+              const itemEntries = allLines
+                .map((line, idx) => ({ line, idx, clinic: extractClinicName(line) }))
+                .filter(e => isAiItemLine(e.line));
+              const clinicOptions = Array.from(
+                new Set(itemEntries.map(e => e.clinic).filter((c): c is string => !!c)),
+              ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+              const inClinic = (clinic: string | null) =>
+                aiClinicFilter === 'all' || clinic === aiClinicFilter;
+              const scoped = itemEntries.filter(e => inClinic(e.clinic));
+              const statusOf = (idx: number) => aiRouteStatus[idx] || 'pendente';
+              const scopedMetrics = {
+                total: scoped.length,
+                pendente: scoped.filter(e => statusOf(e.idx) === 'pendente').length,
+                conversamos: scoped.filter(e => statusOf(e.idx) === 'conversamos').length,
+                nao: scoped.filter(e => statusOf(e.idx) === 'nao').length,
+              };
+              const visibleIdxs = new Set(
+                scoped
+                  .filter(e => aiRouteFilter === 'todos' || statusOf(e.idx) === aiRouteFilter)
+                  .map(e => e.idx),
+              );
+              const allVisibleSelected =
+                visibleIdxs.size > 0 &&
+                Array.from(visibleIdxs).every(i => selectedItems.has(i));
+              const toggleAllVisible = () => {
+                setSelectedItems(prev => {
+                  const next = new Set(prev);
+                  if (allVisibleSelected) {
+                    visibleIdxs.forEach(i => next.delete(i));
+                  } else {
+                    visibleIdxs.forEach(i => next.add(i));
+                  }
+                  return next;
+                });
+              };
+              return (
+                <>
+                  {/* Metrics panel */}
+                  <Card className="shadow-sm">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 space-y-0 pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Target className="w-4 h-4 text-primary" /> Meu andamento
+                        {aiClinicFilter !== 'all' && (
+                          <Badge variant="outline" className="ml-1 text-[10px]">
+                            {aiClinicFilter}
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <Select value={aiClinicFilter} onValueChange={setAiClinicFilter}>
+                        <SelectTrigger className="h-8 w-full sm:w-[240px] text-xs">
+                          <SelectValue placeholder="Filtrar por clínica" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas as clínicas / hospitais</SelectItem>
+                          {clinicOptions.map(c => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="rounded-lg border bg-muted/30 p-3">
+                        <p className="text-xs text-muted-foreground">Total de itens</p>
+                        <p className="text-2xl font-semibold">{scopedMetrics.total}</p>
+                      </div>
+                      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                        <p className="text-xs text-amber-700">Pendentes</p>
+                        <p className="text-2xl font-semibold text-amber-700">{scopedMetrics.pendente}</p>
+                      </div>
+                      <div className="rounded-lg border border-green-200 bg-green-50/50 p-3">
+                        <p className="text-xs text-green-700">Conversamos</p>
+                        <p className="text-2xl font-semibold text-green-700">{scopedMetrics.conversamos}</p>
+                      </div>
+                      <div className="rounded-lg border border-red-200 bg-red-50/50 p-3">
+                        <p className="text-xs text-red-700">Não conversamos</p>
+                        <p className="text-2xl font-semibold text-red-700">{scopedMetrics.nao}</p>
+                      </div>
+                      <div className="col-span-2 md:col-span-4 flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                        <span className="text-xs text-muted-foreground">Taxa de conversão (Conversamos / Total)</span>
+                        <span className="text-lg font-semibold text-primary">
+                          {scopedMetrics.total > 0
+                            ? `${Math.round((scopedMetrics.conversamos / scopedMetrics.total) * 100)}%`
+                            : '—'}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-            {aiRoute && (
               <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -1172,12 +1273,68 @@ export default function PartnersRota() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Bulk actions bar */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3 rounded-md border bg-muted/20 px-2.5 py-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="ai-select-all-visible"
+                        checked={allVisibleSelected}
+                        onCheckedChange={() => toggleAllVisible()}
+                        disabled={visibleIdxs.size === 0}
+                      />
+                      <Label htmlFor="ai-select-all-visible" className="cursor-pointer text-xs">
+                        Selecionar visíveis ({visibleIdxs.size})
+                      </Label>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {selectedItems.size} selecionado(s)
+                    </span>
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                        disabled={selectedItems.size === 0}
+                        onClick={() => bulkMarkSelected('conversamos')}
+                      >
+                        ✅ Marcar Conversamos
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 border-red-300 text-red-700 hover:bg-red-50"
+                        disabled={selectedItems.size === 0}
+                        onClick={() => bulkMarkSelected('nao')}
+                      >
+                        ❌ Marcar Não conversamos
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        disabled={selectedItems.size === 0}
+                        onClick={() => bulkMarkSelected('pendente')}
+                      >
+                        Resetar
+                      </Button>
+                      {selectedItems.size > 0 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => setSelectedItems(new Set())}
+                        >
+                          Limpar seleção
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="space-y-1.5 text-sm">
-                    {aiRoute.split('\n').map((line, idx) => {
+                    {allLines.map((line, idx) => {
                       const isItem = isAiItemLine(line);
                       if (!isItem) {
                         // Hide non-item lines when a filter is active to keep the review focused.
-                        if (aiRouteFilter !== 'todos') return null;
+                        if (aiRouteFilter !== 'todos' || aiClinicFilter !== 'all') return null;
                         return (
                           <div key={idx} className="whitespace-pre-wrap font-sans">
                             {line || '\u00A0'}
@@ -1186,11 +1343,28 @@ export default function PartnersRota() {
                       }
                       const current = aiRouteStatus[idx] || 'pendente';
                       if (aiRouteFilter !== 'todos' && current !== aiRouteFilter) return null;
+                      const clinic = extractClinicName(line);
+                      if (!inClinic(clinic)) return null;
+                      const selected = selectedItems.has(idx);
                       return (
                         <div
                           key={idx}
-                          className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5"
+                          className={`flex items-start gap-2 rounded-md border px-2.5 py-1.5 ${
+                            selected ? 'border-primary/60 bg-primary/5' : 'border-border/60 bg-muted/20'
+                          }`}
                         >
+                          <Checkbox
+                            checked={selected}
+                            onCheckedChange={(c) => {
+                              setSelectedItems(prev => {
+                                const next = new Set(prev);
+                                if (c) next.add(idx); else next.delete(idx);
+                                return next;
+                              });
+                            }}
+                            className="mt-0.5"
+                            aria-label="Selecionar item"
+                          />
                           <div className="flex-1 whitespace-pre-wrap font-sans">{line}</div>
                           <Select
                             value={current}
@@ -1221,7 +1395,9 @@ export default function PartnersRota() {
                   </div>
                 </CardContent>
               </Card>
-            )}
+                </>
+              );
+            })()}
 
             {!aiRoute && !aiLoading && (
               <div className="text-center text-muted-foreground py-12">
