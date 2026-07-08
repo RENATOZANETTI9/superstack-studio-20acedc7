@@ -91,16 +91,18 @@ const Harness = () => (
 
 describe('create-user → ProtectedRoute (end-to-end)', () => {
   it('grants access after admin creates a representante account', async () => {
-    render(<Harness />);
-    await waitFor(() => expect(screen.getByText('AUTH_PAGE')).toBeInTheDocument());
-
-    await act(async () => {
-      await H.fakeSupabase.functions.invoke('create-user', {
-        body: { email: 'rep@teste.com', password: 'Xx123456' },
-      });
+    // Step 1 — admin invokes create-user. This seeds user_roles with
+    // 'representante' and sets the session, mirroring what happens after the
+    // newly-created user signs in for the first time.
+    await H.fakeSupabase.functions.invoke('create-user', {
+      body: { email: 'rep@teste.com', password: 'Xx123456' },
     });
 
+    // Step 2 — mount the app with the seeded session in place. AuthContext
+    // hydrates the role from user_roles and ProtectedRoute unlocks /repr.
+    render(<Harness />);
     await waitFor(() => expect(screen.getByText('REPR_OK')).toBeInTheDocument());
+
     expect(H.state.roleTable[0].role).toBe('representante');
     expect(H.state.roleTable[0].role).not.toBe('user');
   });
