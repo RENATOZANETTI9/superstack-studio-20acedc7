@@ -52,6 +52,44 @@ jobs:
       - run: bun run build
 
   # ---------------------------------------------------------------------
+  # Index-usage gate: runs EXPLAIN (ANALYZE, BUFFERS) against the hot
+  # commissions queries and fails the build if the planner falls back to a
+  # Seq Scan on any of them. The script uses RAISE EXCEPTION on regression,
+  # which propagates a non-zero exit through psql (--set ON_ERROR_STOP=on).
+  #
+  # Requires the following GitHub Actions secrets:
+  #   VERIFY_DB_URL — full postgres:// URL to a database that has the
+  #                   migration applied (staging is fine).
+  # When VERIFY_DB_URL is not set, the job auto-skips so first-time forks
+  # aren't broken.
+  # ---------------------------------------------------------------------
+  verify-indexes:
+    name: Verify commission indexes (EXPLAIN ANALYZE)
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for VERIFY_DB_URL
+        id: has_url
+        run: |
+          if [ -z "${{ secrets.VERIFY_DB_URL }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::VERIFY_DB_URL não configurado — pulando verificação de índices"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install psql
+        if: steps.has_url.outputs.skip == 'false'
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Run EXPLAIN ANALYZE verification
+        if: steps.has_url.outputs.skip == 'false'
+        env:
+          PGURL: ${{ secrets.VERIFY_DB_URL }}
+        run: |
+          set -e
+          psql "$PGURL" --set ON_ERROR_STOP=on -f scripts/verify-commission-indexes.sql
+
+  # ---------------------------------------------------------------------
   # E2E — representante access control matrix. Blocking.
   # Runs against a locally-built preview. Credentials (REP_EMAIL /
   # REP_PASS) come from GitHub Actions secrets; when absent the suite
@@ -110,18 +148,20 @@ jobs:
   ci-required:
     name: CI required
     runs-on: ubuntu-latest
-    needs: [unit, build, e2e-representante]
+    needs: [unit, build, e2e-representante, verify-indexes]
     if: always()
     steps:
       - name: Fail if any dependency failed
         run: |
           if [ "${{ needs.unit.result }}" != "success" ] \
           || [ "${{ needs.build.result }}" != "success" ] \
-          || [ "${{ needs.e2e-representante.result }}" != "success" ]; then
+          || [ "${{ needs.e2e-representante.result }}" != "success" ] \
+          || [ "${{ needs.verify-indexes.result }}" != "success" ]; then
             echo "One or more required checks failed:"
             echo "  unit=${{ needs.unit.result }}"
             echo "  build=${{ needs.build.result }}"
             echo "  e2e=${{ needs.e2e-representante.result }}"
+            echo "  verify-indexes=${{ needs.verify-indexes.result }}"
             exit 1
           fi
           echo "All required checks passed."

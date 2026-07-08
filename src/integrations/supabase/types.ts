@@ -923,6 +923,39 @@ export type Database = {
         }
         Relationships: []
       }
+      perf_alerts: {
+        Row: {
+          budget_ms: number
+          context: Json
+          created_at: string
+          duration_ms: number
+          id: string
+          label: string
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          budget_ms: number
+          context?: Json
+          created_at?: string
+          duration_ms: number
+          id?: string
+          label: string
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          budget_ms?: number
+          context?: Json
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          label?: string
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       portfolio_clinics: {
         Row: {
           bairro: string
