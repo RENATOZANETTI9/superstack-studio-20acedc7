@@ -387,24 +387,24 @@ const RealVsProjetadoTab = () => {
       // Server-side filters: minimal payload, use new indexes. Each query is
       // timed so we surface regressions (>PERF_BUDGET_MS) in the console.
       const [monthTimed, weekTimed, portfolioTimed] = await Promise.all([
-        measureQuery('commissions.month', () =>
-          supabase
+        measureQuery('commissions.month', async () =>
+          await supabase
             .from('partner_commissions')
             .select('status, commission_amount')
             .eq('beneficiary_partner_id', pid)
             .eq('reference_month', referenceMonth)
             .in('status', ['CALCULATED', 'APPROVED', 'PAID']),
         ),
-        measureQuery('commissions.week', () =>
-          supabase
+        measureQuery('commissions.week', async () =>
+          await supabase
             .from('partner_commissions')
             .select('commission_amount, paid_at')
             .eq('beneficiary_partner_id', pid)
             .eq('status', 'PAID')
             .gte('paid_at', weekStartISO),
         ),
-        measureQuery('portfolio.clinics', () =>
-          supabase
+        measureQuery('portfolio.clinics', async () =>
+          await supabase
             .from('portfolio_clinics')
             .select('id, nome, status')
             .eq('partner_id', pid)
