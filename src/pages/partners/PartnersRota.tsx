@@ -196,10 +196,10 @@ export default function PartnersRota() {
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
   const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
-  const [aiMetricsPeriod, setAiMetricsPeriod] = useState<'7' | '30' | 'all'>('30');
-  const [aiMetrics, setAiMetrics] = useState<{ total: number; pendente: number; conversamos: number; nao: number }>({
-    total: 0, pendente: 0, conversamos: 0, nao: 0,
-  });
+  // Fuzzy fallback: normalized-text -> status (survives small wording changes on regeneration)
+  const [aiNormStatusByKey, setAiNormStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
+  const [aiClinicFilter, setAiClinicFilter] = useState<string>('all');
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
   // AI form fields
   const [aiBairros, setAiBairros] = useState('');
@@ -250,6 +250,36 @@ export default function PartnersRota() {
   const isAiItemLine = (line: string) =>
     /^\s*(\d+[\.\)]|[-•*])\s+/.test(line) && line.trim().length > 3;
   const itemKey = (line: string) => line.trim().slice(0, 500);
+  // Normalized key: strips bullets/numbers, punctuation, casing and extra spaces
+  // so that "1. **Clínica X** — visitar" ≈ "- Clínica X | Visitar"
+  const normItemKey = (line: string) =>
+    line
+      .toLowerCase()
+      .replace(/^\s*(\d+[\.\)]|[-•*])\s+/, '')
+      .replace(/\*+/g, '')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200);
+
+  // Extract a clinic label from an AI-generated line by matching known portfolio names.
+  const extractClinicName = (line: string): string | null => {
+    const lower = line.toLowerCase();
+    let best: string | null = null;
+    for (const c of portfolio) {
+      if (c.nome && lower.includes(c.nome.toLowerCase())) {
+        if (!best || c.nome.length > best.length) best = c.nome;
+      }
+    }
+    return best;
+  };
+
+  // Resolve a status for a line: exact key -> normalized key fallback.
+  const resolveStatusForLine = (
+    line: string,
+    exact: Record<string, 'conversamos' | 'nao' | 'pendente'>,
+    norm: Record<string, 'conversamos' | 'nao' | 'pendente'>,
+  ) => exact[itemKey(line)] ?? norm[normItemKey(line)];
 
   // Load persisted generation + statuses
   useEffect(() => {
@@ -260,14 +290,19 @@ export default function PartnersRota() {
         supabase.from('ai_route_item_status').select('item_key,status').eq('user_id', user.id),
       ]);
       const map: Record<string, 'conversamos' | 'nao' | 'pendente'> = {};
-      (statuses || []).forEach((s: any) => { map[s.item_key] = s.status; });
+      const normMap: Record<string, 'conversamos' | 'nao' | 'pendente'> = {};
+      (statuses || []).forEach((s: any) => {
+        map[s.item_key] = s.status;
+        normMap[normItemKey(s.item_key)] = s.status;
+      });
       setAiStatusByKey(map);
+      setAiNormStatusByKey(normMap);
       if (gen?.roteiro) {
         setAiRoute(gen.roteiro);
         const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
         gen.roteiro.split('\n').forEach((line: string, idx: number) => {
           if (isAiItemLine(line)) {
-            const s = map[itemKey(line)];
+            const s = resolveStatusForLine(line, map, normMap);
             if (s) idxMap[idx] = s;
           }
         });
@@ -276,29 +311,6 @@ export default function PartnersRota() {
     };
     load();
   }, [user?.id]);
-
-  // Load metrics whenever period changes
-  useEffect(() => {
-    const loadMetrics = async () => {
-      if (!user?.id) return;
-      let q = supabase
-        .from('ai_route_item_status')
-        .select('status,updated_at')
-        .eq('user_id', user.id);
-      if (aiMetricsPeriod !== 'all') {
-        const days = Number(aiMetricsPeriod);
-        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-        q = q.gte('updated_at', since);
-      }
-      const { data } = await q;
-      const rows = data || [];
-      const c = rows.filter(r => r.status === 'conversamos').length;
-      const n = rows.filter(r => r.status === 'nao').length;
-      const p = rows.filter(r => r.status === 'pendente').length;
-      setAiMetrics({ total: rows.length, pendente: p, conversamos: c, nao: n });
-    };
-    loadMetrics();
-  }, [user?.id, aiMetricsPeriod, aiStatusByKey]);
 
   // Persist a single item status change
   const updateItemStatus = async (
@@ -309,6 +321,7 @@ export default function PartnersRota() {
     setAiRouteStatus(prev => ({ ...prev, [lineIdx]: status }));
     const key = itemKey(line);
     setAiStatusByKey(prev => ({ ...prev, [key]: status }));
+    setAiNormStatusByKey(prev => ({ ...prev, [normItemKey(line)]: status }));
     if (!user?.id) return;
     try {
       await supabase.from('ai_route_item_status').upsert(
@@ -318,6 +331,48 @@ export default function PartnersRota() {
     } catch {
       // silent — UI already updated optimistically
     }
+  };
+
+  // Bulk mark selected items
+  const bulkMarkSelected = async (status: 'conversamos' | 'nao' | 'pendente') => {
+    if (!aiRoute || selectedItems.size === 0) return;
+    const lines = aiRoute.split('\n');
+    const targets: { idx: number; line: string }[] = [];
+    selectedItems.forEach(idx => {
+      const line = lines[idx];
+      if (line != null && isAiItemLine(line)) targets.push({ idx, line });
+    });
+    if (targets.length === 0) return;
+    // Optimistic UI update
+    setAiRouteStatus(prev => {
+      const next = { ...prev };
+      targets.forEach(t => { next[t.idx] = status; });
+      return next;
+    });
+    setAiStatusByKey(prev => {
+      const next = { ...prev };
+      targets.forEach(t => { next[itemKey(t.line)] = status; });
+      return next;
+    });
+    setAiNormStatusByKey(prev => {
+      const next = { ...prev };
+      targets.forEach(t => { next[normItemKey(t.line)] = status; });
+      return next;
+    });
+    if (user?.id) {
+      try {
+        await supabase.from('ai_route_item_status').upsert(
+          targets.map(t => ({
+            user_id: user.id, item_key: itemKey(t.line), item_text: t.line.trim(), status,
+          })),
+          { onConflict: 'user_id,item_key' },
+        );
+      } catch {
+        // silent
+      }
+    }
+    setSelectedItems(new Set());
+    toast.success(`${targets.length} item(ns) marcados`);
   };
 
   const handleGenerateAI = async () => {
@@ -341,15 +396,18 @@ export default function PartnersRota() {
       setAiRoute(roteiro);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
-      const baseMap = aiKeepMarks ? aiStatusByKey : {};
+      const baseExact = aiKeepMarks ? aiStatusByKey : {};
+      const baseNorm = aiKeepMarks ? aiNormStatusByKey : {};
       const idxMap: Record<number, 'conversamos' | 'nao' | 'pendente'> = {};
       roteiro.split('\n').forEach((line, idx) => {
         if (isAiItemLine(line)) {
-          const s = baseMap[itemKey(line)];
+          const s = resolveStatusForLine(line, baseExact, baseNorm);
           if (s) idxMap[idx] = s;
         }
       });
       setAiRouteStatus(idxMap);
+      setSelectedItems(new Set());
+      setAiClinicFilter('all');
 
       if (user?.id) {
         // Persist the generation
@@ -365,6 +423,7 @@ export default function PartnersRota() {
         if (!aiKeepMarks) {
           await supabase.from('ai_route_item_status').delete().eq('user_id', user.id);
           setAiStatusByKey({});
+          setAiNormStatusByKey({});
         }
       }
     } catch (err: any) {
