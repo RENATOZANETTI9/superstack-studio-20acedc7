@@ -317,3 +317,86 @@ Deno.test("integração: source é sempre um dos valores permitidos em todos os 
     assertEquals(j.source, "suggested");
   }
 });
+
+// ─── E2E: endpoint → parseRoteiro contract ────────────────────
+Deno.test("E2E: contrato de structured (dias[]/dicas[]) sempre respeitado", async () => {
+  const scenarios: Array<{ nome: string; body: any; env: (k: string) => string | undefined; llm: string }> = [
+    {
+      nome: "roteiro válido com Tavily",
+      body: { cidade: "BH", bairros: "Savassi", especialidade: "Odonto", tipoLocal: "clínica" },
+      env: baseEnv(),
+      llm: VALID_ROTEIRO,
+    },
+    {
+      nome: "roteiro válido sem bairros → suggested",
+      body: { cidade: "BH" },
+      env: baseEnv(),
+      llm: VALID_ROTEIRO,
+    },
+    {
+      nome: "roteiro malformado (sem ##/1.) → format_valid=false, structured vazio-consistente",
+      body: { cidade: "BH", bairros: "Savassi" },
+      env: baseEnv(),
+      llm: "só um parágrafo solto, sem cabeçalhos nem itens numerados.",
+    },
+  ];
+  for (const sc of scenarios) {
+    const { admin } = makeFakeAdmin();
+    const stubFetch = (async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("tavily.com")) {
+        return new Response(JSON.stringify({ results: [{ title: "X", content: "y" }] }),
+          { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return llmResponse(sc.llm);
+    }) as unknown as typeof fetch;
+    const res = await handleRequest(makeReq(sc.body), { env: sc.env, fetch: stubFetch, admin });
+    assertEquals(res.status, 200, sc.nome);
+    const j = await res.json();
+    // Contrato structured
+    assert(j.structured && typeof j.structured === "object", `${sc.nome}: structured ausente`);
+    assert(Array.isArray(j.structured.dias), `${sc.nome}: dias não é array`);
+    assert(Array.isArray(j.structured.dicas), `${sc.nome}: dicas não é array`);
+    for (const dia of j.structured.dias) {
+      assert(typeof dia.dia === "string", `${sc.nome}: dia.dia não é string`);
+      assert(Array.isArray(dia.itens), `${sc.nome}: dia.itens não é array`);
+      for (const it of dia.itens) {
+        assert(typeof it.clinica === "string", `${sc.nome}: item.clinica não é string`);
+      }
+    }
+    // source sempre no set permitido
+    assert(["tavily", "tavily_cache", "suggested"].includes(j.source), `${sc.nome}: source inválido ${j.source}`);
+    // meta sempre presente
+    assert(j.meta && typeof j.meta.format_valid === "boolean", `${sc.nome}: meta.format_valid ausente`);
+    assert(Array.isArray(j.meta.format_issues), `${sc.nome}: meta.format_issues não é array`);
+  }
+});
+
+Deno.test("E2E: roteiro malformado → format_valid=false, format_issues claros e source consistente", async () => {
+  const { admin } = makeFakeAdmin();
+  const badRoteiro = "isto não tem cabeçalhos nem itens numerados";
+  const stubFetch = (async (url: string | URL) => {
+    const u = String(url);
+    if (u.includes("tavily.com")) throw new Error("Tavily não deveria ser chamado");
+    return llmResponse(badRoteiro);
+  }) as unknown as typeof fetch;
+
+  const res = await handleRequest(
+    makeReq({ cidade: "BH" }), // sem bairros → nunca chama Tavily → source suggested
+    { env: baseEnv(), fetch: stubFetch, admin },
+  );
+  assertEquals(res.status, 200);
+  const j = await res.json();
+
+  assertEquals(j.meta.format_valid, false);
+  assert(j.meta.format_issues.length >= 2, "esperado ao menos 2 issues");
+  // mensagens legíveis mencionando cabeçalho e itens
+  assert(j.meta.format_issues.some((i: string) => /cabeçalho/i.test(i)), "faltou mensagem sobre cabeçalhos");
+  assert(j.meta.format_issues.some((i: string) => /numerad/i.test(i)), "faltou mensagem sobre itens numerados");
+  // source ainda consistente e coerente com ausência de bairros
+  assert(["tavily", "tavily_cache", "suggested"].includes(j.source));
+  assertEquals(j.source, "suggested");
+  // structured continua respeitando contrato mesmo com roteiro ruim
+  assert(Array.isArray(j.structured.dias));
+  assert(Array.isArray(j.structured.dicas));
+});
