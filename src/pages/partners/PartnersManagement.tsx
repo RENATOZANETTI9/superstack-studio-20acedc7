@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Building2, Phone, MapPin, User, Mail, Plus, CheckCircle2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const ESPECIALIDADES = [
   'Clínica Geral',
@@ -85,11 +86,41 @@ const PartnersManagement = () => {
   const [form, setForm] = useState(FORM_INITIAL);
   const [saving, setSaving] = useState(false);
   const [busca, setBusca] = useState('');
+  const { user } = useAuth();
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [clinicasDB, setClinicasDB] = useState<any[] | null>(null);
+  const [loadingClinicas, setLoadingClinicas] = useState(true);
 
-  const clinicasFiltradas = MOCK_CLINICAS.filter(c =>
-    c.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    c.bairro.toLowerCase().includes(busca.toLowerCase()) ||
-    c.especialidade.toLowerCase().includes(busca.toLowerCase())
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      setLoadingClinicas(true);
+      const { data: partnerData } = await supabase
+        .from('partners')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (partnerData?.id) {
+        setPartnerId(partnerData.id);
+        const { data: clinicas } = await supabase
+          .from('portfolio_clinics')
+          .select('*')
+          .eq('partner_id', partnerData.id)
+          .order('created_at', { ascending: false });
+        setClinicasDB(clinicas || []);
+      } else {
+        setClinicasDB([]);
+      }
+      setLoadingClinicas(false);
+    };
+    load();
+  }, [user?.id]);
+
+  const clinicasLista: any[] = clinicasDB ?? MOCK_CLINICAS;
+  const clinicasFiltradas = clinicasLista.filter((c: any) =>
+    (c.nome || c.name || '').toLowerCase().includes(busca.toLowerCase()) ||
+    (c.bairro || c.neighborhood || '').toLowerCase().includes(busca.toLowerCase()) ||
+    (c.tipo || c.especialidade || '').toLowerCase().includes(busca.toLowerCase())
   );
 
   const handleChange = (field: string, value: string) => {
@@ -102,11 +133,30 @@ const PartnersManagement = () => {
       toast({ title: 'Campos obrigatórios', description: 'Preencha todos os campos marcados com *.', variant: 'destructive' });
       return;
     }
+    if (!partnerId) {
+      toast({ title: 'Perfil não encontrado', description: 'Seu perfil de parceiro não foi localizado. Contate o administrador.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
+    const { error } = await supabase.from('portfolio_clinics').insert([{
+      partner_id: partnerId,
+      nome: form.nome,
+      tipo: form.especialidade,
+      bairro: form.bairro,
+      cidade: `${form.cidade} - ${form.estado}`,
+      telefone: form.telefone,
+      responsavel: form.responsavelNome,
+      status: 'prospecto',
+    }]);
     setSaving(false);
-    toast({ title: 'Clínica cadastrada!', description: `${form.nome} foi cadastrada com sucesso.` });
+    if (error) {
+      toast({ title: 'Erro ao cadastrar clínica', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Clínica cadastrada!', description: `${form.nome} foi adicionada à sua carteira.` });
     setForm(FORM_INITIAL);
+    const { data } = await supabase.from('portfolio_clinics').select('*').eq('partner_id', partnerId).order('created_at', { ascending: false });
+    setClinicasDB(data || []);
   };
 
   return (
@@ -268,7 +318,7 @@ const PartnersManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Clínicas Cadastradas</h2>
-              <p className="text-sm text-muted-foreground">{MOCK_CLINICAS.length} clínicas na sua carteira</p>
+              <p className="text-sm text-muted-foreground">{clinicasLista.length} clínica(s) na sua carteira</p>
             </div>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -277,33 +327,33 @@ const PartnersManagement = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {clinicasFiltradas.map(c => (
+            {clinicasFiltradas.map((c: any) => (
               <Card key={c.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="font-medium text-sm truncate">{c.nome}</span>
+                        <span className="font-medium text-sm truncate">{c.nome || c.name}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground pl-6">{c.especialidade}</p>
+                      <p className="text-xs text-muted-foreground pl-6">{c.tipo || c.especialidade}</p>
                       <p className="text-xs text-muted-foreground pl-6 flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
-                        {c.bairro}, {c.cidade} – {c.estado}
+                        {(c.bairro || c.neighborhood) ? `${c.bairro || c.neighborhood}, ` : ''}{c.cidade || c.city}{c.estado ? ` – ${c.estado}` : ''}
                       </p>
                       <p className="text-xs text-muted-foreground pl-6 flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        {c.responsavel}
+                        {c.responsavel || c.responsible || '—'}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-2">
-                      {c.status === 'ativa' ? (
+                      {c.status === 'ativa' || c.status === 'ativo' ? (
                         <Badge variant="default" className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100 text-xs gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Ativa
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs">Pendente</Badge>
+                        <Badge variant="secondary" className="text-xs capitalize">{c.status || 'Pendente'}</Badge>
                       )}
                     </div>
                   </div>
