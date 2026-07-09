@@ -26,6 +26,7 @@ import {
   Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2, Mic, MicOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AI_ROUTE_TITLE_ID, AI_FORMAT_ALERT_ID } from './ai-route-alert-ids';
 
 type VisitStatus =
   | 'Pendente'
@@ -1312,10 +1313,10 @@ export default function PartnersRota() {
               <Card className="shadow-sm">
                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                    <CardTitle
-                     id="ai-route-title"
+                     id={AI_ROUTE_TITLE_ID}
                      className="text-base flex items-center gap-2"
                      aria-describedby={
-                       !aiFormatValid && aiFormatIssues.length > 0 ? 'ai-format-alert' : undefined
+                       !aiFormatValid && aiFormatIssues.length > 0 ? AI_FORMAT_ALERT_ID : undefined
                      }
                    >
                     <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
@@ -1385,11 +1386,11 @@ export default function PartnersRota() {
                   {!aiFormatValid && aiFormatIssues.length > 0 && (
                     <div
                       ref={aiFormatAlertRef}
-                      id="ai-format-alert"
+                      id={AI_FORMAT_ALERT_ID}
                       role="alert"
                       aria-live="polite"
                       aria-atomic="true"
-                      aria-labelledby="ai-route-title"
+                      aria-labelledby={AI_ROUTE_TITLE_ID}
                       tabIndex={-1}
                       data-testid="ai-format-alert"
                       className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"

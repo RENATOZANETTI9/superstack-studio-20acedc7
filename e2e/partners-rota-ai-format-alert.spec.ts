@@ -184,3 +184,181 @@ test.describe('PartnersRota — aviso de format_issues e badge de origem', () =>
     ).toEqual([]);
   });
 });
+
+/**
+ * Fluxo "Gerar novamente" + a11y estendida:
+ *  - Após uma resposta com issues, o `source` do backend continua sendo um
+ *    dos valores permitidos e o badge reflete o mesmo `data-source`.
+ *  - Uma única mudança em `aria-live` é anunciada por resposta (o alerta
+ *    é (re)inserido apenas quando `format_valid=false`).
+ *  - Shift+Tab a partir do botão volta para o alerta; Enter e Espaço no
+ *    botão disparam nova requisição.
+ *  - Escape fecha o tooltip do badge quando ele está aberto por foco.
+ */
+test.describe('PartnersRota — "Gerar novamente" e a11y estendida', () => {
+  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+
+  const ALLOWED_SOURCES = ['tavily', 'tavily_cache', 'suggested'] as const;
+
+  test('source permanece válido a cada retry, alerta anuncia mudança 1x e foco segue o fluxo', async ({ page }) => {
+    let call = 0;
+    // Alternamos as respostas: cada retorno tem `format_valid=false` para
+    // manter o alerta visível, mas com `source` diferente a cada chamada
+    // para verificar que o badge/atributo `data-source` sempre reflete um
+    // valor permitido.
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      const sources = ['tavily_cache', 'suggested', 'tavily'] as const;
+      const source = sources[call % sources.length];
+      call++;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source,
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            format_issues: [
+              'Sem cabeçalhos "## Dia"',
+              'Sem itens numerados "1."',
+            ],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+
+    // Conta quantas vezes um nó com aria-live="polite" foi (re)inserido
+    // contendo o alerta de formato. Uma resposta = uma inserção.
+    await page.evaluate(() => {
+      (window as any).__ariaLiveInsertions = 0;
+      const obs = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          m.addedNodes.forEach((n) => {
+            if (!(n instanceof HTMLElement)) return;
+            if (n.matches?.('[data-testid="ai-format-alert"]')) {
+              (window as any).__ariaLiveInsertions++;
+            } else if (n.querySelector?.('[data-testid="ai-format-alert"]')) {
+              (window as any).__ariaLiveInsertions++;
+            }
+          });
+        }
+      });
+      obs.observe(document.body, { subtree: true, childList: true });
+      (window as any).__ariaLiveObserver = obs;
+    });
+
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const alert = page.getByTestId('ai-format-alert');
+    const badge = page.getByTestId('ai-source-badge');
+    const regen = page.getByTestId('ai-regenerate-btn');
+
+    await expect(alert).toBeVisible();
+    // Após a 1ª resposta, o auto-fallback já dispara a 2ª. Aguardamos.
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2);
+    // Cada resposta produz UM alerta no DOM (aria-live anuncia 1x por resposta).
+    const insertions1 = await page.evaluate(() => (window as any).__ariaLiveInsertions as number);
+    expect(insertions1).toBe(call);
+
+    // Badge sempre reflete um source permitido e ==  atributo data-source no DOM.
+    const src1 = await badge.getAttribute('data-source');
+    expect(ALLOWED_SOURCES).toContain(src1 as any);
+
+    // Clica em "Gerar novamente" e verifica que uma nova resposta gera exatamente
+    // uma nova inserção do alerta (aria-live não é duplicado).
+    const beforeCall = call;
+    await regen.click();
+    await expect.poll(() => call).toBeGreaterThan(beforeCall);
+    // Espera o alerta reaparecer após a nova resposta.
+    await expect(alert).toBeVisible();
+    const insertions2 = await page.evaluate(() => (window as any).__ariaLiveInsertions as number);
+    // Uma inserção adicional para cada nova chamada desde a medição anterior.
+    expect(insertions2 - insertions1).toBe(call - beforeCall);
+
+    // Source permanece consistente após retry.
+    const src2 = await badge.getAttribute('data-source');
+    expect(ALLOWED_SOURCES).toContain(src2 as any);
+
+    // Foco volta para o fluxo esperado: o alerta recebe foco quando reaparece.
+    const focusInAlert = await alert.evaluate(
+      (el) => el === document.activeElement || el.contains(document.activeElement),
+    );
+    expect(focusInAlert).toBe(true);
+  });
+
+  test('Shift+Tab volta ao alerta, Enter e Espaço disparam retry, Escape fecha o tooltip', async ({ page }) => {
+    let call = 0;
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      call++;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source: 'suggested',
+          meta: {
+            tavily_configured: false,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            format_issues: ['Sem cabeçalhos "## Dia"', 'Sem itens numerados "1."'],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const alert = page.getByTestId('ai-format-alert');
+    const regen = page.getByTestId('ai-regenerate-btn');
+    const badge = page.getByTestId('ai-source-badge');
+
+    await expect(alert).toBeVisible();
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2); // 1 + auto-fallback
+
+    // 1) Foca o botão explicitamente e faz Shift+Tab — o foco deve voltar
+    //    para o alerta (ou algum elemento contido nele).
+    await regen.focus();
+    await expect(regen).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    const focusOnAlertAfterShiftTab = await alert.evaluate(
+      (el) => el === document.activeElement || el.contains(document.activeElement),
+    );
+    expect(focusOnAlertAfterShiftTab).toBe(true);
+
+    // 2) Enter dispara nova chamada.
+    let base = call;
+    await regen.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => call).toBeGreaterThan(base);
+
+    // 3) Espaço também dispara nova chamada (semântica nativa de <button>).
+    base = call;
+    await regen.focus();
+    await page.keyboard.press('Space');
+    await expect.poll(() => call).toBeGreaterThan(base);
+
+    // 4) Escape fecha o tooltip do badge quando aberto via foco.
+    //    Radix Tooltip abre no focus e fecha ao pressionar Escape.
+    await badge.focus();
+    const tooltipVisible = page.locator('[role="tooltip"]');
+    // Pode haver leve atraso na abertura; aguarda até 1s.
+    await expect(tooltipVisible.first()).toBeVisible({ timeout: 1500 });
+    await page.keyboard.press('Escape');
+    await expect(tooltipVisible.first()).toBeHidden({ timeout: 1500 });
+  });
+});
