@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 /**
  * Valida que, quando o endpoint `generate-ai-route` retorna
@@ -95,5 +96,91 @@ test.describe('PartnersRota — aviso de format_issues e badge de origem', () =>
       await regen.click();
       await expect.poll(() => callCount).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  test('aria-describedby conecta título ao alerta, Tab percorre badge e regen, e axe não acusa violações', async ({ page }) => {
+    // Todas as respostas retornam formato inválido → alerta persiste após auto-fallback.
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source: 'suggested',
+          meta: {
+            tavily_configured: false,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            format_issues: [
+              'Sem cabeçalhos "## Dia"',
+              'Sem itens numerados "1."',
+            ],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const alert = page.getByTestId('ai-format-alert');
+    await expect(alert).toBeVisible();
+
+    // aria-describedby do título aponta para o id do alerta e o id existe.
+    const title = page.locator('#ai-route-title');
+    await expect(title).toHaveAttribute('aria-describedby', 'ai-format-alert');
+    await expect(alert).toHaveAttribute('id', 'ai-format-alert');
+    await expect(alert).toHaveAttribute('aria-labelledby', 'ai-route-title');
+
+    // Navegação por teclado: partindo do alerta (que recebeu foco), Tab
+    // deve alcançar o botão "Gerar novamente" e depois o badge de origem
+    // (ambos focáveis) sem depender do mouse.
+    const focusedOnAlert = await alert.evaluate(
+      (el) => el === document.activeElement || el.contains(document.activeElement),
+    );
+    expect(focusedOnAlert).toBe(true);
+
+    const regen = page.getByTestId('ai-regenerate-btn');
+    const badge = page.getByTestId('ai-source-badge');
+
+    let reachedRegen = false;
+    let reachedBadge = false;
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press('Tab');
+      if (!reachedRegen && (await regen.evaluate((el) => el === document.activeElement))) {
+        reachedRegen = true;
+      }
+      if (reachedRegen && (await badge.evaluate((el) => el === document.activeElement))) {
+        reachedBadge = true;
+        break;
+      }
+    }
+    expect(reachedRegen, 'Tab a partir do alerta deve alcançar o botão Gerar novamente').toBe(true);
+    expect(reachedBadge, 'Tab após o botão deve alcançar o badge de origem').toBe(true);
+
+    // Tooltip do badge acessível por foco (aparece via focus, não só hover).
+    await badge.focus();
+    await expect(badge).toBeFocused();
+
+    // Varredura axe-core: alerta aria-live e badge/tooltip não devem ter
+    // violações críticas de ARIA/contraste.
+    const results = await new AxeBuilder({ page })
+      .include('[data-testid="ai-format-alert"]')
+      .include('[data-testid="ai-source-badge"]')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+
+    const serious = results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious',
+    );
+    expect(
+      serious,
+      `Violações axe:\n${JSON.stringify(serious, null, 2)}`,
+    ).toEqual([]);
   });
 });
