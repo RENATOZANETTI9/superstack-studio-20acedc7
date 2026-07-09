@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,47 +8,66 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Phone, MapPin, Calendar, ArrowLeft, CheckCircle2, Clock, Plus, ArrowUp, ArrowRight, ArrowDown,
-  Building2, User, Save,
+  Phone, MapPin, Calendar, ArrowLeft, CheckCircle2, Clock, Plus,
+  Building2, User, Save, Inbox, AlertTriangle,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip as RTooltip, CartesianGrid } from 'recharts';
 import { toast } from 'sonner';
-import { MOCK_CLINICS } from './PartnersClinicas';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const MOCK_RECEPTIONISTS_BASE = [
-  { name: 'Maria Silva', today: 22, yesterday: 18, week: [15, 18, 20, 22, 19], trend: 'up' as const },
-  { name: 'Ana Lima', today: 18, yesterday: 20, week: [17, 19, 18, 20, 21], trend: 'right' as const },
-  { name: 'Carla Souza', today: 12, yesterday: 14, week: [11, 12, 13, 12, 14], trend: 'down' as const },
-];
+interface ClinicRow {
+  id: string;
+  nome: string;
+  tipo: string;
+  bairro: string;
+  cidade: string;
+  telefone: string | null;
+  responsavel: string | null;
+  status: string;
+  created_at: string;
+  ultima_visita: string | null;
+}
 
-const MOCK_TREND_14D = Array.from({ length: 14 }, (_, i) => ({
-  day: `D${i + 1}`,
-  simulacoes: Math.round(20 + Math.sin(i / 2) * 10 + i * 1.5 + Math.random() * 6),
-}));
-
-const MOCK_VISITS_HISTORY = [
-  { date: '20/06/2026', goal: 'Treinar nova recepcionista', result: 'Mariana treinada. Iniciou cadastros no mesmo dia.' },
-  { date: '06/06/2026', goal: 'Apresentar campanha de junho', result: 'Equipe engajada. Material entregue.' },
-  { date: '22/05/2026', goal: 'Reativar fluxo de simulações', result: 'Identificada queda por mudança de gestor. Plano traçado.' },
-];
-
-const TREND_ICON: Record<'up' | 'right' | 'down', JSX.Element> = {
-  up: <ArrowUp className="h-4 w-4 text-green-600" />,
-  right: <ArrowRight className="h-4 w-4 text-muted-foreground" />,
-  down: <ArrowDown className="h-4 w-4 text-red-600" />,
-};
+function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="text-center py-10 text-muted-foreground">
+      <Inbox className="w-10 h-10 mx-auto mb-2 opacity-40" />
+      <p className="text-sm font-medium">{title}</p>
+      {hint && <p className="text-xs mt-1">{hint}</p>}
+    </div>
+  );
+}
 
 export default function PartnersClinicProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const clinic = MOCK_CLINICS.find(c => c.id === id) ?? MOCK_CLINICS[0];
+  const [clinic, setClinic] = useState<ClinicRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [visits, setVisits] = useState(MOCK_VISITS_HISTORY);
+  const [visits, setVisits] = useState<Array<{ date: string; goal: string; result: string }>>([]);
   const [openNewVisit, setOpenNewVisit] = useState(false);
   const [vDate, setVDate] = useState('');
   const [vGoal, setVGoal] = useState('');
   const [vResult, setVResult] = useState('');
   const [vNext, setVNext] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      const { data, error: err } = await supabase
+        .from('portfolio_clinics')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (err) setError(err.message);
+      else setClinic(data as ClinicRow | null);
+      setLoading(false);
+    };
+    load();
+  }, [id]);
 
   const handleSaveVisit = () => {
     if (!vDate || !vGoal) {
@@ -61,14 +80,53 @@ export default function PartnersClinicProfile() {
     setVDate(''); setVGoal(''); setVResult(''); setVNext('');
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-40 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-20">
+          <AlertTriangle className="w-10 h-10 mx-auto mb-2 text-red-500 opacity-70" />
+          <p className="text-sm font-medium text-red-700">Não foi possível carregar esta clínica</p>
+          <p className="text-xs mt-1 text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/dashboard/partners/clinicas')}>Voltar</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!clinic) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-20">
+          <Inbox className="w-10 h-10 mx-auto mb-2 opacity-40 text-muted-foreground" />
+          <p className="text-sm font-medium">Clínica não encontrada</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/dashboard/partners/clinicas')}>Voltar</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const clinicAddress = `${clinic.bairro}, ${clinic.cidade}`;
+  const active = clinic.status === 'Ativo' || clinic.status === 'ativa' || clinic.status === 'ativo';
   const checklist = [
     { label: 'Clínica cadastrada', done: true },
-    { label: 'Recepcionista treinada', done: true },
-    { label: 'Primeiro CPF inserido', done: true },
-    { label: 'Meta semanal atingida pela 1ª vez', done: clinic.status === 'green' },
+    { label: 'Recepcionista treinada', done: false },
+    { label: 'Primeiro CPF inserido', done: false },
+    { label: 'Meta semanal atingida pela 1ª vez', done: active },
   ];
-
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinic.address)}`;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicAddress)}`;
 
   return (
     <DashboardLayout>
@@ -87,26 +145,29 @@ export default function PartnersClinicProfile() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-xl md:text-2xl font-bold text-foreground">{clinic.name}</h1>
-                    <Badge className={clinic.active ? 'bg-green-500 text-white border-0' : 'bg-red-500 text-white border-0'}>
-                      {clinic.active ? 'Ativa' : 'Inativa'}
+                    <h1 className="text-xl md:text-2xl font-bold text-foreground">{clinic.nome}</h1>
+                    <Badge className={active ? 'bg-green-500 text-white border-0' : 'bg-red-500 text-white border-0'}>
+                      {active ? 'Ativa' : clinic.status || 'Inativa'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{clinic.specialty}</p>
+                  <p className="text-sm text-muted-foreground">{clinic.tipo}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 text-sm">
-                    <p className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="w-3.5 h-3.5" /> {clinic.address}</p>
-                    <p className="flex items-center gap-1.5 text-muted-foreground"><Phone className="w-3.5 h-3.5" /> {clinic.phone}</p>
-                    <p className="flex items-center gap-1.5 text-muted-foreground"><User className="w-3.5 h-3.5" /> {clinic.responsible}</p>
-                    <p className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="w-3.5 h-3.5" /> Cadastrada em {clinic.registeredAt}</p>
-                    <p className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="w-3.5 h-3.5" /> Ativada em {clinic.activatedAt}</p>
-                    <p className="flex items-center gap-1.5 text-muted-foreground"><Clock className="w-3.5 h-3.5" /> {clinic.activeDays} dias ativos</p>
+                    <p className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="w-3.5 h-3.5" /> {clinicAddress}</p>
+                    <p className="flex items-center gap-1.5 text-muted-foreground"><Phone className="w-3.5 h-3.5" /> {clinic.telefone || '—'}</p>
+                    <p className="flex items-center gap-1.5 text-muted-foreground"><User className="w-3.5 h-3.5" /> {clinic.responsavel || '—'}</p>
+                    <p className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="w-3.5 h-3.5" /> Cadastrada em {new Date(clinic.created_at).toLocaleDateString('pt-BR')}</p>
+                    {clinic.ultima_visita && (
+                      <p className="flex items-center gap-1.5 text-muted-foreground"><Clock className="w-3.5 h-3.5" /> Última visita: {new Date(clinic.ultima_visita).toLocaleDateString('pt-BR')}</p>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
-                <Button variant="outline" size="sm" asChild className="gap-1">
-                  <a href={`tel:${clinic.phone.replace(/\D/g, '')}`}><Phone className="w-4 h-4" /> Ligar para Clínica</a>
-                </Button>
+                {clinic.telefone && (
+                  <Button variant="outline" size="sm" asChild className="gap-1">
+                    <a href={`tel:${clinic.telefone.replace(/\D/g, '')}`}><Phone className="w-4 h-4" /> Ligar para Clínica</a>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" asChild className="gap-1">
                   <a href={mapsUrl} target="_blank" rel="noreferrer"><MapPin className="w-4 h-4" /> Ver no Maps</a>
                 </Button>
@@ -132,47 +193,17 @@ export default function PartnersClinicProfile() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              <span className="font-medium text-foreground">Dias até primeira simulação após cadastro:</span> 2 dias
-            </p>
           </CardContent>
         </Card>
 
         {/* Simulações por recepcionista */}
         <Card className="shadow-sm">
           <CardHeader><CardTitle className="text-base">Simulações por Recepcionista · últimos 7 dias</CardTitle></CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead>
-                <tr className="border-b text-xs text-muted-foreground">
-                  <th className="text-left font-medium py-2">Recepcionista</th>
-                  <th className="text-center font-medium py-2">Hoje</th>
-                  <th className="text-center font-medium py-2">Ontem</th>
-                  <th className="text-center font-medium py-2">Seg</th>
-                  <th className="text-center font-medium py-2">Ter</th>
-                  <th className="text-center font-medium py-2">Qua</th>
-                  <th className="text-center font-medium py-2">Qui</th>
-                  <th className="text-center font-medium py-2">Sex</th>
-                  <th className="text-center font-medium py-2">Total</th>
-                  <th className="text-center font-medium py-2">Tendência</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_RECEPTIONISTS_BASE.slice(0, Math.max(1, clinic.activeReceptionists || 1)).map(r => {
-                  const total = r.today + r.yesterday + r.week.reduce((a, b) => a + b, 0);
-                  return (
-                    <tr key={r.name} className="border-b hover:bg-muted/30">
-                      <td className="py-2 font-medium">{r.name}</td>
-                      <td className="text-center">{r.today}</td>
-                      <td className="text-center">{r.yesterday}</td>
-                      {r.week.map((v, i) => <td key={i} className="text-center">{v}</td>)}
-                      <td className="text-center font-semibold">{total}</td>
-                      <td className="text-center"><span className="inline-flex justify-center">{TREND_ICON[r.trend]}</span></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <CardContent>
+            <EmptyState
+              title="Sem dados ainda — aguardando primeiro ciclo"
+              hint="A produção por recepcionista será exibida após a integração com o fluxo de simulações da clínica."
+            />
           </CardContent>
         </Card>
 
@@ -180,17 +211,10 @@ export default function PartnersClinicProfile() {
         <Card className="shadow-sm">
           <CardHeader><CardTitle className="text-base">Tendência · últimos 14 dias</CardTitle></CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={MOCK_TREND_14D}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <RTooltip />
-                  <Line type="monotone" dataKey="simulacoes" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <EmptyState
+              title="Sem simulações registradas para esta clínica"
+              hint="O gráfico será populado quando houver métricas diárias vinculadas à clínica."
+            />
           </CardContent>
         </Card>
 
@@ -203,7 +227,9 @@ export default function PartnersClinicProfile() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            {visits.length === 0 ? (
+              <EmptyState title="Nenhuma visita registrada ainda" hint="Use 'Registrar Nova Visita' para começar seu histórico." />
+            ) : (<div className="space-y-2">
               {visits.map((v, i) => (
                 <div key={i} className="p-3 rounded-lg border bg-card">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -215,7 +241,7 @@ export default function PartnersClinicProfile() {
                   <p className="text-sm text-muted-foreground mt-1">{v.result}</p>
                 </div>
               ))}
-            </div>
+            </div>)}
           </CardContent>
         </Card>
 
