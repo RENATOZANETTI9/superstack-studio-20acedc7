@@ -174,6 +174,15 @@ export default function PartnersRota() {
   const [aiFormatIssues, setAiFormatIssues] = useState<string[]>([]);
   const [aiFormatValid, setAiFormatValid] = useState<boolean>(true);
   const aiFormatAlertRef = useRef<HTMLDivElement>(null);
+
+  // Move keyboard focus to the format-issues alert when it appears, so
+  // usuários de teclado/leitor de tela sejam levados ao aviso e ao botão
+  // "Gerar novamente" imediatamente.
+  useEffect(() => {
+    if (!aiFormatValid && aiFormatIssues.length > 0) {
+      aiFormatAlertRef.current?.focus();
+    }
+  }, [aiFormatValid, aiFormatIssues]);
   const [aiRouteFilter, setAiRouteFilter] = useState<'todos' | 'pendente' | 'conversamos' | 'nao'>('todos');
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
