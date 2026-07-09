@@ -699,3 +699,288 @@ test.describe('PartnersRota — múltiplos retries mantêm a11y e tooltip', () =
     }
   });
 });
+
+/**
+ * Substituição de conteúdo em retries + atributos ARIA do tooltip do badge:
+ *  - A cada retry, o badge e o alerta são substituídos in-place: nunca há
+ *    mais de UM nó `[data-testid="ai-source-badge"]` ou de UM nó
+ *    `[data-testid="ai-format-alert"]` no DOM em qualquer instante.
+ *  - O TooltipContent do Radix usa `role="tooltip"` e o trigger recebe
+ *    `aria-describedby` apontando para o content quando aberto.
+ *  - Cliques rápidos consecutivos em "Gerar novamente" (sem esperar) não
+ *    quebram a11y: aria-live não duplica e o teclado continua funcional.
+ */
+test.describe('PartnersRota — substituição de conteúdo, aria do tooltip e cliques rápidos', () => {
+  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+
+  const ALLOWED = ['tavily', 'tavily_cache', 'suggested'] as const;
+
+  test('retries substituem badge/alerta in-place — nunca ficam nós obsoletos', async ({ page }) => {
+    let call = 0;
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      const sources = ['tavily', 'tavily_cache', 'suggested'] as const;
+      const source = sources[call % sources.length];
+      call++;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source,
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            format_issues: [`issue #${call}`],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+
+    // Rastreia o valor máximo de nós simultâneos de cada testid durante todo
+    // o ciclo de vida do teste. Se algum retry deixar um nó "obsoleto" para
+    // trás, esses contadores passariam de 1.
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__maxBadges = 0;
+      w.__maxAlerts = 0;
+      w.__ariaLiveInsertions = 0;
+      const check = () => {
+        const b = document.querySelectorAll('[data-testid="ai-source-badge"]').length;
+        const a = document.querySelectorAll('[data-testid="ai-format-alert"]').length;
+        if (b > w.__maxBadges) w.__maxBadges = b;
+        if (a > w.__maxAlerts) w.__maxAlerts = a;
+      };
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          m.addedNodes.forEach((n) => {
+            if (
+              n instanceof HTMLElement &&
+              (n.matches?.('[data-testid="ai-format-alert"]') ||
+                n.querySelector?.('[data-testid="ai-format-alert"]'))
+            ) {
+              w.__ariaLiveInsertions++;
+            }
+          });
+        }
+        check();
+      });
+      obs.observe(document.body, { subtree: true, childList: true });
+      w.__watcher = obs;
+      check();
+    });
+
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const alert = page.getByTestId('ai-format-alert');
+    const badge = page.getByTestId('ai-source-badge');
+    const regen = page.getByTestId('ai-regenerate-btn');
+    await expect(alert).toBeVisible();
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2);
+
+    // Guarda referência ao nó original — após retries o mesmo elemento é
+    // reconciliado (React não recria) OU é substituído por exatamente um novo.
+    const N = 4;
+    for (let i = 0; i < N; i++) {
+      const before = call;
+      await regen.click();
+      await expect.poll(() => call).toBeGreaterThan(before);
+      await expect(alert).toBeVisible();
+
+      // Existe exatamente um badge e um alerta no DOM.
+      expect(await page.locator('[data-testid="ai-source-badge"]').count()).toBe(1);
+      expect(await page.locator('[data-testid="ai-format-alert"]').count()).toBe(1);
+
+      // Conteúdo do alerta corresponde à última resposta (substituição real).
+      await expect(alert).toContainText(`issue #${call}`);
+
+      // data-source sempre pertence ao conjunto permitido.
+      const src = await badge.getAttribute('data-source');
+      expect(ALLOWED).toContain(src as (typeof ALLOWED)[number]);
+    }
+
+    const { maxBadges, maxAlerts, insertions } = await page.evaluate(() => {
+      const w = window as any;
+      return {
+        maxBadges: w.__maxBadges as number,
+        maxAlerts: w.__maxAlerts as number,
+        insertions: w.__ariaLiveInsertions as number,
+      };
+    });
+    expect(maxBadges, 'nunca deve haver >1 badge simultâneo').toBeLessThanOrEqual(1);
+    expect(maxAlerts, 'nunca deve haver >1 alerta simultâneo').toBeLessThanOrEqual(1);
+    // No máximo uma inserção por resposta — nunca duplicadas para o mesmo call.
+    expect(insertions).toBeLessThanOrEqual(call);
+  });
+
+  test('tooltip do badge usa role="tooltip" e aria-describedby no trigger; foco não fica preso', async ({ page }) => {
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_VALIDO,
+          structured: { dias: [], dicas: [] },
+          source: 'tavily',
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 1,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 1,
+            format_valid: true,
+            format_issues: [],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const badge = page.getByTestId('ai-source-badge');
+    await expect(badge).toBeVisible();
+
+    // aria-label conhecido no trigger (rótulo acessível estável).
+    await expect(badge).toHaveAttribute('aria-label', /Origem do roteiro:\s+(tavily|tavily_cache|suggested)/);
+
+    // Antes de abrir: sem tooltip renderizado.
+    await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
+
+    // Abre por foco (Radix Tooltip).
+    await badge.focus();
+    const tooltip = page.locator('[role="tooltip"]');
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+
+    // O trigger recebe aria-describedby apontando para o id do content.
+    const describedBy = await badge.getAttribute('aria-describedby');
+    expect(describedBy, 'trigger deve descrever seu tooltip aberto').toBeTruthy();
+    const tooltipId = await tooltip.first().getAttribute('id');
+    expect(tooltipId).toBeTruthy();
+    expect(describedBy!.split(/\s+/)).toContain(tooltipId!);
+
+    // data-state do trigger reflete o estado aberto (contrato Radix).
+    await expect(badge).toHaveAttribute('data-state', 'open');
+
+    // Escape fecha o tooltip e o foco NÃO fica preso: o badge continua
+    // sendo o elemento ativo (não move para body / não perde foco).
+    await page.keyboard.press('Escape');
+    await expect(tooltip.first()).toBeHidden({ timeout: 1500 });
+    await expect(badge).toBeFocused();
+
+    // Ao sair do badge com Tab, o foco avança e o tooltip permanece fechado.
+    await page.keyboard.press('Tab');
+    await expect(badge).not.toBeFocused();
+    await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
+
+    // Refocar o badge deve reabrir o tooltip (não ficou em estado inválido).
+    await badge.focus();
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+    await expect(badge).toHaveAttribute('data-state', 'open');
+  });
+
+  test('cliques rápidos em "Gerar novamente" durante respostas com issues não duplicam aria-live nem travam o teclado', async ({ page }) => {
+    let call = 0;
+    // Introduz latência artificial para forçar sobreposição de cliques.
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      const sources = ['tavily', 'tavily_cache', 'suggested'] as const;
+      const source = sources[call % sources.length];
+      call++;
+      await new Promise((r) => setTimeout(r, 120));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source,
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            format_issues: ['Sem cabeçalhos "## Dia"'],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__insertions = 0;
+      w.__maxSimul = 0;
+      const check = () => {
+        const n = document.querySelectorAll('[data-testid="ai-format-alert"]').length;
+        if (n > w.__maxSimul) w.__maxSimul = n;
+      };
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          m.addedNodes.forEach((n) => {
+            if (
+              n instanceof HTMLElement &&
+              (n.matches?.('[data-testid="ai-format-alert"]') ||
+                n.querySelector?.('[data-testid="ai-format-alert"]'))
+            ) {
+              w.__insertions++;
+            }
+          });
+        }
+        check();
+      });
+      obs.observe(document.body, { subtree: true, childList: true });
+      check();
+    });
+
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+    const alert = page.getByTestId('ai-format-alert');
+    const regen = page.getByTestId('ai-regenerate-btn');
+    const badge = page.getByTestId('ai-source-badge');
+    await expect(alert).toBeVisible();
+
+    // Dispara 6 cliques em sequência, sem aguardar entre eles.
+    const RAPID = 6;
+    const beforeRapid = call;
+    for (let i = 0; i < RAPID; i++) {
+      // `noWaitAfter` para não bloquear em navigation/rede entre cliques.
+      await regen.click({ noWaitAfter: true }).catch(() => {});
+    }
+    // Aguarda a rede estabilizar — pode haver debounce/loading que
+    // engula cliques quando `loading=true`, então usamos ≥ 1 nova chamada.
+    await expect.poll(() => call, { timeout: 5000 }).toBeGreaterThan(beforeRapid);
+
+    // Invariantes de a11y após tempestade de cliques:
+    // (a) nunca há mais de 1 alerta simultâneo no DOM.
+    const maxSimul = await page.evaluate(() => (window as any).__maxSimul as number);
+    expect(maxSimul).toBeLessThanOrEqual(1);
+    // (b) inserções ≤ chamadas efetivas — nunca duplicadas por clique.
+    const insertions = await page.evaluate(() => (window as any).__insertions as number);
+    expect(insertions).toBeLessThanOrEqual(call);
+    // (c) só existe um badge e um alerta agora.
+    expect(await page.locator('[data-testid="ai-format-alert"]').count()).toBe(1);
+    expect(await page.locator('[data-testid="ai-source-badge"]').count()).toBe(1);
+
+    // Teclado continua funcional: badge focável e tooltip abre/fecha.
+    await badge.focus();
+    const tooltip = page.locator('[role="tooltip"]');
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+    await page.keyboard.press('Escape');
+    await expect(tooltip.first()).toBeHidden({ timeout: 1500 });
+
+    // Botão regen também continua focável (não ficou "preso" em loading).
+    await regen.focus();
+    await expect(regen).toBeFocused();
+  });
+});
