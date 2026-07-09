@@ -337,7 +337,8 @@ function RepresentativeDashboard({ isAdmin, userEmail, userName, userLocation }:
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
         <Card><CardContent className="pt-5">
           <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
-          <p className="text-xl font-bold text-green-600">R$ 280,00</p>
+          <p className="text-xl font-bold text-muted-foreground">—</p>
+          <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
         </CardContent></Card>
       </div>
 
@@ -349,6 +350,13 @@ function RepresentativeDashboard({ isAdmin, userEmail, userName, userLocation }:
 function RepresentativeAnalyticsSections() {
   return (
     <div className="space-y-6">
+      <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2">
+        <span className="text-amber-600 mt-0.5">⚠️</span>
+        <div>
+          <p className="text-sm font-medium text-amber-800">Dados demonstrativos</p>
+          <p className="text-xs text-amber-700 mt-0.5">Metas, desempenho, carteira e gráfico abaixo são ilustrativos. Os valores reais serão populados automaticamente após os primeiros ciclos completos de simulação e comissão.</p>
+        </div>
+      </div>
       {/* Metas do mês */}
       <div>
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Minhas Metas do Mês</h2>
