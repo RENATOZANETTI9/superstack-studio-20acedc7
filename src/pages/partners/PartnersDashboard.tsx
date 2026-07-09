@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Users, Building2, TrendingUp, DollarSign, AlertTriangle, 
-  Target, Activity, Info, Phone, MapPin, ArrowUp, ArrowDown, ArrowRight, ArrowUpRight, ArrowDownRight
+  Target, Activity, Info, Phone, MapPin, Inbox
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PartnerCharts from '@/components/partners/PartnerCharts';
@@ -21,55 +21,6 @@ import { isRepresentanteRole } from '@/lib/partner-rules';
 import { toast } from 'sonner';
 
 type Period = 'hoje' | '7d' | '30d' | '90d';
-
-// Mock today data: simulações, média esperada e recepcionistas por clínica
-const MOCK_TODAY_ACTIVITY = [
-  { clinic_id: 'c1', clinic_name: 'Clínica Sorriso Feliz', today: 12, expected: 10, trend: 'up', receptionists: ['Mariana', 'Beatriz'] },
-  { clinic_id: 'c2', clinic_name: 'OdontoVida Premium', today: 8, expected: 10, trend: 'right', receptionists: ['Camila'] },
-  { clinic_id: 'c3', clinic_name: 'Centro Médico Saúde+', today: 4, expected: 10, trend: 'down', receptionists: ['Patrícia'] },
-  { clinic_id: 'c5', clinic_name: 'Estética Carioca', today: 15, expected: 12, trend: 'up', receptionists: ['Larissa', 'Fernanda', 'Júlia'] },
-  { clinic_id: 'c6', clinic_name: 'OdontoPlan Rio', today: 0, expected: 8, trend: 'down', receptionists: [] },
-  { clinic_id: 'c7', clinic_name: 'Clínica BH Sorriso', today: 9, expected: 10, trend: 'upright', receptionists: ['Roberta'] },
-  { clinic_id: 'c8', clinic_name: 'Centro Odonto Minas', today: 2, expected: 8, trend: 'downright', receptionists: ['Cláudia'] },
-];
-
-const EXTRA_MOCK_ALERTS = [
-  {
-    id: 'a-today-1', alert_type: 'SEM_ATIVIDADE_HOJE', severity: 'MEDIUM',
-    title: 'Clínica OdontoPlan Rio não registrou simulações hoje',
-    description: 'Sem atividade desde 00h. Última simulação: ontem 18h32.',
-    clinic_name: 'OdontoPlan Rio', alert_date: new Date().toISOString(), resolved_at: null,
-  },
-  {
-    id: 'a-new-1', alert_type: 'NOVA_CLINICA_SEM_ATIVACAO', severity: 'CRITICAL',
-    title: 'Clínica Novo Horizonte cadastrada há 5 dias sem primeira simulação',
-    description: 'Cadastrada em 23/06. Onboarding não concluído.',
-    clinic_name: 'Clínica Novo Horizonte', alert_date: new Date().toISOString(), resolved_at: null,
-  },
-  {
-    id: 'a-meta-1', alert_type: 'META_SEMANA_EM_RISCO', severity: 'LOW',
-    title: '3 clínicas estão abaixo de 60% da meta semanal',
-    description: 'Centro Médico Saúde+, OdontoPlan Rio e Centro Odonto Minas.',
-    clinic_name: null, alert_date: new Date().toISOString(), resolved_at: null,
-  },
-];
-
-function getStatusColor(today: number, expected: number) {
-  if (today >= expected) return { dot: 'bg-green-500', label: 'Em dia', text: 'text-green-700', bg: 'bg-green-50' };
-  if (today >= expected * 0.5) return { dot: 'bg-yellow-500', label: 'Atenção', text: 'text-yellow-700', bg: 'bg-yellow-50' };
-  return { dot: 'bg-red-500', label: 'Crítico', text: 'text-red-700', bg: 'bg-red-50' };
-}
-
-function TrendIcon({ trend }: { trend: string }) {
-  switch (trend) {
-    case 'up': return <ArrowUp className="h-4 w-4 text-green-600" />;
-    case 'upright': return <ArrowUpRight className="h-4 w-4 text-green-500" />;
-    case 'right': return <ArrowRight className="h-4 w-4 text-muted-foreground" />;
-    case 'downright': return <ArrowDownRight className="h-4 w-4 text-orange-500" />;
-    case 'down': return <ArrowDown className="h-4 w-4 text-red-600" />;
-    default: return <ArrowRight className="h-4 w-4 text-muted-foreground" />;
-  }
-}
 
 function alertSeverityStyles(type: string, severity: string) {
   if (type === 'SEM_ATIVIDADE_HOJE') return { border: 'border-orange-300', bg: 'bg-orange-50', icon: 'text-orange-500', badge: 'bg-orange-100 text-orange-700' };
@@ -136,7 +87,7 @@ const PartnersDashboard = () => {
     setLoading(false);
   };
 
-  const allAlerts = [...EXTRA_MOCK_ALERTS, ...alerts];
+  const allAlerts = alerts;
 
   const totalPartners = partners.length;
   const activePartners = partners.filter(p => p.status === 'ACTIVE').length;
@@ -148,10 +99,13 @@ const PartnersDashboard = () => {
     ? (partners.reduce((sum, p) => sum + Number(p.seh_score || 0), 0) / partners.length).toFixed(1) 
     : '0';
 
-  // Hoje KPIs (mocked from MOCK_TODAY_ACTIVITY)
-  const totalToday = MOCK_TODAY_ACTIVITY.reduce((s, c) => s + c.today, 0);
-  const clinicsActiveToday = MOCK_TODAY_ACTIVITY.filter(c => c.today > 0).length;
-  const clinicsCriticalToday = MOCK_TODAY_ACTIVITY.filter(c => c.today < c.expected * 0.5).length;
+  // Hoje KPIs — derivados de partner_metrics_daily (data == hoje).
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todaysMetrics = metrics.filter((m: any) => (m.metric_date || '').slice(0, 10) === todayKey);
+  const totalToday = todaysMetrics.reduce((s: number, m: any) => s + Number(m.consultations || 0), 0);
+  const clinicsActiveToday = todaysMetrics.filter((m: any) => Number(m.consultations || 0) > 0).length;
+  const clinicsCriticalToday = 0;
+  const hasTodayData = todaysMetrics.length > 0;
 
   const handleRegisterContact = () => {
     toast.success('Contato registrado', { description: contactNote || 'Sem observações.' });
@@ -198,7 +152,7 @@ const PartnersDashboard = () => {
               <Card><CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="p-1.5 sm:p-2 rounded-lg bg-green-500/10"><Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" /></div>
-                  <div><p className="text-[10px] sm:text-sm text-muted-foreground">Clínicas ativas hoje</p><p className="text-lg sm:text-2xl font-bold">{clinicsActiveToday}/{MOCK_TODAY_ACTIVITY.length}</p></div>
+                  <div><p className="text-[10px] sm:text-sm text-muted-foreground">Clínicas ativas hoje</p><p className="text-lg sm:text-2xl font-bold">{clinicsActiveToday}/{todaysMetrics.length}</p></div>
                 </div>
               </CardContent></Card>
               <Card><CardContent className="pt-4 sm:pt-6">
@@ -273,35 +227,22 @@ const PartnersDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {MOCK_TODAY_ACTIVITY.map(c => {
-                  const status = getStatusColor(c.today, c.expected);
-                  return (
-                    <div key={c.clinic_id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border ${status.bg}`}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className={`h-3 w-3 rounded-full ${status.dot} shrink-0`} aria-label={status.label} />
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{c.clinic_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            Recepcionistas hoje: {c.receptionists.length ? c.receptionists.join(', ') : '—'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 sm:gap-6 justify-end">
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Simulações hoje</p>
-                          <p className="text-base font-bold">{c.today} <span className="text-xs font-normal text-muted-foreground">/ {c.expected}</span></p>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <TrendIcon trend={c.trend} />
-                          <span className="text-[10px] text-muted-foreground mt-0.5">Tendência</span>
-                        </div>
-                        <Badge className={`${status.text} bg-white border`}>{status.label}</Badge>
-                      </div>
+              {!hasTodayData ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <Inbox className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm font-medium">Sem dados ainda — nenhuma atividade registrada hoje</p>
+                  <p className="text-xs mt-1">A produção do dia aparecerá aqui assim que as clínicas registrarem simulações.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {todaysMetrics.map((m: any) => (
+                    <div key={m.partner_id + '_' + m.metric_date} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <p className="font-medium text-sm">{m.partner_id}</p>
+                      <p className="text-sm font-bold">{m.consultations || 0} simulações</p>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
