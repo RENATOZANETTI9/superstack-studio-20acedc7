@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,12 +16,20 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PartnerCharts from '@/components/partners/PartnerCharts';
 import { usePartnerAlertRealtime } from '@/hooks/usePartnerAlertRealtime';
-import { MOCK_PARTNERS, MOCK_CLINICS, MOCK_METRICS_DAILY, MOCK_ALERTS, MOCK_COMMISSIONS, withMockFallbackTracked } from '@/lib/mock-data';
-import { MockDataBanner } from '@/components/MockDataBanner';
 import { isRepresentanteRole } from '@/lib/partner-rules';
 import { toast } from 'sonner';
 
 type Period = 'hoje' | '7d' | '30d' | '90d';
+
+const PERIOD_DAYS: Record<Period, number> = { hoje: 1, '7d': 7, '30d': 30, '90d': 90 };
+
+const periodStartISO = (p: Period) => {
+  const days = PERIOD_DAYS[p];
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - (days - 1));
+  return d.toISOString().slice(0, 10);
+};
 
 function alertSeverityStyles(type: string, severity: string) {
   if (type === 'SEM_ATIVIDADE_HOJE') return { border: 'border-orange-300', bg: 'bg-orange-50', icon: 'text-orange-500', badge: 'bg-orange-100 text-orange-700' };
@@ -40,50 +49,62 @@ const PartnersDashboard = () => {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMockData, setIsMockData] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('7d');
   const [contactAlert, setContactAlert] = useState<any | null>(null);
   const [contactNote, setContactNote] = useState('');
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [period]);
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(null);
+    const startDate = periodStartISO(period);
 
     const partnerRes = await supabase
       .from('partners')
-      .select('*')
+      .select('id, status, seh_score, type, user_id, created_at')
       .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-    const partnersTracked = withMockFallbackTracked(partnerRes.data, MOCK_PARTNERS);
-    const partnerData = partnersTracked.data;
+      .order('created_at', { ascending: false })
+      .limit(50);
+    const partnerData = partnerRes.data || [];
     setPartners(partnerData);
 
     const isRep = isRepresentanteRole(role as any);
     const partnerId = partnerData[0]?.id;
-    const clinicsBase = supabase.from('partner_clinic_relations').select('*');
+    const clinicsBase = supabase
+      .from('partner_clinic_relations')
+      .select('id, partner_id, clinic_external_id, clinic_name, is_active, is_qualified')
+      .limit(500);
     const clinicsRes = (isRep && partnerId)
       ? await clinicsBase.eq('partner_id', partnerId)
       : await clinicsBase;
 
     const [metricsRes, alertsRes, commissionsRes] = await Promise.all([
-      supabase.from('partner_metrics_daily').select('*').order('metric_date', { ascending: false }).limit(200),
-      supabase.from('partner_alerts').select('*').is('resolved_at', null).order('alert_date', { ascending: false }).limit(10),
-      supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('partner_metrics_daily')
+        .select('partner_id, metric_date, consultations, seh_score')
+        .gte('metric_date', startDate)
+        .order('metric_date', { ascending: false })
+        .limit(500),
+      supabase.from('partner_alerts')
+        .select('id, partner_id, alert_type, severity, title, description, alert_date, resolved_at')
+        .is('resolved_at', null)
+        .gte('alert_date', startDate)
+        .order('alert_date', { ascending: false })
+        .limit(20),
+      supabase.from('partner_commissions')
+        .select('id, commission_amount, status, reference_month, created_at')
+        .gte('reference_month', startDate.slice(0, 7))
+        .order('created_at', { ascending: false })
+        .limit(100),
     ]);
 
-    const clinicsTracked = withMockFallbackTracked(clinicsRes.data, MOCK_CLINICS);
-    const metricsTracked = withMockFallbackTracked(metricsRes.data, MOCK_METRICS_DAILY);
-    const alertsTracked = withMockFallbackTracked(alertsRes.data, MOCK_ALERTS);
-    const commissionsTracked = withMockFallbackTracked(commissionsRes.data, MOCK_COMMISSIONS);
-    setClinics(clinicsTracked.data);
-    setMetrics(metricsTracked.data);
-    setAlerts(alertsTracked.data);
-    setCommissions(commissionsTracked.data);
-    setIsMockData(
-      partnersTracked.isMock || clinicsTracked.isMock || metricsTracked.isMock ||
-      alertsTracked.isMock || commissionsTracked.isMock,
-    );
+    const firstErr = partnerRes.error || clinicsRes.error || metricsRes.error || alertsRes.error || commissionsRes.error;
+    if (firstErr) setLoadError(firstErr.message);
+    setClinics(clinicsRes.data || []);
+    setMetrics(metricsRes.data || []);
+    setAlerts(alertsRes.data || []);
+    setCommissions(commissionsRes.data || []);
     setLoading(false);
   };
 
@@ -120,7 +141,12 @@ const PartnersDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-4 sm:space-y-6">
-        <MockDataBanner show={isMockData} />
+        {loadError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>Erro ao carregar dados: {loadError}</span>
+            <Button size="sm" variant="outline" onClick={fetchData}>Tentar novamente</Button>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Meu Painel · Partners</h1>
@@ -140,6 +166,11 @@ const PartnersDashboard = () => {
         </Tabs>
 
         {/* KPI Cards */}
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[0,1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
+          </div>
+        ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {period === 'hoje' ? (
             <>
@@ -218,6 +249,7 @@ const PartnersDashboard = () => {
             </>
           )}
         </div>
+        )}
 
         {period === 'hoje' && (
           <Card>
@@ -254,7 +286,10 @@ const PartnersDashboard = () => {
           <CardHeader><CardTitle className="text-base sm:text-lg">Alertas Pendentes ({pendingAlerts})</CardTitle></CardHeader>
           <CardContent>
             {allAlerts.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground"><Activity className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhum alerta pendente</p></div>
+              <div className="text-center py-12 text-muted-foreground">
+                <Inbox className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>Sem dados ainda — nenhum alerta pendente no período selecionado</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {allAlerts.map((alert: any) => {
