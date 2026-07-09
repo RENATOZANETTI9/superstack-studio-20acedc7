@@ -52,11 +52,25 @@ const PartnersBonificacoes = () => {
       ? supabase.from('partners').select('id, type').eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null });
 
+    // Server-side period boundary: default to last 90 days when no explicit filter
+    const fromISO = (dateFrom ?? new Date(Date.now() - 90 * 86400000)).toISOString();
+    const toISO = dateTo ? new Date(dateTo.getTime() + 86400000).toISOString() : new Date().toISOString();
+
     const [comRes, incRes, partnerRes, clinicRes] = await Promise.all([
-      supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }),
-      supabase.from('attendant_incentives').select('*').order('created_at', { ascending: false }),
+      supabase.from('partner_commissions')
+        .select('id, partner_id, beneficiary_partner_id, commission_type, reference_month, net_paid_amount, commission_rate, commission_amount, status, paid_at, approved_at, clinic_external_id, created_at')
+        .gte('created_at', fromISO).lte('created_at', toISO)
+        .order('created_at', { ascending: false })
+        .limit(1000),
+      supabase.from('attendant_incentives')
+        .select('id, clinic_user_id, clinic_external_id, incentive_type, reference_month, reference_week, incentive_amount, status, pix_key, pix_tier, consultations_generated, paid_amount_generated, paid_at, created_at')
+        .gte('created_at', fromISO).lte('created_at', toISO)
+        .order('created_at', { ascending: false })
+        .limit(1000),
       partnerPromise,
-      supabase.from('partner_clinic_relations').select('clinic_external_id, clinic_name, partner_id'),
+      supabase.from('partner_clinic_relations')
+        .select('clinic_external_id, clinic_name, partner_id')
+        .limit(2000),
     ]);
     const firstErr = comRes.error || incRes.error || clinicRes.error;
     if (firstErr) setLoadError(firstErr.message);
@@ -65,7 +79,7 @@ const PartnersBonificacoes = () => {
     setMyPartner((partnerRes as any).data ?? null);
     setClinicRelations(clinicRes.data || []);
     setLoading(false);
-  }, [user]);
+  }, [user, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
