@@ -3,6 +3,7 @@ import {
   ALLOWED_AI_SOURCES,
   isAiSource,
   normalizeAiSource,
+  coerceAiSource,
 } from '@/pages/partners/ai-route-source';
 
 describe('normalizeAiSource', () => {
@@ -63,10 +64,6 @@ describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
       'x',
       'foo',
       'tavily_live',
-      'TAVILY',
-      'Tavily_Cache',
-      'suggested ',
-      ' tavily',
       'null',
       'undefined',
       'random-string-🌐',
@@ -121,7 +118,7 @@ describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
   }
 
   it('nunca retorna a string bruta recebida quando ela não pertence ao conjunto', () => {
-    const raw = ['tavily_LIVE', 'TAVILY', 'suggested!', ' tavily ', 'cache'];
+    const raw = ['tavily_LIVE', 'suggested!', 'cache', 'random-🌐'];
     for (const r of raw) {
       const out = normalizeAiSource(r);
       expect(out).not.toBe(r);
@@ -136,6 +133,57 @@ describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
       const twice = normalizeAiSource(once);
       expect(twice).toBe(once);
       expect(ALLOWED).toContain(twice);
+    }
+  });
+});
+
+/**
+ * Whitespace / case coercion: o backend pode responder com variantes
+ * cosméticas do mesmo valor ("TAVILY", " tavily_cache ", "Suggested\n").
+ * `normalizeAiSource` deve tratar essas variantes como equivalentes ao
+ * valor canônico em minúsculas e sem espaços em branco nas bordas.
+ */
+describe('normalizeAiSource — variantes de espaços em branco e caixa', () => {
+  const cases: Array<[unknown, 'tavily' | 'tavily_cache' | 'suggested']> = [
+    [' tavily', 'tavily'],
+    ['tavily ', 'tavily'],
+    [' tavily ', 'tavily'],
+    ['\ttavily\n', 'tavily'],
+    ['TAVILY', 'tavily'],
+    ['Tavily', 'tavily'],
+    [' TaViLy ', 'tavily'],
+    ['TAVILY_CACHE', 'tavily_cache'],
+    ['Tavily_Cache', 'tavily_cache'],
+    [' tavily_cache\n', 'tavily_cache'],
+    ['SUGGESTED', 'suggested'],
+    ['Suggested', 'suggested'],
+    ['  suggested  ', 'suggested'],
+  ];
+
+  for (const [raw, expected] of cases) {
+    it(`coage ${JSON.stringify(raw)} → ${expected}`, () => {
+      expect(coerceAiSource(raw)).toBe(expected);
+      expect(normalizeAiSource(raw)).toBe(expected);
+      // coercion tem prioridade sobre fallback
+      expect(normalizeAiSource(raw, 'suggested')).toBe(expected);
+    });
+  }
+
+  it('coerção não afeta strings genuinamente inválidas', () => {
+    for (const bad of ['tavily_live', '  cache  ', 'TAVILY!', 'tavilyX', '']) {
+      expect(coerceAiSource(bad)).toBeNull();
+      expect(normalizeAiSource(bad)).toBe('suggested');
+    }
+  });
+
+  it('coerção também se aplica ao fallback quando raw é inválido', () => {
+    expect(normalizeAiSource(undefined, ' TAVILY ' as never)).toBe('tavily');
+    expect(normalizeAiSource({}, 'Tavily_Cache' as never)).toBe('tavily_cache');
+  });
+
+  it('coerceAiSource retorna null para não-strings', () => {
+    for (const v of [undefined, null, 0, 1, {}, [], true, false, Symbol('x')]) {
+      expect(coerceAiSource(v as unknown)).toBeNull();
     }
   });
 });

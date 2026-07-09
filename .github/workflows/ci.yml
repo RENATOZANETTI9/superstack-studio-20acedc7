@@ -141,6 +141,61 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------
+  # E2E — accessibility gate for the PartnersRota AI alert + source badge.
+  # Runs the axe-core assertions and focus/aria-live regression checks
+  # that live in partners-rota-ai-format-alert.spec.ts. Blocking so that
+  # any regression to the aria-live announcement or focus flow fails PR
+  # merges. Credentials (ADMIN_EMAIL/ADMIN_PASS) come from GitHub Actions
+  # secrets; when absent the suite auto-skips via test.skip().
+  # ---------------------------------------------------------------------
+  e2e-a11y:
+    name: E2E — a11y (aria-live, focus, axe)
+    runs-on: ubuntu-latest
+    needs: [unit, build]
+    env:
+      BASE_URL: http://127.0.0.1:4173
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+      - name: Build app
+        run: bun run build
+      - name: Start preview server
+        run: |
+          bunx vite preview --port 4173 --host 127.0.0.1 &
+          echo $! > preview.pid
+          for i in $(seq 1 30); do
+            if curl -sSf "$BASE_URL" >/dev/null; then
+              echo "preview up"; break
+            fi
+            sleep 1
+          done
+      - name: Run a11y E2E (partners-rota alert + badge)
+        run: bun run test:e2e:a11y -- --reporter=list
+      - name: Run visual regression (source badge/tooltip)
+        run: bun run test:e2e:visual -- --reporter=list
+      - name: Stop preview server
+        if: always()
+        run: |
+          if [ -f preview.pid ]; then kill "$(cat preview.pid)" || true; fi
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-a11y
+          path: |
+            playwright-report/
+            test-results/
+            e2e/__screenshots__/
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------
   # Aggregate required-check: this is the single job you point branch
   # protection at. It only succeeds if every gate above succeeded, so any
   # divergence in the permissions matrix or route guards blocks the merge.
@@ -148,7 +203,7 @@ jobs:
   ci-required:
     name: CI required
     runs-on: ubuntu-latest
-    needs: [unit, build, e2e-representante, verify-indexes]
+    needs: [unit, build, e2e-representante, e2e-a11y, verify-indexes]
     if: always()
     steps:
       - name: Fail if any dependency failed
@@ -156,11 +211,13 @@ jobs:
           if [ "${{ needs.unit.result }}" != "success" ] \
           || [ "${{ needs.build.result }}" != "success" ] \
           || [ "${{ needs.e2e-representante.result }}" != "success" ] \
+          || [ "${{ needs.e2e-a11y.result }}" != "success" ] \
           || [ "${{ needs.verify-indexes.result }}" != "success" ]; then
             echo "One or more required checks failed:"
             echo "  unit=${{ needs.unit.result }}"
             echo "  build=${{ needs.build.result }}"
             echo "  e2e=${{ needs.e2e-representante.result }}"
+            echo "  e2e-a11y=${{ needs.e2e-a11y.result }}"
             echo "  verify-indexes=${{ needs.verify-indexes.result }}"
             exit 1
           fi
