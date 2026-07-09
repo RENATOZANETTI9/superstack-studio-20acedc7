@@ -44,3 +44,95 @@ describe('normalizeAiSource', () => {
     expect(isAiSource(null)).toBe(false);
   });
 });
+
+/**
+ * Cobertura exaustiva por categoria de valor bruto: para cada tipo que o
+ * backend pode devolver em cenários degradados, `normalizeAiSource` deve
+ * SEMPRE retornar exatamente um dos três rótulos permitidos, sem depender
+ * de fallback quando este também é inválido.
+ */
+describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
+  const ALLOWED = ALLOWED_AI_SOURCES as readonly string[];
+
+  const buckets: Record<string, unknown[]> = {
+    undefined: [undefined],
+    null: [null],
+    'strings aleatórias': [
+      '',
+      ' ',
+      'x',
+      'foo',
+      'tavily_live',
+      'TAVILY',
+      'Tavily_Cache',
+      'suggested ',
+      ' tavily',
+      'null',
+      'undefined',
+      'random-string-🌐',
+    ],
+    números: [0, 1, -1, 42, NaN, Infinity, -Infinity, 3.14, Number.MAX_SAFE_INTEGER],
+    booleanos: [true, false],
+    objetos: [
+      {},
+      { source: 'tavily' },
+      { toString: () => 'tavily' },
+      new Date(),
+      new Map(),
+      new Set(),
+      Object.create(null),
+    ],
+    arrays: [[], ['tavily'], ['tavily', 'tavily_cache'], [null], [1, 2, 3]],
+    símbolos: [Symbol('tavily')],
+    funções: [() => 'tavily', function () { return 'tavily'; }],
+  };
+
+  for (const [label, values] of Object.entries(buckets)) {
+    it(`retorna sempre um valor permitido para ${label} (sem fallback)`, () => {
+      for (const v of values) {
+        const out = normalizeAiSource(v);
+        expect(ALLOWED, `entrada ${String(v)}`).toContain(out);
+        // Sem fallback válido, o valor default é 'suggested'.
+        expect(out).toBe('suggested');
+      }
+    });
+
+    it(`retorna sempre um valor permitido para ${label} com fallback inválido`, () => {
+      for (const v of values) {
+        for (const fb of [null, undefined, 'bogus', 42, {}] as unknown[]) {
+          const out = normalizeAiSource(v, fb as never);
+          expect(ALLOWED, `entrada ${String(v)} / fb ${String(fb)}`).toContain(out);
+          expect(out).toBe('suggested');
+        }
+      }
+    });
+
+    it(`preserva o fallback válido quando ${label} é inválido`, () => {
+      for (const v of values) {
+        for (const fb of ALLOWED_AI_SOURCES) {
+          const out = normalizeAiSource(v, fb);
+          expect(out).toBe(fb);
+        }
+      }
+    });
+  }
+
+  it('nunca retorna a string bruta recebida quando ela não pertence ao conjunto', () => {
+    const raw = ['tavily_LIVE', 'TAVILY', 'suggested!', ' tavily ', 'cache'];
+    for (const r of raw) {
+      const out = normalizeAiSource(r);
+      expect(out).not.toBe(r);
+      expect(ALLOWED).toContain(out);
+    }
+  });
+
+  it('é idempotente: normalizar duas vezes produz o mesmo resultado', () => {
+    const inputs: unknown[] = [undefined, null, 'x', 42, {}, [], 'tavily', 'tavily_cache', 'suggested'];
+    for (const i of inputs) {
+      const once = normalizeAiSource(i);
+      const twice = normalizeAiSource(once);
+      expect(twice).toBe(once);
+      expect(ALLOWED).toContain(twice);
+    }
+  });
+});
