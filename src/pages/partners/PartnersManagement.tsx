@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Phone, MapPin, User, Mail, Plus, CheckCircle2, Search } from 'lucide-react';
+import { Building2, Phone, MapPin, User, Mail, Plus, CheckCircle2, Search, Inbox, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ESPECIALIDADES = [
   'Clínica Geral',
@@ -50,13 +51,6 @@ interface Clinica {
   status: 'ativa' | 'pendente';
 }
 
-const MOCK_CLINICAS: Clinica[] = [
-  { id: '1', nome: 'Clínica São Lucas', especialidade: 'Cardiologia', bairro: 'Centro', cidade: 'São Paulo', estado: 'SP', telefone: '(11) 3333-1111', responsavel: 'Dr. Marcos Silva', status: 'ativa' },
-  { id: '2', nome: 'Instituto Vida Saúde', especialidade: 'Clínica Geral', bairro: 'Jardins', cidade: 'São Paulo', estado: 'SP', telefone: '(11) 3333-2222', responsavel: 'Dra. Ana Souza', status: 'ativa' },
-  { id: '3', nome: 'Clínica BemEstar', especialidade: 'Psicologia', bairro: 'Pinheiros', cidade: 'São Paulo', estado: 'SP', telefone: '(11) 3333-3333', responsavel: 'Dr. Pedro Costa', status: 'pendente' },
-  { id: '4', nome: 'Centro Médico Norte', especialidade: 'Ortopedia', bairro: 'Santana', cidade: 'São Paulo', estado: 'SP', telefone: '(11) 3333-4444', responsavel: 'Dra. Carla Lima', status: 'ativa' },
-];
-
 const FORM_INITIAL = {
   nome: '',
   especialidade: '',
@@ -90,33 +84,47 @@ const PartnersManagement = () => {
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [clinicasDB, setClinicasDB] = useState<any[] | null>(null);
   const [loadingClinicas, setLoadingClinicas] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      if (!user?.id) return;
-      setLoadingClinicas(true);
-      const { data: partnerData } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (partnerData?.id) {
-        setPartnerId(partnerData.id);
-        const { data: clinicas } = await supabase
-          .from('portfolio_clinics')
-          .select('*')
-          .eq('partner_id', partnerData.id)
-          .order('created_at', { ascending: false });
-        setClinicasDB(clinicas || []);
-      } else {
-        setClinicasDB([]);
-      }
-      setLoadingClinicas(false);
-    };
-    load();
+    loadClinicas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const clinicasLista: any[] = clinicasDB ?? MOCK_CLINICAS;
+  const loadClinicas = async () => {
+    if (!user?.id) return;
+    setLoadingClinicas(true);
+    setLoadError(null);
+    const { data: partnerData, error: partnerErr } = await supabase
+      .from('partners')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (partnerErr) {
+      setLoadError(partnerErr.message);
+      setLoadingClinicas(false);
+      return;
+    }
+    if (partnerData?.id) {
+      setPartnerId(partnerData.id);
+      const { data: clinicas, error: clinErr } = await supabase
+        .from('portfolio_clinics')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .order('created_at', { ascending: false });
+      if (clinErr) {
+        setLoadError(clinErr.message);
+        setLoadingClinicas(false);
+        return;
+      }
+      setClinicasDB(clinicas || []);
+    } else {
+      setClinicasDB([]);
+    }
+    setLoadingClinicas(false);
+  };
+
+  const clinicasLista: any[] = clinicasDB ?? [];
   const clinicasFiltradas = clinicasLista.filter((c: any) =>
     (c.nome || c.name || '').toLowerCase().includes(busca.toLowerCase()) ||
     (c.bairro || c.neighborhood || '').toLowerCase().includes(busca.toLowerCase()) ||
@@ -327,7 +335,28 @@ const PartnersManagement = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {clinicasFiltradas.map((c: any) => (
+            {loadingClinicas ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-lg" />
+              ))
+            ) : loadError ? (
+              <div className="col-span-2 text-center py-10 text-muted-foreground">
+                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-500 opacity-70" />
+                <p className="text-sm font-medium text-red-700">Não foi possível carregar as clínicas</p>
+                <p className="text-xs mt-1">{loadError}</p>
+                <Button size="sm" variant="outline" className="mt-3" onClick={loadClinicas}>Tentar novamente</Button>
+              </div>
+            ) : clinicasLista.length === 0 ? (
+              <div className="col-span-2 text-center py-12 text-muted-foreground">
+                <Inbox className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm font-medium">Sem dados ainda — nenhuma clínica cadastrada</p>
+                <p className="text-xs mt-1">Cadastre a primeira clínica no formulário acima para vê-la aqui.</p>
+              </div>
+            ) : clinicasFiltradas.length === 0 ? (
+              <div className="col-span-2 text-center py-10 text-muted-foreground text-sm">
+                Nenhuma clínica encontrada para "{busca}"
+              </div>
+            ) : clinicasFiltradas.map((c: any) => (
               <Card key={c.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-start justify-between">
@@ -360,11 +389,6 @@ const PartnersManagement = () => {
                 </CardContent>
               </Card>
             ))}
-            {clinicasFiltradas.length === 0 && (
-              <div className="col-span-2 text-center py-10 text-muted-foreground text-sm">
-                Nenhuma clínica encontrada para "{busca}"
-              </div>
-            )}
           </div>
         </div>
       </div>
