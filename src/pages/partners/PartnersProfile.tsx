@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, Phone, FileText, MapPin, Save, Loader2, Pill, Wrench, HeartPulse, Megaphone, Star, Target, DollarSign, TrendingUp, Info, Building2, AlertTriangle, CheckCircle2, TrendingDown } from 'lucide-react';
+import { User, Mail, Phone, FileText, MapPin, Save, Loader2, Pill, Wrench, HeartPulse, Megaphone, Star, Target, DollarSign, TrendingUp, Info, Building2, AlertTriangle, CheckCircle2, Inbox } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -249,46 +249,13 @@ export default function PartnersProfile() {
           </Card>
         </div>
 
-        {showAnalytics && <RepresentativeAnalyticsSections />}
+        {showAnalytics && <RepresentativeAnalyticsSections partnerId={partner.id} />}
       </div>
     </DashboardLayout>
   );
 }
 
-/* ---------- Representative dashboard (mocked) ---------- */
-
-const MOCK_WEEK_SIMULATIONS = [
-  { week: 'Sem 1', simulacoes: 142 },
-  { week: 'Sem 2', simulacoes: 168 },
-  { week: 'Sem 3', simulacoes: 195 },
-  { week: 'Sem 4', simulacoes: 221 },
-];
-
-const MOCK_WEEKLY_BREAKDOWN = [
-  { sem: 'Sem 1', cadastradas: 1, ativadas: 0, simulacoes: 142, contratos: 0 },
-  { sem: 'Sem 2', cadastradas: 1, ativadas: 1, simulacoes: 168, contratos: 1 },
-  { sem: 'Sem 3', cadastradas: 1, ativadas: 1, simulacoes: 195, contratos: 0 },
-  { sem: 'Sem 4', cadastradas: 0, ativadas: 0, simulacoes: 221, contratos: 2 },
-];
-
-const MOCK_CARTEIRA = {
-  acimaMetaComSim: [
-    { name: 'Clínica Dental Plus', simHoje: 62, meta: 50 },
-    { name: 'OdontoVida Premium', simHoje: 35, meta: 30 },
-    { name: 'Clínica Sorriso Mineiro', simHoje: 28, meta: 25 },
-  ],
-  abaixoMeta: [
-    { name: 'Clínica BH Sorriso', simHoje: 18, meta: 25 },
-    { name: 'Clínica Dental BH', simHoje: 12, meta: 20 },
-  ],
-  emAlerta: [
-    { name: 'Centro Odonto Minas', motivo: 'Sem simulações há 3 dias' },
-    { name: 'Clínica Saúde Total', motivo: 'Sem recepcionistas ativos' },
-  ],
-  aguardandoAtivacao: [
-    { name: 'Dental Plus Centro', cadastradaEm: '26/06/2026' },
-  ],
-};
+/* ---------- Representative dashboard (real data) ---------- */
 
 function RepresentativeDashboard({ isAdmin, userEmail, userName, userLocation }: { isAdmin: boolean; userEmail?: string | null; userName: string; userLocation: string | null }) {
   if (!isAdmin) {
@@ -332,56 +299,185 @@ function RepresentativeDashboard({ isAdmin, userEmail, userName, userLocation }:
         </CardContent>
       </Card>
 
-      {/* Bonificações */}
-      <div>
-        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
-        <Card><CardContent className="pt-5">
-          <p className="text-xs text-muted-foreground">Total acumulado no mês</p>
-          <p className="text-xl font-bold text-muted-foreground">—</p>
-          <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
-        </CardContent></Card>
-      </div>
-
-      <RepresentativeAnalyticsSections />
+      <RepresentativeAnalyticsSections partnerId={null} />
     </div>
   );
 }
 
-function RepresentativeAnalyticsSections() {
+function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="text-center py-10 text-muted-foreground">
+      <Inbox className="w-10 h-10 mx-auto mb-2 opacity-40" />
+      <p className="text-sm font-medium">{title}</p>
+      {hint && <p className="text-xs mt-1">{hint}</p>}
+    </div>
+  );
+}
+
+type WeekBucket = { key: string; label: string; start: Date; end: Date };
+
+function buildLast4Weeks(): WeekBucket[] {
+  const now = new Date();
+  const buckets: WeekBucket[] = [];
+  // Weeks anchored on Monday, last 4 including current
+  const day = now.getDay();
+  const diffToMonday = (day + 6) % 7;
+  const thisMonday = new Date(now);
+  thisMonday.setHours(0, 0, 0, 0);
+  thisMonday.setDate(thisMonday.getDate() - diffToMonday);
+  for (let i = 3; i >= 0; i--) {
+    const start = new Date(thisMonday);
+    start.setDate(start.getDate() - i * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    buckets.push({ key: `w${3 - i}`, label: `Sem ${4 - i}`, start, end });
+  }
+  return buckets;
+}
+
+function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | null }) {
+  const [loading, setLoading] = useState(true);
+  const [commissionAmount, setCommissionAmount] = useState<number>(0);
+  const [hasCommissionCycle, setHasCommissionCycle] = useState(false);
+  const [clinics, setClinics] = useState<any[]>([]);
+  const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
+
+  const weeks = useMemo(() => buildLast4Weeks(), []);
+
+  useEffect(() => {
+    if (!partnerId) { setLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const start28 = new Date(now);
+      start28.setDate(start28.getDate() - 28);
+
+      const [commRes, clinicsRes, metricsRes] = await Promise.all([
+        supabase
+          .from('partner_commissions')
+          .select('commission_amount, status, reference_month')
+          .eq('beneficiary_partner_id', partnerId)
+          .eq('reference_month', monthKey)
+          .in('status', ['PAID', 'APPROVED']),
+        supabase
+          .from('portfolio_clinics')
+          .select('id, nome, status, created_at, updated_at, ultima_visita')
+          .eq('partner_id', partnerId),
+        supabase
+          .from('partner_metrics_daily')
+          .select('metric_date, consultations, paid_contracts, active_clinics, total_clinics_direct')
+          .eq('partner_id', partnerId)
+          .gte('metric_date', start28.toISOString().slice(0, 10))
+          .order('metric_date', { ascending: true }),
+      ]);
+
+      if (cancelled) return;
+      const commRows = commRes.data ?? [];
+      setHasCommissionCycle(commRows.length > 0);
+      setCommissionAmount(commRows.reduce((s: number, r: any) => s + Number(r.commission_amount || 0), 0));
+      setClinics(clinicsRes.data ?? []);
+      setDailyMetrics(metricsRes.data ?? []);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [partnerId]);
+
+  const weekChart = useMemo(() =>
+    weeks.map(w => {
+      const sum = dailyMetrics.reduce((acc, m) => {
+        const d = new Date(m.metric_date);
+        return d >= w.start && d < w.end ? acc + Number(m.consultations || 0) : acc;
+      }, 0);
+      return { week: w.label, simulacoes: sum };
+    }), [weeks, dailyMetrics]);
+
+  const weeklyBreakdown = useMemo(() =>
+    weeks.map(w => {
+      const cadastradas = clinics.filter(c => {
+        const d = new Date(c.created_at); return d >= w.start && d < w.end;
+      }).length;
+      const ativadas = clinics.filter(c => {
+        if (c.status !== 'Ativo') return false;
+        const d = new Date(c.updated_at); return d >= w.start && d < w.end;
+      }).length;
+      const simulacoes = dailyMetrics.reduce((acc, m) => {
+        const d = new Date(m.metric_date);
+        return d >= w.start && d < w.end ? acc + Number(m.consultations || 0) : acc;
+      }, 0);
+      const contratos = dailyMetrics.reduce((acc, m) => {
+        const d = new Date(m.metric_date);
+        return d >= w.start && d < w.end ? acc + Number(m.paid_contracts || 0) : acc;
+      }, 0);
+      return { sem: w.label, cadastradas, ativadas, simulacoes, contratos };
+    }), [weeks, clinics, dailyMetrics]);
+
+  const chartHasData = weekChart.some(w => w.simulacoes > 0);
+  const breakdownHasData = weeklyBreakdown.some(w => w.cadastradas || w.ativadas || w.simulacoes || w.contratos);
+
+  // Metas do mês (real progress vs. default target 5)
+  const startOfMonth = useMemo(() => {
+    const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d;
+  }, []);
+  const cadastradasMes = clinics.filter(c => new Date(c.created_at) >= startOfMonth).length;
+  const ativadasMes = clinics.filter(c => c.status === 'Ativo' && new Date(c.updated_at) >= startOfMonth).length;
+  const metaCadastros = 5;
+  const metaAtivacoes = 5;
+
+  // Carteira grouped by real status
+  const ativas = clinics.filter(c => c.status === 'Ativo');
+  const leads = clinics.filter(c => c.status === 'Lead');
+  const inativas = clinics.filter(c => c.status === 'Inativo');
+  const hasClinics = clinics.length > 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2">
-        <span className="text-amber-600 mt-0.5">⚠️</span>
-        <div>
-          <p className="text-sm font-medium text-amber-800">Dados demonstrativos</p>
-          <p className="text-xs text-amber-700 mt-0.5">Metas, desempenho, carteira e gráfico abaixo são ilustrativos. Os valores reais serão populados automaticamente após os primeiros ciclos completos de simulação e comissão.</p>
-        </div>
+      {/* Bonificações reais */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /> Minhas Bonificações</h2>
+        <Card><CardContent className="pt-5">
+          <p className="text-xs text-muted-foreground">Total acumulado no mês (PAID + APPROVED)</p>
+          {hasCommissionCycle ? (
+            <p className="text-2xl font-bold text-green-600">
+              {commissionAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </p>
+          ) : (
+            <>
+              <p className="text-xl font-bold text-muted-foreground">—</p>
+              <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
+            </>
+          )}
+        </CardContent></Card>
       </div>
+
       {/* Metas do mês */}
       <div>
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Minhas Metas do Mês</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">Cadastros</p>
-            <p className="text-2xl font-bold">3<span className="text-sm text-muted-foreground font-normal"> / 5</span></p>
-            <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-primary" style={{ width: '60%' }} /></div>
-          </CardContent></Card>
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">Ativações</p>
-            <p className="text-2xl font-bold">2<span className="text-sm text-muted-foreground font-normal"> / 5</span></p>
-            <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-yellow-500" style={{ width: '40%' }} /></div>
-          </CardContent></Card>
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">Clínicas acima da meta</p>
-            <p className="text-2xl font-bold">60<span className="text-sm text-muted-foreground font-normal">%</span></p>
-            <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-green-500" style={{ width: '60%' }} /></div>
-          </CardContent></Card>
-          <Card><CardContent className="pt-5">
-            <p className="text-xs text-muted-foreground">SEH atual</p>
-            <p className="text-2xl font-bold">70.8</p>
-            <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-blue-500" style={{ width: '70.8%' }} /></div>
-          </CardContent></Card>
-        </div>
+        {!hasClinics ? (
+          <Card><CardContent className="pt-5"><EmptyState title="Sem dados ainda — aguardando primeiro ciclo" hint="Suas metas aparecerão assim que você tiver clínicas na carteira." /></CardContent></Card>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+            <Card><CardContent className="pt-5">
+              <p className="text-xs text-muted-foreground">Cadastros (mês)</p>
+              <p className="text-2xl font-bold">{cadastradasMes}<span className="text-sm text-muted-foreground font-normal"> / {metaCadastros}</span></p>
+              <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-primary" style={{ width: `${Math.min(100, (cadastradasMes / metaCadastros) * 100)}%` }} /></div>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5">
+              <p className="text-xs text-muted-foreground">Ativações (mês)</p>
+              <p className="text-2xl font-bold">{ativadasMes}<span className="text-sm text-muted-foreground font-normal"> / {metaAtivacoes}</span></p>
+              <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-yellow-500" style={{ width: `${Math.min(100, (ativadasMes / metaAtivacoes) * 100)}%` }} /></div>
+            </CardContent></Card>
+          </div>
+        )}
       </div>
 
       {/* Desempenho */}
@@ -390,9 +486,9 @@ function RepresentativeAnalyticsSections() {
           <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Meu Desempenho · últimas 4 semanas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          {chartHasData ? (<div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MOCK_WEEK_SIMULATIONS}>
+              <BarChart data={weekChart}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
                 <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -400,7 +496,9 @@ function RepresentativeAnalyticsSections() {
                 <Bar dataKey="simulacoes" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </div>) : (
+            <EmptyState title="Sem simulações registradas nas últimas 4 semanas" hint="O gráfico será populado a partir das métricas diárias da sua carteira." />
+          )}
         </CardContent>
       </Card>
 
@@ -409,8 +507,10 @@ function RepresentativeAnalyticsSections() {
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-primary" /> Desempenho Semana a Semana
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {MOCK_WEEKLY_BREAKDOWN.map(w => (
+        {!breakdownHasData ? (
+          <Card><CardContent className="pt-5"><EmptyState title="Sem dados ainda — aguardando primeiro ciclo" /></CardContent></Card>
+        ) : (<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {weeklyBreakdown.map(w => (
             <Card key={w.sem}>
               <CardContent className="pt-4">
                 <p className="text-xs font-bold text-primary mb-3 uppercase tracking-wide">{w.sem}</p>
@@ -435,7 +535,7 @@ function RepresentativeAnalyticsSections() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </div>)}
       </div>
 
       {/* Clínicas da Minha Carteira */}
@@ -443,60 +543,55 @@ function RepresentativeAnalyticsSections() {
         <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
           <Building2 className="w-4 h-4 text-primary" /> Clínicas da Minha Carteira
         </h2>
-        <div className="space-y-3">
+        {!hasClinics ? (
+          <Card><CardContent className="pt-5"><EmptyState title="Nenhuma clínica vinculada ainda" hint="Cadastre clínicas em 'Minhas Clínicas' para acompanhar a carteira." /></CardContent></Card>
+        ) : (<div className="space-y-3">
           <div className="rounded-lg border border-green-200 bg-green-50/40 p-3">
             <p className="text-xs font-semibold text-green-700 mb-2 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Ativas acima da meta ({MOCK_CARTEIRA.acimaMetaComSim.length})
+              <CheckCircle2 className="w-3.5 h-3.5" /> Ativas ({ativas.length})
             </p>
             <div className="space-y-1">
-              {MOCK_CARTEIRA.acimaMetaComSim.map(c => (
-                <div key={c.name} className="flex justify-between text-xs">
-                  <span className="text-foreground">{c.name}</span>
-                  <span className="text-green-700 font-medium">{c.simHoje} sim. / meta {c.meta}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50/40 p-3">
-            <p className="text-xs font-semibold text-yellow-700 mb-2 flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5" /> Ativas abaixo da meta ({MOCK_CARTEIRA.abaixoMeta.length})
-            </p>
-            <div className="space-y-1">
-              {MOCK_CARTEIRA.abaixoMeta.map(c => (
-                <div key={c.name} className="flex justify-between text-xs">
-                  <span className="text-foreground">{c.name}</span>
-                  <span className="text-yellow-700 font-medium">{c.simHoje} sim. / meta {c.meta}</span>
+              {ativas.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Nenhuma clínica ativa no momento.</p>
+              ) : ativas.map(c => (
+                <div key={c.id} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.nome}</span>
+                  <span className="text-green-700 font-medium">Ativa</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="rounded-lg border border-red-200 bg-red-50/40 p-3">
             <p className="text-xs font-semibold text-red-700 mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" /> Em alerta ({MOCK_CARTEIRA.emAlerta.length})
+              <AlertTriangle className="w-3.5 h-3.5" /> Inativas ({inativas.length})
             </p>
             <div className="space-y-1">
-              {MOCK_CARTEIRA.emAlerta.map(c => (
-                <div key={c.name} className="flex justify-between text-xs">
-                  <span className="text-foreground">{c.name}</span>
-                  <span className="text-red-700 font-medium">{c.motivo}</span>
+              {inativas.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Nenhuma clínica inativa.</p>
+              ) : inativas.map(c => (
+                <div key={c.id} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.nome}</span>
+                  <span className="text-red-700 font-medium">Inativa</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3">
             <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" /> Aguardando ativação ({MOCK_CARTEIRA.aguardandoAtivacao.length})
+              <Building2 className="w-3.5 h-3.5" /> Aguardando ativação · Leads ({leads.length})
             </p>
             <div className="space-y-1">
-              {MOCK_CARTEIRA.aguardandoAtivacao.map(c => (
-                <div key={c.name} className="flex justify-between text-xs">
-                  <span className="text-foreground">{c.name}</span>
-                  <span className="text-blue-700 font-medium">Cadastrada em {c.cadastradaEm}</span>
+              {leads.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Nenhum lead pendente.</p>
+              ) : leads.map(c => (
+                <div key={c.id} className="flex justify-between text-xs">
+                  <span className="text-foreground">{c.nome}</span>
+                  <span className="text-blue-700 font-medium">Cadastrada em {new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </div>)}
       </div>
     </div>
   );
