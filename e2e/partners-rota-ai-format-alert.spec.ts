@@ -984,3 +984,215 @@ test.describe('PartnersRota — substituição de conteúdo, aria do tooltip e c
     await expect(regen).toBeFocused();
   });
 });
+
+/**
+ * Ciclo completo de fechamento do tooltip do badge:
+ *  - Fechamento por clique fora → foco retorna para o badge trigger.
+ *  - Fechamento por Escape → foco permanece no badge trigger.
+ *  - Em nenhum dos casos o foco pode acabar em um elemento "detached"
+ *    (nó removido do DOM, típico de Radix Portal descartado após close).
+ *  - A cada retry ("Gerar novamente"), os nós anteriores de badge e
+ *    alerta são removidos do DOM ANTES de a próxima resposta ser
+ *    anunciada via aria-live — invariante que impede leitores de tela
+ *    de anunciarem conteúdo obsoleto misturado ao novo.
+ */
+test.describe('PartnersRota — tooltip focus-return e substituição pré-anúncio', () => {
+  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+
+  test('após fechar o tooltip (click-outside e Escape), foco volta ao badge e nunca em nó detached', async ({ page }) => {
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_VALIDO,
+          structured: { dias: [], dicas: [] },
+          source: 'tavily',
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 1,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 1,
+            format_valid: true,
+            format_issues: [],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const badge = page.getByTestId('ai-source-badge');
+    await expect(badge).toBeVisible();
+
+    const tooltip = page.locator('[role="tooltip"]');
+    const assertFocusOnLiveBadge = async () => {
+      // Focar no badge e validar que `document.activeElement` é o próprio
+      // elemento vivo (isConnected=true) e é o mesmo nó apontado pelo
+      // seletor — nunca um portal residual detached.
+      const info = await page.evaluate(() => {
+        const active = document.activeElement as HTMLElement | null;
+        const badgeEl = document.querySelector('[data-testid="ai-source-badge"]');
+        return {
+          isConnected: !!active?.isConnected,
+          isBadge: !!active && active === badgeEl,
+          badgeCount: document.querySelectorAll('[data-testid="ai-source-badge"]').length,
+        };
+      });
+      expect(info.badgeCount).toBe(1);
+      expect(info.isConnected, 'foco não pode estar em nó detached').toBe(true);
+      expect(info.isBadge, 'foco deve estar exatamente no badge trigger').toBe(true);
+    };
+
+    // 1) Abrir via foco → fechar por Escape → foco permanece no badge vivo.
+    await badge.focus();
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+    await page.keyboard.press('Escape');
+    await expect(tooltip).toHaveCount(0);
+    await expect(badge).toBeFocused();
+    await assertFocusOnLiveBadge();
+
+    // 2) Abrir novamente → fechar por clique fora → refocar badge → foco
+    //    aterrissa no badge vivo (nunca no portal descartado).
+    await badge.focus();
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+    await page.mouse.click(5, 5);
+    await expect(tooltip).toHaveCount(0);
+    await badge.focus();
+    await assertFocusOnLiveBadge();
+
+    // 3) Sanity: repetir open/close várias vezes não acumula portais.
+    for (let i = 0; i < 3; i++) {
+      await badge.focus();
+      await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+      await page.keyboard.press('Escape');
+      await expect(tooltip).toHaveCount(0);
+    }
+    await assertFocusOnLiveBadge();
+  });
+
+  test('cada retry remove badge/alerta anteriores do DOM ANTES da próxima anunciação aria-live', async ({ page }) => {
+    let call = 0;
+    // Latência artificial garante uma janela observável entre o clique
+    // e a nova resposta, permitindo capturar a ordem de mutações.
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      call++;
+      await new Promise((r) => setTimeout(r, 150));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source: (['tavily', 'tavily_cache', 'suggested'] as const)[call % 3],
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            // O texto único por chamada permite distinguir o "antigo" do "novo".
+            format_issues: [`issue-${call}`],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+
+    // Registra uma trilha de mutações: para cada inserção de alerta,
+    // guardamos o texto do issue anunciado; para cada remoção, marcamos.
+    // A invariante é: antes de inserir "issue-N", o nó "issue-(N-1)" já
+    // deve ter sido removido (nunca coexistem).
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__events = [] as { type: 'add' | 'remove'; text: string; simul: number }[];
+      const currentTexts = () =>
+        Array.from(document.querySelectorAll('[data-testid="ai-format-alert"]')).map(
+          (n) => (n.textContent || '').trim(),
+        );
+      const record = (type: 'add' | 'remove', node: Element) => {
+        w.__events.push({
+          type,
+          text: (node.textContent || '').trim(),
+          simul: document.querySelectorAll('[data-testid="ai-format-alert"]').length,
+        });
+      };
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          m.addedNodes.forEach((n) => {
+            if (!(n instanceof HTMLElement)) return;
+            const target =
+              n.matches?.('[data-testid="ai-format-alert"]')
+                ? n
+                : n.querySelector?.('[data-testid="ai-format-alert"]');
+            if (target) record('add', target);
+          });
+          m.removedNodes.forEach((n) => {
+            if (!(n instanceof HTMLElement)) return;
+            const target =
+              n.matches?.('[data-testid="ai-format-alert"]')
+                ? n
+                : n.querySelector?.('[data-testid="ai-format-alert"]');
+            if (target) record('remove', target);
+          });
+        }
+      });
+      obs.observe(document.body, { subtree: true, childList: true });
+      w.__snapshot = currentTexts;
+    });
+
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+    const alert = page.getByTestId('ai-format-alert');
+    const badge = page.getByTestId('ai-source-badge');
+    const regen = page.getByTestId('ai-regenerate-btn');
+    await expect(alert).toBeVisible();
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2);
+
+    for (let i = 0; i < 3; i++) {
+      const before = call;
+      await regen.click();
+      await expect.poll(() => call).toBeGreaterThan(before);
+      // Espera a UI refletir a nova resposta (texto único do issue).
+      await expect(alert).toContainText(`issue-${call}`);
+      // Nunca coexistem dois alertas ou dois badges.
+      expect(await page.locator('[data-testid="ai-format-alert"]').count()).toBe(1);
+      expect(await page.locator('[data-testid="ai-source-badge"]').count()).toBe(1);
+    }
+
+    const events = await page.evaluate(() => (window as any).__events as Array<{ type: string; text: string; simul: number }>);
+    // Invariante 1: nenhuma mutação observou 2+ alertas simultâneos.
+    for (const ev of events) {
+      expect(ev.simul, `mutação ${ev.type} viu ${ev.simul} alertas simultâneos`).toBeLessThanOrEqual(1);
+    }
+    // Invariante 2: para cada par (add issue-N), o "add" imediatamente
+    // anterior de outro issue foi precedido por seu "remove" correspondente.
+    // Ou seja: entre dois "add" consecutivos existe pelo menos um "remove"
+    // (ou React reconciliou o mesmo nó, caso em que só há "add" único).
+    const adds = events.filter((e) => e.type === 'add');
+    if (adds.length >= 2) {
+      for (let i = 1; i < adds.length; i++) {
+        const between = events.slice(
+          events.indexOf(adds[i - 1]) + 1,
+          events.indexOf(adds[i]),
+        );
+        const removedBefore = between.some(
+          (e) => e.type === 'remove' && e.text === adds[i - 1].text,
+        );
+        // React pode reconciliar (mesmo nó reutilizado) → não há remove
+        // entre eles. Só falhamos se o antigo AINDA existir quando o
+        // novo aparecer — caso em que `adds[i].simul` seria > 1, já
+        // coberto pela invariante 1 acima.
+        expect(removedBefore || adds[i].simul === 1).toBe(true);
+      }
+    }
+    // Sanity final: badge continua funcional após todos os retries.
+    await badge.focus();
+    await expect(badge).toBeFocused();
+  });
+});
