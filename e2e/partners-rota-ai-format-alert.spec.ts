@@ -477,3 +477,225 @@ test.describe('PartnersRota — fallback de source e tooltip fecha ao clicar for
     await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
   });
 });
+
+/**
+ * Estresse do fluxo "Gerar novamente" — várias tentativas seguidas:
+ *  - Cada resposta com issues produz exatamente UMA inserção no
+ *    contêiner aria-live (nenhum anúncio duplicado).
+ *  - O tooltip do badge continua abrindo/fechando corretamente.
+ *  - A navegação por teclado (Tab a partir do alerta chega ao botão
+ *    e ao badge) permanece funcional após N retries.
+ */
+test.describe('PartnersRota — múltiplos retries mantêm a11y e tooltip', () => {
+  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+
+  const ALLOWED = ['tavily', 'tavily_cache', 'suggested'] as const;
+
+  test('N cliques em "Gerar novamente" não duplicam aria-live nem travam o teclado', async ({ page }) => {
+    let call = 0;
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      const sources = ['tavily', 'tavily_cache', 'suggested'] as const;
+      const source = sources[call % sources.length];
+      call++;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          source,
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: false,
+            format_issues: [
+              'Sem cabeçalhos "## Dia"',
+              'Sem itens numerados "1."',
+            ],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+
+    // Observa (1) quantas vezes o alerta é inserido no DOM e (2) quantos
+    // nós [aria-live] existem em cada momento — nunca deve haver >1.
+    await page.evaluate(() => {
+      (window as any).__ariaLiveInsertions = 0;
+      (window as any).__ariaLiveMaxCount = 0;
+      const bump = () => {
+        const n = document.querySelectorAll('[data-testid="ai-format-alert"]').length;
+        if (n > (window as any).__ariaLiveMaxCount) {
+          (window as any).__ariaLiveMaxCount = n;
+        }
+      };
+      const obs = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          m.addedNodes.forEach((n) => {
+            if (!(n instanceof HTMLElement)) return;
+            if (
+              n.matches?.('[data-testid="ai-format-alert"]') ||
+              n.querySelector?.('[data-testid="ai-format-alert"]')
+            ) {
+              (window as any).__ariaLiveInsertions++;
+              bump();
+            }
+          });
+        }
+      });
+      obs.observe(document.body, { subtree: true, childList: true });
+      (window as any).__ariaLiveObserver = obs;
+    });
+
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const alert = page.getByTestId('ai-format-alert');
+    const badge = page.getByTestId('ai-source-badge');
+    const regen = page.getByTestId('ai-regenerate-btn');
+
+    await expect(alert).toBeVisible();
+    // 1ª resposta + auto-fallback → pelo menos 2 chamadas.
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2);
+
+    // Executa 5 retries manuais em sequência.
+    const N = 5;
+    for (let i = 0; i < N; i++) {
+      const before = call;
+      await regen.click();
+      await expect.poll(() => call).toBeGreaterThan(before);
+      await expect(alert).toBeVisible();
+
+      // Após cada resposta, o badge reflete um source permitido.
+      const src = await badge.getAttribute('data-source');
+      expect(ALLOWED).toContain(src as (typeof ALLOWED)[number]);
+
+      // Só existe UM contêiner de alerta aria-live no DOM.
+      const liveCount = await page.locator('[data-testid="ai-format-alert"]').count();
+      expect(liveCount).toBe(1);
+    }
+
+    // Inserções por resposta == número de chamadas (nunca duplicadas).
+    const totalInsertions = await page.evaluate(
+      () => (window as any).__ariaLiveInsertions as number,
+    );
+    // Cada chamada gera no máximo uma inserção; pode haver menos se o
+    // React reconciliar sem remontar. O invariante crítico é: nunca
+    // mais de uma por chamada e nunca mais de 1 nó vivo simultaneamente.
+    expect(totalInsertions).toBeLessThanOrEqual(call);
+    const maxSimultaneous = await page.evaluate(
+      () => (window as any).__ariaLiveMaxCount as number,
+    );
+    expect(maxSimultaneous).toBeLessThanOrEqual(1);
+
+    // Tooltip do badge continua funcional após os retries.
+    await badge.focus();
+    const tooltip = page.locator('[role="tooltip"]');
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+    await page.keyboard.press('Escape');
+    await expect(tooltip.first()).toBeHidden({ timeout: 1500 });
+
+    // Navegação por teclado ainda alcança regen e badge partindo do alerta.
+    await alert.evaluate((el) => (el as HTMLElement).focus());
+    let reachedRegen = false;
+    let reachedBadge = false;
+    for (let i = 0; i < 15; i++) {
+      await page.keyboard.press('Tab');
+      if (!reachedRegen && (await regen.evaluate((el) => el === document.activeElement))) {
+        reachedRegen = true;
+      }
+      if (reachedRegen && (await badge.evaluate((el) => el === document.activeElement))) {
+        reachedBadge = true;
+        break;
+      }
+    }
+    expect(reachedRegen).toBe(true);
+    expect(reachedBadge).toBe(true);
+  });
+
+  test('respostas com source inválido/null são sempre normalizadas no retry', async ({ page }) => {
+    // Sequência determinística de sources inválidos; a UI deve normalizar
+    // cada um deles para um valor de ALLOWED e nunca renderizar o valor bruto.
+    const invalidSources: unknown[] = [
+      undefined,
+      null,
+      '',
+      'random-string',
+      'TAVILY',            // case-sensitive: inválido
+      'tavily_live',
+      123,
+      { source: 'tavily' } as unknown,
+      [],
+    ];
+    let call = 0;
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      const idx = Math.min(call, invalidSources.length - 1);
+      call++;
+      const payload: Record<string, unknown> = {
+        roteiro: ROTEIRO_INVALIDO,
+        structured: { dias: [], dicas: [] },
+        meta: {
+          tavily_configured: false,
+          tavily_hits: 0,
+          cache_hits: 0,
+          tavily_errors: 0,
+          bairros_queried: 0,
+          format_valid: false,
+          format_issues: ['Sem cabeçalhos "## Dia"'],
+        },
+      };
+      // Só inclui `source` quando o índice não corresponde a `undefined`.
+      if (invalidSources[idx] !== undefined) payload.source = invalidSources[idx];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(payload),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const badge = page.getByTestId('ai-source-badge');
+    const regen = page.getByTestId('ai-regenerate-btn');
+    await expect(badge).toBeVisible();
+    // 1ª (source undefined) + auto-fallback.
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2);
+
+    // Percorre todos os sources inválidos restantes via "Gerar novamente".
+    const observed: string[] = [];
+    const src0 = await badge.getAttribute('data-source');
+    expect(ALLOWED).toContain(src0 as (typeof ALLOWED)[number]);
+    observed.push(src0!);
+
+    for (let i = call; i < invalidSources.length; i++) {
+      const before = call;
+      await regen.click();
+      await expect.poll(() => call).toBeGreaterThan(before);
+      const src = await badge.getAttribute('data-source');
+      expect(
+        ALLOWED,
+        `data-source após resposta inválida "${String(invalidSources[i - 1])}"`,
+      ).toContain(src as (typeof ALLOWED)[number]);
+      observed.push(src!);
+    }
+
+    // O texto visível do badge também precisa corresponder a um dos rótulos
+    // conhecidos — nunca renderiza a string bruta recebida.
+    const label = (await badge.textContent())?.trim() ?? '';
+    expect(
+      ['🌐 Tavily', '💾 Cache', '✨ Sugestões IA'].some((l) => label.includes(l.replace(/^[^ ]+ /, ''))),
+      `label inesperado: "${label}"`,
+    ).toBe(true);
+
+    // Todos os valores observados pertencem a ALLOWED.
+    for (const s of observed) {
+      expect(ALLOWED).toContain(s as (typeof ALLOWED)[number]);
+    }
+  });
+});
