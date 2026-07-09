@@ -1305,28 +1305,48 @@ export default function PartnersRota() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
                     {aiSource && (
-                      <Badge
-                        variant="outline"
-                        className={
-                          aiSource === 'tavily'
-                            ? 'ml-1 border-green-300 bg-green-50 text-green-700'
-                            : aiSource === 'tavily_cache'
-                              ? 'ml-1 border-blue-300 bg-blue-50 text-blue-700'
-                              : 'ml-1 border-amber-300 bg-amber-50 text-amber-700'
-                        }
-                        title={
-                          aiSource === 'tavily'
-                            ? 'Clínicas encontradas na internet (Tavily)'
-                            : aiSource === 'tavily_cache'
-                              ? 'Clínicas do cache (Tavily) — busca recente reutilizada'
-                              : 'Nenhum dado externo — sugestões geradas pela IA'
-                        }
-                        aria-label={`Origem do roteiro: ${aiSource}`}
-                      >
-                        {aiSource === 'tavily' && '🌐 Tavily'}
-                        {aiSource === 'tavily_cache' && '💾 Cache'}
-                        {aiSource === 'suggested' && '✨ Sugestões IA'}
-                      </Badge>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            tabIndex={0}
+                            data-testid="ai-source-badge"
+                            data-source={aiSource}
+                            variant="outline"
+                            className={
+                              aiSource === 'tavily'
+                                ? 'ml-1 border-green-300 bg-green-50 text-green-700 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                                : aiSource === 'tavily_cache'
+                                  ? 'ml-1 border-blue-300 bg-blue-50 text-blue-700 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                                  : 'ml-1 border-amber-300 bg-amber-50 text-amber-700 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                            }
+                            aria-label={`Origem do roteiro: ${aiSource}`}
+                          >
+                            {aiSource === 'tavily' && '🌐 Tavily'}
+                            {aiSource === 'tavily_cache' && '💾 Cache'}
+                            {aiSource === 'suggested' && '✨ Sugestões IA'}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-xs leading-relaxed">
+                          {aiSource === 'tavily' && (
+                            <>
+                              <p className="font-semibold">Tavily (busca ao vivo)</p>
+                              <p>Clínicas obtidas em tempo real da internet via API Tavily. Usado quando há bairros informados e a busca retorna resultados novos.</p>
+                            </>
+                          )}
+                          {aiSource === 'tavily_cache' && (
+                            <>
+                              <p className="font-semibold">Cache Tavily</p>
+                              <p>Resultados reaproveitados de uma busca anterior (TTL de 7 dias) para a mesma cidade, bairro, especialidade e tipo. Reduz custo e latência.</p>
+                            </>
+                          )}
+                          {aiSource === 'suggested' && (
+                            <>
+                              <p className="font-semibold">Sugestões da IA</p>
+                              <p>Nenhum dado externo disponível — a IA gerou nomes plausíveis para prospecção. Usado quando não há bairros, Tavily não está configurado ou a busca falhou.</p>
+                            </>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
@@ -1349,17 +1369,37 @@ export default function PartnersRota() {
                 <CardContent>
                   {!aiFormatValid && aiFormatIssues.length > 0 && (
                     <div
+                      ref={aiFormatAlertRef}
                       role="alert"
-                      className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                      aria-live="polite"
+                      aria-atomic="true"
+                      tabIndex={-1}
+                      data-testid="ai-format-alert"
+                      className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                     >
-                      <div className="font-semibold mb-1">
-                        ⚠️ O roteiro pode não renderizar corretamente:
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="font-semibold mb-1">
+                            ⚠️ O roteiro pode não renderizar corretamente:
+                          </div>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            {aiFormatIssues.map((i, k) => (
+                              <li key={k}>{i}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-testid="ai-regenerate-btn"
+                          disabled={aiLoading}
+                          onClick={() => void handleGenerateAI()}
+                          className="shrink-0 h-7 gap-1 border-amber-400 text-amber-800 hover:bg-amber-100"
+                        >
+                          {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                          Gerar novamente
+                        </Button>
                       </div>
-                      <ul className="list-disc pl-4 space-y-0.5">
-                        {aiFormatIssues.map((i, k) => (
-                          <li key={k}>{i}</li>
-                        ))}
-                      </ul>
                     </div>
                   )}
                   {/* Bulk actions bar */}
