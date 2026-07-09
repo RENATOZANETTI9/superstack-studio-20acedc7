@@ -270,17 +270,26 @@ jobs:
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 14
-      # test-results/ recebe trace.zip, screenshots e videos apenas para
-      # tentativas que falharam (trace: on-first-retry, screenshot/video:
-      # only-on-failure/retain-on-failure). Publicamos somente quando algum
-      # passo falhou para não gerar artefatos vazios em builds verdes.
-      - name: Upload failure artifacts (traces, screenshots, videos)
+      # Traces são sempre publicados (mesmo em builds verdes com retry) para
+      # facilitar diagnósticos de flakes intermitentes. `if-no-files-found:
+      # ignore` evita falhar quando não há trace nenhum (execução limpa sem
+      # retries). Screenshots e vídeos ficam restritos a falhas para reduzir
+      # o custo/tempo de debugging.
+      - name: Upload Playwright traces (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-a11y-${{ github.run_attempt }}
+          path: |
+            test-results/**/trace.zip
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload failure artifacts (screenshots, videos)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-failures-a11y-${{ github.run_attempt }}
           path: |
-            test-results/**/trace.zip
             test-results/**/*.png
             test-results/**/*.webm
             e2e/__screenshots__/
