@@ -259,6 +259,7 @@ const PartnersBonificacoes = () => {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Histórico de Pagamentos</CardTitle>
+                  <p className="text-xs text-amber-600">⚠️ Valores demonstrativos</p>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -383,6 +384,9 @@ const PixPorAtendenteTab = () => {
         <p className="text-xs text-muted-foreground">Baseado em contratos pagos no período · Corte: 25/06/2026</p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
+          ⚠️ <strong>Dados demonstrativos</strong> — os valores reais serão calculados automaticamente ao final de cada ciclo mensal de pagamentos.
+        </div>
         <div className="flex gap-2 flex-wrap">
           <Button onClick={exportarCSV} className="bg-primary hover:bg-primary/90">
             <Download className="h-4 w-4 mr-2" /> Exportar para Pagamento
@@ -458,6 +462,9 @@ const MimoAtivoTab = () => (
         <p className="text-xs text-muted-foreground mt-1">Período: 30/06 a 04/07/2026 · Meta: 50 simulações por clínica para atingir Prata</p>
       </CardHeader>
       <CardContent>
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700 flex items-center gap-2 mb-3">
+          ⚠️ <strong>Dados demonstrativos</strong> — as simulações reais serão sincronizadas automaticamente pela plataforma.
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
