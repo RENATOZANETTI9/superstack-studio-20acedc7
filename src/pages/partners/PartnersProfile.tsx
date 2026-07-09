@@ -497,7 +497,7 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
               </BarChart>
             </ResponsiveContainer>
           </div>) : (
-            <EmptyState title="Sem simulações registradas nas últimas 4 semanas" hint="O gráfico será populado a partir das métricas diárias da sua carteira." />
+            <EmptyState title="Sem simulações registradas nas últimas 4 semanas" hint={clinics.length === 0 ? 'Cadastre clínicas para começar a gerar métricas diárias.' : 'Aguardando primeiras simulações da sua carteira ativa.'} />
           )}
         </CardContent>
       </Card>
