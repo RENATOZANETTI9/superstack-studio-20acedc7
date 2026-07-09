@@ -1310,8 +1310,14 @@ export default function PartnersRota() {
                   </Card>
 
               <Card className="shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
+                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                   <CardTitle
+                     id="ai-route-title"
+                     className="text-base flex items-center gap-2"
+                     aria-describedby={
+                       !aiFormatValid && aiFormatIssues.length > 0 ? 'ai-format-alert' : undefined
+                     }
+                   >
                     <Sparkles className="w-4 h-4 text-primary" /> Roteiro Gerado pela IA
                     {aiSource && (
                       <Tooltip>
@@ -1379,9 +1385,11 @@ export default function PartnersRota() {
                   {!aiFormatValid && aiFormatIssues.length > 0 && (
                     <div
                       ref={aiFormatAlertRef}
+                      id="ai-format-alert"
                       role="alert"
                       aria-live="polite"
                       aria-atomic="true"
+                      aria-labelledby="ai-route-title"
                       tabIndex={-1}
                       data-testid="ai-format-alert"
                       className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
