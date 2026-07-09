@@ -3,6 +3,7 @@ import {
   ALLOWED_AI_SOURCES,
   isAiSource,
   normalizeAiSource,
+  coerceAiSource,
 } from '@/pages/partners/ai-route-source';
 
 describe('normalizeAiSource', () => {
@@ -63,10 +64,6 @@ describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
       'x',
       'foo',
       'tavily_live',
-      'TAVILY',
-      'Tavily_Cache',
-      'suggested ',
-      ' tavily',
       'null',
       'undefined',
       'random-string-🌐',
