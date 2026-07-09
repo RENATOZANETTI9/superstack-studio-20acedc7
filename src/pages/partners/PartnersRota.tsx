@@ -18,6 +18,9 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import {
+  Tooltip, TooltipTrigger, TooltipContent,
+} from '@/components/ui/tooltip';
+import {
   MapPin, ChevronLeft, ChevronRight, Sparkles, Search, Phone, Gift,
   Target, Calendar, Users, CheckCircle2, Share2, Building2, Save, ClipboardCheck,
   Upload, Plus, Loader2, Copy, MoreVertical, Pencil, Trash2, Mic, MicOff
@@ -170,6 +173,7 @@ export default function PartnersRota() {
   const [aiSource, setAiSource] = useState<'tavily' | 'tavily_cache' | 'suggested' | null>(null);
   const [aiFormatIssues, setAiFormatIssues] = useState<string[]>([]);
   const [aiFormatValid, setAiFormatValid] = useState<boolean>(true);
+  const aiFormatAlertRef = useRef<HTMLDivElement>(null);
   const [aiRouteFilter, setAiRouteFilter] = useState<'todos' | 'pendente' | 'conversamos' | 'nao'>('todos');
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
@@ -358,9 +362,11 @@ export default function PartnersRota() {
     toast.success(`${targets.length} item(ns) marcados`);
   };
 
-  const handleGenerateAI = async () => {
+  const handleGenerateAI = async (opts?: { isRetry?: boolean }) => {
+    const isRetry = !!opts?.isRetry;
     setAiLoading(true);
-    if (!aiKeepMarks) setAiRoute(null);
+    if (!aiKeepMarks && !isRetry) setAiRoute(null);
+    const previousSource = aiSource;
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-route', {
         body: {
@@ -371,17 +377,23 @@ export default function PartnersRota() {
           tipoLocal: aiTipoLocal !== 'todos' ? aiTipoLocal : undefined,
           faturamentoMedio: aiFaturamentoMedio || undefined,
           clinicasPorDia: aiClinicasPorDia || undefined,
-          notasAdicionais: aiNotas || undefined,
+          notasAdicionais: isRetry
+            ? `${aiNotas ? aiNotas + ' | ' : ''}IMPORTANTE: siga estritamente o formato com cabeçalhos "## Dia" e itens numerados "1.".`
+            : (aiNotas || undefined),
         },
       });
       if (error) throw error;
       const roteiro: string = data?.roteiro || 'Roteiro não disponível.';
       setAiRoute(roteiro);
       const src = data?.source as 'tavily' | 'tavily_cache' | 'suggested' | undefined;
-      setAiSource(src && ['tavily', 'tavily_cache', 'suggested'].includes(src) ? src : 'suggested');
+      const nextSource = src && ['tavily', 'tavily_cache', 'suggested'].includes(src)
+        ? src
+        : (previousSource ?? 'suggested');
+      setAiSource(nextSource);
       const issues: string[] = Array.isArray(data?.meta?.format_issues) ? data.meta.format_issues : [];
+      const valid = data?.meta?.format_valid !== false;
       setAiFormatIssues(issues);
-      setAiFormatValid(data?.meta?.format_valid !== false);
+      setAiFormatValid(valid);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
       const baseExact = aiKeepMarks ? aiStatusByKey : {};
@@ -413,6 +425,14 @@ export default function PartnersRota() {
           setAiStatusByKey({});
           setAiNormStatusByKey({});
         }
+      }
+
+      // Auto-fallback: se falhou validação e ainda não é retry, tenta novamente
+      // reforçando o formato. Mantém `source` consistente com o retorno anterior.
+      if (!valid && !isRetry) {
+        toast.message('Formato inválido detectado, tentando novamente…');
+        setAiLoading(false);
+        return handleGenerateAI({ isRetry: true });
       }
     } catch (err: any) {
       const msg = String(err?.message || err || '');
