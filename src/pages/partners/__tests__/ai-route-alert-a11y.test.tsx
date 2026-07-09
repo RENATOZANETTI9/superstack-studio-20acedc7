@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { useState } from 'react';
 import {
@@ -60,11 +60,12 @@ function AlertHarness({ issues }: { issues: string[] }) {
 }
 
 describe('AI route format-alert ARIA contract', () => {
-  it('title.aria-describedby === alert.id and alert.aria-labelledby === title.id', () => {
-    cleanup();
-    render(<AlertHarness issues={['Sem cabeçalhos "## Dia"']} />);
+  afterEach(() => cleanup());
 
-    const title = document.getElementById(AI_ROUTE_TITLE_ID)!;
+  it('title.aria-describedby === alert.id and alert.aria-labelledby === title.id', () => {
+    const { container } = render(<AlertHarness issues={['Sem cabeçalhos "## Dia"']} />);
+
+    const title = container.querySelector(`#${AI_ROUTE_TITLE_ID}`) as HTMLElement;
     const alert = screen.getByTestId('ai-format-alert');
 
     expect(title).toBeTruthy();
@@ -76,8 +77,7 @@ describe('AI route format-alert ARIA contract', () => {
   });
 
   it('id and aria-labelledby stay identical when issues/source content changes', async () => {
-    cleanup();
-    const { getByTestId } = render(
+    const { getByTestId, container } = render(
       <AlertHarness issues={['Sem cabeçalhos "## Dia"', 'Sem itens numerados "1."']} />,
     );
 
@@ -97,7 +97,7 @@ describe('AI route format-alert ARIA contract', () => {
     expect(alertAfter.getAttribute('aria-labelledby')).toBe(AI_ROUTE_TITLE_ID);
 
     // Title still points at the same alert id.
-    const title = document.getElementById(AI_ROUTE_TITLE_ID)!;
+    const title = container.querySelector(`#${AI_ROUTE_TITLE_ID}`) as HTMLElement;
     expect(title.getAttribute('aria-describedby')).toBe(AI_FORMAT_ALERT_ID);
 
     // The list content actually changed, proving we mutated something.
@@ -106,16 +106,12 @@ describe('AI route format-alert ARIA contract', () => {
   });
 
   it('aria-describedby is removed when there are no more issues (alert unmounted)', () => {
-    cleanup();
-    const { rerender } = render(<AlertHarness issues={['x']} />);
-    expect(
-      document.getElementById(AI_ROUTE_TITLE_ID)!.getAttribute('aria-describedby'),
-    ).toBe(AI_FORMAT_ALERT_ID);
+    const { rerender, container } = render(<AlertHarness issues={['x']} />);
+    const title = () => container.querySelector(`#${AI_ROUTE_TITLE_ID}`) as HTMLElement;
+    expect(title().getAttribute('aria-describedby')).toBe(AI_FORMAT_ALERT_ID);
 
     rerender(<AlertHarness issues={[]} />);
-    expect(screen.queryByTestId('ai-format-alert')).toBeNull();
-    expect(
-      document.getElementById(AI_ROUTE_TITLE_ID)!.getAttribute('aria-describedby'),
-    ).toBeNull();
+    expect(container.querySelector('[data-testid="ai-format-alert"]')).toBeNull();
+    expect(title().getAttribute('aria-describedby')).toBeNull();
   });
 });
