@@ -161,3 +161,98 @@ for (const vp of VIEWPORTS) {
     });
   });
 }
+
+/**
+ * Garantia extra de determinismo: durante a janela do snapshot, nem o
+ * badge nem o tooltip podem ter animação/transição CSS em execução. Se
+ * qualquer `animation-name` ≠ "none" ou `transition-duration` > 0 for
+ * detectado no trigger, no content ou em qualquer descendente, o teste
+ * falha — indicando que o CSS injetado (reduced-motion + overrides) não
+ * está sendo aplicado como esperado e futuros diffs podem flakiar.
+ */
+test.describe('PartnersRota — badge/tooltip sem animações ativas durante snapshot', () => {
+  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+  test.use({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+
+  test('nenhuma animação/transição CSS ativa em badge nem tooltip', async ({ page }) => {
+    await page.clock.install({ time: FIXED_TIME });
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_VALIDO,
+          structured: { dias: [], dicas: [] },
+          source: 'tavily',
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 1,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 1,
+            format_valid: true,
+            format_issues: [],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.addStyleTag({
+      content: `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+          caret-color: transparent !important;
+        }
+      `,
+    });
+    await page.clock.runFor(500);
+
+    const gerar = page.getByRole('button', { name: /gerar roteiro/i });
+    if (await gerar.isVisible().catch(() => false)) await gerar.click();
+
+    const badge = page.getByTestId('ai-source-badge');
+    await expect(badge).toBeVisible();
+
+    // Auditor: retorna nomes de propriedades animadas em execução para
+    // um elemento e todos os descendentes.
+    const audit = async (locator: import('@playwright/test').Locator, label: string) => {
+      const findings = await locator.evaluate((root) => {
+        const active: Array<{ tag: string; prop: string; value: string }> = [];
+        const nodes: Element[] = [root, ...Array.from(root.querySelectorAll('*'))];
+        for (const el of nodes) {
+          const cs = getComputedStyle(el);
+          if (cs.animationName && cs.animationName !== 'none') {
+            const dur = parseFloat(cs.animationDuration || '0') || 0;
+            if (dur > 0) active.push({ tag: el.tagName, prop: 'animation-name', value: cs.animationName });
+          }
+          const tdur = (cs.transitionDuration || '')
+            .split(',')
+            .map((s) => parseFloat(s) || 0)
+            .reduce((a, b) => Math.max(a, b), 0);
+          if (tdur > 0) {
+            active.push({ tag: el.tagName, prop: 'transition-duration', value: cs.transitionDuration });
+          }
+        }
+        return active;
+      });
+      expect(
+        findings,
+        `${label}: propriedades animadas ativas durante o snapshot:\n${JSON.stringify(findings, null, 2)}`,
+      ).toEqual([]);
+    };
+
+    await audit(badge, 'badge');
+
+    await badge.focus();
+    const tooltip = page.locator('[role="tooltip"]').first();
+    await expect(tooltip).toBeVisible();
+    // Drena qualquer transição de abertura remanescente antes de auditar.
+    await page.clock.runFor(300);
+    await audit(tooltip, 'tooltip');
+  });
+});
