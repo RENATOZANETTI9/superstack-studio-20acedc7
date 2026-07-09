@@ -31,7 +31,7 @@ const RepresentantesDashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', type: 'PARTNER', region_state: '', region_city: '',
+    name: '', email: '', phone: '', password: '', type: 'PARTNER', region_state: '', region_city: '',
   });
 
   useEffect(() => { fetchData(); }, []);
@@ -51,33 +51,52 @@ const RepresentantesDashboard = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.email) {
-      toast.error('Nome e e-mail são obrigatórios');
+    if (!form.name || !form.email || !form.password) {
+      toast.error('Nome, e-mail e senha inicial são obrigatórios');
+      return;
+    }
+    if (form.password.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres');
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from('partners').insert([{
-      user_id: crypto.randomUUID(),
-      legal_name: form.name,
-      document_number: '',
-      email: form.email,
-      phone: form.phone || null,
-      type: form.type,
-      region_state: form.region_state || null,
-      region_city: form.region_city || null,
-      status: 'PENDING',
-      person_type: 'PF',
-    }]);
-    setSaving(false);
-    if (error) {
-      toast.error('Erro ao cadastrar representante', { description: error.message });
-    } else {
-      toast.success('Representante pré-cadastrado com sucesso', {
-        description: 'O acesso ao sistema deve ser configurado pelo administrador.',
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user', {
+        body: { email: form.email, password: form.password, full_name: form.name, role: 'representante' },
+      });
+      if (fnError || fnData?.error) {
+        toast.error('Erro ao criar acesso', { description: fnError?.message || fnData?.error });
+        return;
+      }
+      const newUserId = fnData?.user?.id;
+      if (!newUserId) {
+        toast.error('Erro interno: ID do usuário não retornado pela função');
+        return;
+      }
+      const { error: partnerError } = await supabase.from('partners').insert([{
+        user_id: newUserId,
+        legal_name: form.name,
+        document_number: '',
+        email: form.email,
+        phone: form.phone || null,
+        type: form.type,
+        region_state: form.region_state || null,
+        region_city: form.region_city || null,
+        status: 'PENDING',
+        person_type: 'PF',
+      }]);
+      if (partnerError) {
+        toast.error('Usuário criado mas erro ao salvar perfil de parceiro', { description: partnerError.message });
+        return;
+      }
+      toast.success(`Representante cadastrado com sucesso! Login: ${form.email} | Senha: ${form.password}`, {
+        duration: 10000,
       });
       setDialogOpen(false);
-      setForm({ name: '', email: '', phone: '', type: 'PARTNER', region_state: '', region_city: '' });
+      setForm({ name: '', email: '', phone: '', password: '', type: 'PARTNER', region_state: '', region_city: '' });
       fetchData();
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -177,6 +196,10 @@ const RepresentantesDashboard = () => {
             <div className="space-y-1.5">
               <Label htmlFor="rep-phone">Telefone</Label>
               <Input id="rep-phone" placeholder="(11) 99999-0000" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-password">Senha inicial * <span className="text-xs text-muted-foreground">(representante deverá alterar no primeiro acesso)</span></Label>
+              <Input id="rep-password" type="text" placeholder="Mínimo 6 caracteres" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
               <Label>Tipo</Label>
