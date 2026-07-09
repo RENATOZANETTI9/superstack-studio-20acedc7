@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { MOCK_COMMISSIONS, MOCK_INCENTIVES, MOCK_CLINICS, withMockFallbackTracked } from '@/lib/mock-data';
-import { MockDataBanner } from '@/components/MockDataBanner';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { CalendarClock, Download, Copy, Gift } from 'lucide-react';
+import { CalendarClock, Download, Copy, Gift, Inbox } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +26,7 @@ const PartnersBonificacoes = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [incentives, setIncentives] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMockData, setIsMockData] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [filterClinic, setFilterClinic] = useState('ALL');
@@ -47,6 +45,7 @@ const PartnersBonificacoes = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
 
     // Fetch partner record for current user
     const partnerPromise = user
@@ -59,18 +58,12 @@ const PartnersBonificacoes = () => {
       partnerPromise,
       supabase.from('partner_clinic_relations').select('clinic_external_id, clinic_name, partner_id'),
     ]);
-
-    const com = withMockFallbackTracked(comRes.data, MOCK_COMMISSIONS);
-    const inc = withMockFallbackTracked(incRes.data, MOCK_INCENTIVES);
-    const clin = withMockFallbackTracked(
-      clinicRes.data,
-      MOCK_CLINICS.map(c => ({ clinic_external_id: c.clinic_external_id, clinic_name: c.clinic_name, partner_id: c.partner_id })),
-    );
-    setCommissions(com.data);
-    setIncentives(inc.data);
-    setMyPartner(partnerRes.data);
-    setClinicRelations(clin.data);
-    setIsMockData(com.isMock || inc.isMock || clin.isMock);
+    const firstErr = comRes.error || incRes.error || clinicRes.error;
+    if (firstErr) setLoadError(firstErr.message);
+    setCommissions(comRes.data || []);
+    setIncentives(incRes.data || []);
+    setMyPartner((partnerRes as any).data ?? null);
+    setClinicRelations(clinicRes.data || []);
     setLoading(false);
   }, [user]);
 
