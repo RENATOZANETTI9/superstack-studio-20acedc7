@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip as RTooltip, CartesianGrid } from 'recharts';
 import { isAdminRole } from '@/lib/partner-rules';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const isRepresentanteRole = (r: string | null | undefined) =>
   r === 'partner' || r === 'master_partner';
@@ -314,6 +315,19 @@ function EmptyState({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
+function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="text-center py-8 text-muted-foreground">
+      <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-500 opacity-70" />
+      <p className="text-sm font-medium text-red-700">Não foi possível carregar os dados</p>
+      <p className="text-xs mt-1">{message}</p>
+      {onRetry && (
+        <Button size="sm" variant="outline" className="mt-3" onClick={onRetry}>Tentar novamente</Button>
+      )}
+    </div>
+  );
+}
+
 type WeekBucket = { key: string; label: string; start: Date; end: Date };
 
 function buildLast4Weeks(): WeekBucket[] {
@@ -337,6 +351,8 @@ function buildLast4Weeks(): WeekBucket[] {
 
 function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | null }) {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [commissionAmount, setCommissionAmount] = useState<number>(0);
   const [hasCommissionCycle, setHasCommissionCycle] = useState(false);
   const [clinics, setClinics] = useState<any[]>([]);
@@ -349,6 +365,7 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       const now = new Date();
       const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       const start28 = new Date(now);
@@ -374,6 +391,12 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
       ]);
 
       if (cancelled) return;
+      const firstErr = commRes.error || clinicsRes.error || metricsRes.error;
+      if (firstErr) {
+        setError(firstErr.message);
+        setLoading(false);
+        return;
+      }
       const commRows = commRes.data ?? [];
       setHasCommissionCycle(commRows.length > 0);
       setCommissionAmount(commRows.reduce((s: number, r: any) => s + Number(r.commission_amount || 0), 0));
@@ -382,7 +405,9 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [partnerId]);
+  }, [partnerId, reloadKey]);
+
+  const retry = () => setReloadKey(k => k + 1);
 
   const weekChart = useMemo(() =>
     weeks.map(w => {
@@ -433,9 +458,34 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="space-y-6">
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </div>
+        <Skeleton className="h-72 w-full rounded-lg" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
+        </div>
+        <Skeleton className="h-40 w-full rounded-lg" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card><CardContent className="pt-5">
+        <ErrorState message={error} onRetry={retry} />
+      </CardContent></Card>
+    );
+  }
+
+  if (!partnerId) {
+    return (
+      <Card><CardContent className="pt-5">
+        <EmptyState title="Sem dados ainda — aguardando primeiro ciclo" hint="Seu perfil de partner ainda não está vinculado. Assim que o admin ativar, suas métricas aparecerão aqui." />
+      </CardContent></Card>
     );
   }
 
@@ -453,7 +503,11 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
           ) : (
             <>
               <p className="text-xl font-bold text-muted-foreground">—</p>
-              <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
+              <p className="text-xs text-muted-foreground">
+                {clinics.length === 0
+                  ? 'Sem pagamentos no mês — aguardando primeiro ciclo completo.'
+                  : 'Sem pagamentos aprovados neste mês — aguardando aprovações.'}
+              </p>
             </>
           )}
         </CardContent></Card>
@@ -497,7 +551,7 @@ function RepresentativeAnalyticsSections({ partnerId }: { partnerId: string | nu
               </BarChart>
             </ResponsiveContainer>
           </div>) : (
-            <EmptyState title="Sem simulações registradas nas últimas 4 semanas" hint="O gráfico será populado a partir das métricas diárias da sua carteira." />
+            <EmptyState title="Sem simulações registradas nas últimas 4 semanas" hint={clinics.length === 0 ? 'Cadastre clínicas para começar a gerar métricas diárias.' : 'Aguardando primeiras simulações da sua carteira ativa.'} />
           )}
         </CardContent>
       </Card>
