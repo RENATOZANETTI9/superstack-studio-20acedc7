@@ -22,8 +22,26 @@ export function isAiSource(v: unknown): v is AiSource {
   return typeof v === 'string' && (ALLOWED_AI_SOURCES as readonly string[]).includes(v);
 }
 
+/**
+ * Coerce loose string variants ("  Tavily ", "TAVILY_CACHE", "Suggested\n")
+ * back into the canonical lowercase form. Non-strings and strings whose
+ * trimmed/lowercased form is not in the allowed set return `null`, so the
+ * regular fallback chain in `normalizeAiSource` kicks in.
+ */
+export function coerceAiSource(v: unknown): AiSource | null {
+  if (typeof v !== 'string') return null;
+  const canon = v.trim().toLowerCase();
+  return (ALLOWED_AI_SOURCES as readonly string[]).includes(canon)
+    ? (canon as AiSource)
+    : null;
+}
+
 export function normalizeAiSource(raw: unknown, fallback?: AiSource | null): AiSource {
   if (isAiSource(raw)) return raw;
+  const coerced = coerceAiSource(raw);
+  if (coerced) return coerced;
   if (isAiSource(fallback)) return fallback;
+  const coercedFallback = coerceAiSource(fallback);
+  if (coercedFallback) return coercedFallback;
   return 'suggested';
 }
