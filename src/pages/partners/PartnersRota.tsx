@@ -736,7 +736,7 @@ export default function PartnersRota() {
               </Button>
             </div>
             <Button
-              onClick={() => { setOuterTab('ia'); handleGenerateAI(); }}
+              onClick={() => { setOuterTab('ia'); void handleGenerateAI(); }}
               className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-md hover:shadow-lg"
               disabled={aiLoading}
             >
@@ -1191,7 +1191,7 @@ export default function PartnersRota() {
             <div className="flex flex-col items-center gap-2 py-6">
               <Button
                 size="lg"
-                onClick={handleGenerateAI}
+                onClick={() => void handleGenerateAI()}
                 disabled={aiLoading || isRecording || isTranscribing}
                 className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl"
               >
