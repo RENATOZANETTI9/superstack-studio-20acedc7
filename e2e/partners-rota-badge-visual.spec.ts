@@ -32,12 +32,24 @@ async function login(page: Page) {
   await page.waitForURL(/\/dashboard/);
 }
 
-test.describe('PartnersRota — regressão visual do badge/tooltip de source', () => {
-  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+/**
+ * Matriz de viewports: cada estado de retry (`tavily`, `tavily_cache`,
+ * `suggested`) é comparado por snapshot em mobile, tablet e desktop. Snapshots
+ * ficam nomeados como `badge-<source>-<viewport>.png`, isolando regressões
+ * de layout responsivo (por exemplo, badge quebrando linha em mobile).
+ */
+const VIEWPORTS = [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'tablet', width: 768, height: 1024 },
+  { name: 'desktop', width: 1280, height: 800 },
+] as const;
 
-  test('badge renderiza consistentemente por source e tooltip não deixa nós obsoletos', async ({
-    page,
-  }) => {
+for (const vp of VIEWPORTS) {
+  test.describe(`PartnersRota — regressão visual do badge/tooltip (${vp.name})`, () => {
+    test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test(`badge/tooltip consistentes por source em ${vp.name}`, async ({ page }) => {
     const sequence = ['tavily', 'tavily_cache', 'suggested'] as const;
     let callCount = 0;
     await page.route('**/functions/v1/generate-ai-route', async (route) => {
@@ -81,8 +93,8 @@ test.describe('PartnersRota — regressão visual do badge/tooltip de source', (
       await expect(badge).toBeVisible();
       await expect(badge).toHaveAttribute('data-source', sequence[i]);
 
-      // Snapshot do badge por origem.
-      await expect(badge).toHaveScreenshot(`badge-${sequence[i]}.png`, {
+      // Snapshot do badge por origem + viewport.
+      await expect(badge).toHaveScreenshot(`badge-${sequence[i]}-${vp.name}.png`, {
         maxDiffPixelRatio: 0.02,
       });
 
@@ -90,7 +102,7 @@ test.describe('PartnersRota — regressão visual do badge/tooltip de source', (
       await badge.focus();
       const tooltip = page.locator('[role="tooltip"]').first();
       await expect(tooltip).toBeVisible();
-      await expect(tooltip).toHaveScreenshot(`tooltip-${sequence[i]}.png`, {
+      await expect(tooltip).toHaveScreenshot(`tooltip-${sequence[i]}-${vp.name}.png`, {
         maxDiffPixelRatio: 0.02,
       });
 
@@ -109,5 +121,6 @@ test.describe('PartnersRota — regressão visual do badge/tooltip de source', (
     // Nenhum badge duplicado deve sobrar após múltiplos retries.
     await expect(page.getByTestId('ai-source-badge')).toHaveCount(1);
     await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
+    });
   });
-});
+}

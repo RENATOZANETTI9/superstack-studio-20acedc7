@@ -24,6 +24,15 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lockb', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Typecheck
@@ -48,6 +57,15 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lockb', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       - run: bun run build
 
@@ -108,9 +126,31 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lockb', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
+      - name: Cache Playwright browsers
+        id: pw-cache-rep
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lockb', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
       - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
+        run: |
+          if [ "${{ steps.pw-cache-rep.outputs.cache-hit }}" = "true" ]; then
+            bunx playwright install-deps chromium
+          else
+            bunx playwright install --with-deps chromium
+          fi
       - name: Build app
         run: bun run build
       - name: Start preview server
@@ -161,9 +201,31 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lockb', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
+      - name: Cache Playwright browsers
+        id: pw-cache-a11y
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lockb', 'bun.lock', 'package.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
       - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
+        run: |
+          if [ "${{ steps.pw-cache-a11y.outputs.cache-hit }}" = "true" ]; then
+            bunx playwright install-deps chromium
+          else
+            bunx playwright install --with-deps chromium
+          fi
       - name: Build app
         run: bun run build
       - name: Start preview server
