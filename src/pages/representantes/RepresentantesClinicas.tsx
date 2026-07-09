@@ -76,34 +76,81 @@ export default function PartnersClinicas() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const [realClinics, setRealClinics] = useState<any[] | null>(null);
-
-  useEffect(() => {
-    const loadClinicas = async () => {
-      if (!isRepresentanteRole(role as any) || !user?.id) return;
-      const { data: partnerData } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      if (!partnerData?.id) return;
-      const { data: relations } = await supabase
-        .from('partner_clinic_relations')
-        .select('*')
-        .eq('partner_id', partnerData.id);
-      if (relations && relations.length > 0) {
-        setRealClinics(relations);
-      }
-    };
-    loadClinicas();
-  }, [user?.id, role]);
-
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
   const [specialtyFilter, setSpecialtyFilter] = useState('all');
 
+  useEffect(() => {
+    const loadClinicas = async () => {
+      setLoading(true);
+      if (!user?.id) { setLoading(false); return; }
+
+      if (isRepresentanteRole(role as any)) {
+        const { data: partnerData } = await supabase
+          .from('partners')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!partnerData?.id) { setRealClinics([]); setLoading(false); return; }
+        const { data: relations } = await supabase
+          .from('partner_clinic_relations')
+          .select('*')
+          .eq('partner_id', partnerData.id)
+          .order('created_at', { ascending: false });
+        setRealClinics(relations || []);
+      } else {
+        const { data: relations } = await supabase
+          .from('partner_clinic_relations')
+          .select('*')
+          .order('created_at', { ascending: false });
+        setRealClinics(relations && relations.length > 0 ? relations : null);
+      }
+      setLoading(false);
+    };
+    loadClinicas();
+  }, [user?.id, role]);
+
+  const displayClinics: MockClinic[] = realClinics && realClinics.length > 0
+    ? realClinics.map((rel): MockClinic => {
+        const activeDays = Math.floor((Date.now() - new Date(rel.created_at).getTime()) / 86400000);
+        const isAlert = rel.is_active && !rel.is_qualified && activeDays > 14;
+        const simCount = rel.consultations_count || 0;
+        const paidCount = rel.paid_count || 0;
+        const status: ClinicStatus = rel.is_qualified && paidCount > 0 ? 'green'
+          : isAlert ? 'red'
+          : 'yellow';
+        return {
+          id: rel.id,
+          name: rel.clinic_name || 'Clínica sem nome',
+          specialty: 'Odontologia',
+          neighborhood: '—',
+          city: '—',
+          status,
+          active: rel.is_active ?? true,
+          alert: isAlert,
+          awaitingFirstSim: rel.consultations_count === 0 && activeDays <= 30,
+          isNew: activeDays <= 7,
+          simulationsToday: simCount,
+          expected: 20,
+          trend: 'right',
+          activeReceptionists: 0,
+          activeDays,
+          daysSinceLastSim: 0,
+          phone: '',
+          responsible: '',
+          address: '',
+          registeredAt: new Date(rel.created_at).toLocaleDateString('pt-BR'),
+          activatedAt: rel.qualified_at ? new Date(rel.qualified_at).toLocaleDateString('pt-BR') : '—',
+        };
+      })
+    : (realClinics === null ? MOCK_CLINICS : []);
+
+  const usandoMock = realClinics === null && displayClinics === MOCK_CLINICS;
+
   const filtered = useMemo(() => {
-    return MOCK_CLINICS.filter(c => {
+    return displayClinics.filter(c => {
       const m1 = c.name.toLowerCase().includes(search.toLowerCase()) ||
                   c.responsible.toLowerCase().includes(search.toLowerCase());
       const m2 = statusFilter === 'all'
@@ -115,7 +162,7 @@ export default function PartnersClinicas() {
       const m4 = specialtyFilter === 'all' || c.specialty === specialtyFilter;
       return m1 && m2 && m3 && m4;
     });
-  }, [search, statusFilter, neighborhoodFilter, specialtyFilter]);
+  }, [displayClinics, search, statusFilter, neighborhoodFilter, specialtyFilter]);
 
   const groups = useMemo(() => ({
     alerta: filtered.filter(c => c.alert),
@@ -125,11 +172,11 @@ export default function PartnersClinicas() {
     inativas: filtered.filter(c => !c.active && !c.awaitingFirstSim),
   }), [filtered]);
 
-  const total = 12;
-  const ativas = 10;
-  const simHoje = 127;
-  const emAlerta = 3;
-  const novasSemana = 2;
+  const total = displayClinics.length;
+  const ativas = displayClinics.filter(c => c.active).length;
+  const emAlerta = displayClinics.filter(c => c.alert).length;
+  const novasSemana = displayClinics.filter(c => c.isNew).length;
+  const simHoje = displayClinics.reduce((s, c) => s + c.simulationsToday, 0);
 
   const renderClinicCard = (c: MockClinic) => (
     <div
@@ -226,12 +273,15 @@ export default function PartnersClinicas() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Monitoramento em tempo real de simulações e ativações</p>
           {isRepresentanteRole(role as any) && (
-            <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-primary/10 text-primary border-0">
-                🏥 Exibindo apenas suas clínicas cadastradas
-              </Badge>
-              {realClinics !== null && (
-                <span className="text-xs text-muted-foreground">{realClinics.length} clínica(s) no Supabase</span>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {usandoMock ? (
+                <Badge className="bg-yellow-100 text-yellow-700 border-0">
+                  ⚠️ Dados demonstrativos — nenhuma clínica vinculada ainda
+                </Badge>
+              ) : (
+                <Badge className="bg-primary/10 text-primary border-0">
+                  🏥 Exibindo suas {total} clínica(s) vinculada(s)
+                </Badge>
               )}
             </div>
           )}
@@ -322,7 +372,13 @@ export default function PartnersClinicas() {
         </div>
 
         {/* Seções agrupadas */}
-        {filtered.length === 0 ? (
+        {!loading && realClinics !== null && realClinics.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Building2 className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            <p className="font-medium text-base">Nenhuma clínica vinculada ainda</p>
+            <p className="text-sm mt-1">Suas clínicas aparecerão aqui após a ativação pelo administrador.</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-sm text-muted-foreground">
             Nenhuma clínica encontrada com os filtros aplicados.
           </div>
