@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:representante": "playwright test e2e/representante-access.spec.ts"
+    "test:e2e:representante": "playwright test e2e/representante-access.spec.ts",
+    "test:e2e:a11y": "playwright test e2e/partners-rota-ai-format-alert.spec.ts",
+    "test:e2e:visual": "playwright test e2e/partners-rota-badge-visual.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
