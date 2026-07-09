@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { MOCK_ALERTS, MOCK_COMMISSIONS, MOCK_CONFIG_HISTORY, withMockFallbackTracked } from '@/lib/mock-data';
-import { MockDataBanner } from '@/components/MockDataBanner';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +21,7 @@ const PartnersMonitoring = () => {
   const [configHistory, setConfigHistory] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMockData, setIsMockData] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -36,18 +34,17 @@ const PartnersMonitoring = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(null);
     const [alertsRes, historyRes, commsRes] = await Promise.all([
       supabase.from('partner_alerts').select('*').order('alert_date', { ascending: false }).limit(50),
       supabase.from('partner_config_history').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(100),
     ]);
-    const a = withMockFallbackTracked(alertsRes.data, MOCK_ALERTS);
-    const h = withMockFallbackTracked(historyRes.data, MOCK_CONFIG_HISTORY);
-    const c = withMockFallbackTracked(commsRes.data, MOCK_COMMISSIONS);
-    setAlerts(a.data);
-    setConfigHistory(h.data);
-    setCommissions(c.data);
-    setIsMockData(a.isMock || h.isMock || c.isMock);
+    const firstErr = alertsRes.error || historyRes.error || commsRes.error;
+    if (firstErr) setLoadError(firstErr.message);
+    setAlerts(alertsRes.data || []);
+    setConfigHistory(historyRes.data || []);
+    setCommissions(commsRes.data || []);
     setLoading(false);
   };
 
@@ -89,7 +86,12 @@ const PartnersMonitoring = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <MockDataBanner show={isMockData} />
+        {loadError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>Erro ao carregar dados: {loadError}</span>
+            <Button size="sm" variant="outline" onClick={fetchData}>Tentar novamente</Button>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Monitoramento & Auditoria</h1>
