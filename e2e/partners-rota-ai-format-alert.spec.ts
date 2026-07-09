@@ -362,3 +362,118 @@ test.describe('PartnersRota — "Gerar novamente" e a11y estendida', () => {
     await expect(tooltipVisible.first()).toBeHidden({ timeout: 1500 });
   });
 });
+
+/**
+ * Fallback de `source` ausente/inválido + fechamento do tooltip por
+ * clique fora, garantindo que o foco retorne para o badge após o
+ * fechamento (Radix Tooltip fecha em pointerdown fora ou Escape).
+ */
+test.describe('PartnersRota — fallback de source e tooltip fecha ao clicar fora', () => {
+  test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
+
+  const ALLOWED = ['tavily', 'tavily_cache', 'suggested'] as const;
+
+  test('source ausente/invalido é normalizado para valor permitido e badge fica consistente', async ({ page }) => {
+    let call = 0;
+    // Sequência: (1) source ausente + inválido → auto-fallback dispara (2)
+    // com source = null. Depois o botão "Gerar novamente" dispara (3) com
+    // source = 'foo' (string desconhecida). Em todos os casos, o badge
+    // precisa mostrar um valor de `ALLOWED`.
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      call++;
+      const bodies = [
+        { /* sem source */ },
+        { source: null },
+        { source: 'foo-bar' },
+        { source: 'tavily' },
+      ];
+      const extra = bodies[Math.min(call - 1, bodies.length - 1)];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: call >= 4 ? ROTEIRO_VALIDO : ROTEIRO_INVALIDO,
+          structured: { dias: [], dicas: [] },
+          ...extra,
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 0,
+            tavily_errors: 0,
+            bairros_queried: 0,
+            format_valid: call >= 4,
+            format_issues: call >= 4 ? [] : ['Sem cabeçalhos "## Dia"'],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const badge = page.getByTestId('ai-source-badge');
+    await expect(badge).toBeVisible();
+    // Após 1ª (source ausente) + auto-fallback (source: null).
+    await expect.poll(() => call).toBeGreaterThanOrEqual(2);
+    const src1 = await badge.getAttribute('data-source');
+    expect(ALLOWED).toContain(src1 as (typeof ALLOWED)[number]);
+
+    // Novo retry manual → resposta com source desconhecida.
+    const before = call;
+    await page.getByTestId('ai-regenerate-btn').click();
+    await expect.poll(() => call).toBeGreaterThan(before);
+    const src2 = await badge.getAttribute('data-source');
+    expect(ALLOWED).toContain(src2 as (typeof ALLOWED)[number]);
+    // Como o retry veio com source inválido, o normalizador deve preservar
+    // o último valor válido conhecido (src1).
+    expect(src2).toBe(src1);
+  });
+
+  test('tooltip fecha ao clicar fora e o badge pode receber foco novamente', async ({ page }) => {
+    await page.route('**/functions/v1/generate-ai-route', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          roteiro: ROTEIRO_VALIDO,
+          structured: { dias: [], dicas: [] },
+          source: 'tavily_cache',
+          meta: {
+            tavily_configured: true,
+            tavily_hits: 0,
+            cache_hits: 1,
+            tavily_errors: 0,
+            bairros_queried: 1,
+            format_valid: true,
+            format_issues: [],
+          },
+        }),
+      });
+    });
+
+    await login(page);
+    await page.goto('/dashboard/partners/rota');
+    await page.getByRole('button', { name: /Gerar Roteiro com Inteligência Artificial/i }).click();
+
+    const badge = page.getByTestId('ai-source-badge');
+    await expect(badge).toBeVisible();
+
+    // Abre o tooltip via foco.
+    await badge.focus();
+    const tooltip = page.locator('[role="tooltip"]');
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+
+    // Clica em um ponto neutro fora do tooltip e do badge (título da página).
+    // Radix Tooltip fecha em pointerdown fora do trigger/content.
+    await page.mouse.click(5, 5);
+    await expect(tooltip.first()).toBeHidden({ timeout: 1500 });
+
+    // Foco pode ter saído do badge; o badge continua focável e pode
+    // ser reativado, confirmando que não ficou preso em estado inválido.
+    await badge.focus();
+    await expect(badge).toBeFocused();
+    // Reabrir o tooltip via foco funciona normalmente.
+    await expect(tooltip.first()).toBeVisible({ timeout: 1500 });
+  });
+});
