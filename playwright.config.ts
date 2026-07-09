@@ -18,5 +18,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Snapshots determinísticos: sistema honra `prefers-reduced-motion`
+    // e desliga transições, evitando diffs por animações no meio de frame.
+    reducedMotion: 'reduce',
   },
 });
