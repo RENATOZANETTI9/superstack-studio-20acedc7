@@ -76,7 +76,11 @@ export default function PartnersClinicas() {
       setLoadError(null);
       if (!user) { setLoading(false); return; }
 
-      let query = supabase.from('portfolio_clinics').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('portfolio_clinics')
+        .select('id, nome, tipo, bairro, cidade, status, telefone, responsavel, ultima_visita, created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
       if (!isAdminRole(role as any)) {
         const { data: partner, error: partnerErr } = await supabase
           .from('partners').select('id').eq('user_id', user.id).maybeSingle();

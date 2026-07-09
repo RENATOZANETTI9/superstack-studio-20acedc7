@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessMonitoring } from '@/lib/partner-rules';
@@ -14,6 +15,9 @@ import {
   RefreshCw, Shield, TrendingUp, XCircle
 } from 'lucide-react';
 
+type MonPeriod = '7d' | '30d' | '90d' | 'all';
+const MON_PERIOD_DAYS: Record<Exclude<MonPeriod, 'all'>, number> = { '7d': 7, '30d': 30, '90d': 90 };
+
 const PartnersMonitoring = () => {
   const navigate = useNavigate();
   const { user, role, isLoading: authLoading } = useAuth();
@@ -22,6 +26,7 @@ const PartnersMonitoring = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<MonPeriod>('30d');
 
   // Redirect non-admin users
   useEffect(() => {
@@ -30,16 +35,33 @@ const PartnersMonitoring = () => {
     }
   }, [role, authLoading, navigate]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [period]);
 
   const fetchData = async () => {
     setLoading(true);
     setLoadError(null);
-    const [alertsRes, historyRes, commsRes] = await Promise.all([
-      supabase.from('partner_alerts').select('*').order('alert_date', { ascending: false }).limit(50),
-      supabase.from('partner_config_history').select('*').order('created_at', { ascending: false }).limit(50),
-      supabase.from('partner_commissions').select('*').order('created_at', { ascending: false }).limit(100),
-    ]);
+    let fromISO: string | null = null;
+    if (period !== 'all') {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (MON_PERIOD_DAYS[period] - 1));
+      fromISO = d.toISOString();
+    }
+    let alertsQ = supabase.from('partner_alerts')
+      .select('id, partner_id, alert_type, severity, title, description, alert_date, resolved_at, resolved_by')
+      .order('alert_date', { ascending: false }).limit(200);
+    let historyQ = supabase.from('partner_config_history')
+      .select('id, config_key, old_value, new_value, changed_by, created_at')
+      .order('created_at', { ascending: false }).limit(200);
+    let commsQ = supabase.from('partner_commissions')
+      .select('id, commission_type, reference_month, net_paid_amount, commission_rate, commission_amount, status, created_at')
+      .order('created_at', { ascending: false }).limit(500);
+    if (fromISO) {
+      alertsQ = alertsQ.gte('alert_date', fromISO);
+      historyQ = historyQ.gte('created_at', fromISO);
+      commsQ = commsQ.gte('created_at', fromISO);
+    }
+    const [alertsRes, historyRes, commsRes] = await Promise.all([alertsQ, historyQ, commsQ]);
     const firstErr = alertsRes.error || historyRes.error || commsRes.error;
     if (firstErr) setLoadError(firstErr.message);
     setAlerts(alertsRes.data || []);
@@ -97,7 +119,18 @@ const PartnersMonitoring = () => {
             <h1 className="text-2xl font-bold text-foreground">Monitoramento & Auditoria</h1>
             <p className="text-muted-foreground">Saúde operacional, alertas e logs de auditoria</p>
           </div>
-          <Button onClick={fetchData} variant="outline" size="sm"><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</Button>
+          <div className="flex items-center gap-2">
+            <Select value={period} onValueChange={(v) => setPeriod(v as MonPeriod)}>
+              <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                <SelectItem value="all">Todo o período</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={fetchData} variant="outline" size="sm"><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
