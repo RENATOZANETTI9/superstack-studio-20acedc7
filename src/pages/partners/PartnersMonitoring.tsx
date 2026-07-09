@@ -136,7 +136,7 @@ const PartnersMonitoring = () => {
                 {loading ? (
                   <div className="flex justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" /></div>
                 ) : alerts.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground"><Shield className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhum alerta registrado</p></div>
+                  <div className="text-center py-12 text-muted-foreground"><Shield className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Sem dados ainda — nenhum alerta registrado no período</p></div>
                 ) : (
                   <div className="space-y-3">
                     {alerts.map(alert => (
@@ -174,7 +174,7 @@ const PartnersMonitoring = () => {
               </CardHeader>
               <CardContent>
                 {configHistory.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground"><Shield className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhuma alteração registrada</p></div>
+                  <div className="text-center py-12 text-muted-foreground"><Shield className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Sem dados ainda — nenhuma alteração de configuração registrada</p></div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -204,7 +204,7 @@ const PartnersMonitoring = () => {
               </CardHeader>
               <CardContent>
                 {commissions.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground"><TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Nenhuma bonificação registrada</p></div>
+                  <div className="text-center py-12 text-muted-foreground"><TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-30" /><p>Sem dados ainda — nenhuma bonificação calculada ainda</p></div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
