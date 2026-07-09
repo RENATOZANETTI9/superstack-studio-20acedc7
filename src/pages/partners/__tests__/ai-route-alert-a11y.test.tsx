@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { useState } from 'react';
 import {
   AI_ROUTE_TITLE_ID,
@@ -16,7 +16,8 @@ import {
 
 function AlertHarness({ issues }: { issues: string[] }) {
   const [source, setSource] = useState<'tavily' | 'tavily_cache' | 'suggested'>('tavily');
-  const [msgs, setMsgs] = useState(issues);
+  const [extra, setExtra] = useState<string[]>([]);
+  const msgs = [...issues, ...extra];
   const hasIssues = msgs.length > 0;
   return (
     <div>
@@ -47,7 +48,7 @@ function AlertHarness({ issues }: { issues: string[] }) {
           <button
             data-testid="mutate-content"
             onClick={() => {
-              setMsgs((cur) => [...cur, `extra ${cur.length}`]);
+              setExtra((cur) => [...cur, `extra ${cur.length}`]);
               setSource((s) => (s === 'tavily' ? 'tavily_cache' : 'suggested'));
             }}
           >
@@ -86,8 +87,8 @@ describe('AI route format-alert ARIA contract', () => {
     const labelBefore = alertBefore.getAttribute('aria-labelledby');
 
     // Mutate content — same DOM element (React reconciles), attributes must not drift.
-    getByTestId('mutate-content').click();
-    getByTestId('mutate-content').click();
+    fireEvent.click(getByTestId('mutate-content'));
+    fireEvent.click(getByTestId('mutate-content'));
 
     const alertAfter = getByTestId('ai-format-alert');
     expect(alertAfter).toBe(alertBefore);
