@@ -87,11 +87,14 @@ describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
     funções: [() => 'tavily', function () { return 'tavily'; }],
   };
 
+  const safe = (v: unknown) => {
+    try { return String(v); } catch { return '[unprintable]'; }
+  };
   for (const [label, values] of Object.entries(buckets)) {
     it(`retorna sempre um valor permitido para ${label} (sem fallback)`, () => {
       for (const v of values) {
         const out = normalizeAiSource(v);
-        expect(ALLOWED, `entrada ${String(v)}`).toContain(out);
+        expect(ALLOWED, `entrada ${safe(v)}`).toContain(out);
         // Sem fallback válido, o valor default é 'suggested'.
         expect(out).toBe('suggested');
       }
@@ -101,7 +104,7 @@ describe('normalizeAiSource — cobertura exaustiva por tipo', () => {
       for (const v of values) {
         for (const fb of [null, undefined, 'bogus', 42, {}] as unknown[]) {
           const out = normalizeAiSource(v, fb as never);
-          expect(ALLOWED, `entrada ${String(v)} / fb ${String(fb)}`).toContain(out);
+          expect(ALLOWED, `entrada ${safe(v)} / fb ${safe(fb)}`).toContain(out);
           expect(out).toBe('suggested');
         }
       }
