@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AI_ROUTE_TITLE_ID, AI_FORMAT_ALERT_ID } from './ai-route-alert-ids';
+import { normalizeAiSource, type AiSource } from './ai-route-source';
 
 type VisitStatus =
   | 'Pendente'
@@ -171,7 +172,7 @@ export default function PartnersRota() {
   const [aiRoute, setAiRoute] = useState<string | null>(null);
   const [aiRouteStatus, setAiRouteStatus] = useState<Record<number, 'conversamos' | 'nao' | 'pendente'>>({});
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiSource, setAiSource] = useState<'tavily' | 'tavily_cache' | 'suggested' | null>(null);
+  const [aiSource, setAiSource] = useState<AiSource | null>(null);
   const [aiFormatIssues, setAiFormatIssues] = useState<string[]>([]);
   const [aiFormatValid, setAiFormatValid] = useState<boolean>(true);
   const aiFormatAlertRef = useRef<HTMLDivElement>(null);
@@ -395,10 +396,9 @@ export default function PartnersRota() {
       if (error) throw error;
       const roteiro: string = data?.roteiro || 'Roteiro não disponível.';
       setAiRoute(roteiro);
-      const src = data?.source as 'tavily' | 'tavily_cache' | 'suggested' | undefined;
-      const nextSource = src && ['tavily', 'tavily_cache', 'suggested'].includes(src)
-        ? src
-        : (previousSource ?? 'suggested');
+      // Normaliza `source` — respostas com campo ausente/inválido caem
+      // para o último `source` válido conhecido, e por fim `'suggested'`.
+      const nextSource = normalizeAiSource(data?.source, previousSource);
       setAiSource(nextSource);
       const issues: string[] = Array.isArray(data?.meta?.format_issues) ? data.meta.format_issues : [];
       const valid = data?.meta?.format_valid !== false;
