@@ -178,6 +178,35 @@ const PartnersBonificacoes = () => {
 
   const hasActiveFilters = filterClinic !== 'ALL' || filterAttendant !== 'ALL' || filterStatus !== 'ALL' || !!dateFrom || !!dateTo;
 
+  // Real payment history (last months with PAID commissions/PIX incentives)
+  const paymentHistory = useMemo(() => {
+    const buckets = new Map<string, { total: number; count: number }>();
+    for (const c of commissions) {
+      if (c.status !== 'PAID') continue;
+      const key = c.reference_month;
+      if (!key) continue;
+      const b = buckets.get(key) || { total: 0, count: 0 };
+      b.total += Number(c.commission_amount || 0);
+      b.count += 1;
+      buckets.set(key, b);
+    }
+    for (const i of incentives) {
+      if (i.status !== 'PAID') continue;
+      const key = i.reference_month;
+      if (!key) continue;
+      const b = buckets.get(key) || { total: 0, count: 0 };
+      b.total += Number(i.incentive_amount || 0);
+      b.count += 1;
+      buckets.set(key, b);
+    }
+    return [...buckets.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .slice(0, 3)
+      .map(([mes, v]) => ({ mes, ...v }));
+  }, [commissions, incentives]);
+
+  const hasNextPix = !!nextPixTier && paidThisMonth > 0;
+
   const clearFilters = () => {
     setDateFrom(undefined); setDateTo(undefined);
     setFilterClinic('ALL'); setFilterAttendant('ALL'); setFilterStatus('ALL');
@@ -186,7 +215,12 @@ const PartnersBonificacoes = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <MockDataBanner show={isMockData} />
+        {loadError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>Erro ao carregar dados: {loadError}</span>
+            <Button size="sm" variant="outline" onClick={fetchData}>Tentar novamente</Button>
+          </div>
+        )}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Bonificações e Incentivos</h1>
           <p className="text-muted-foreground">Gestão de bonificações de partners e incentivos de atendentes Help Ude</p>
@@ -230,14 +264,14 @@ const PartnersBonificacoes = () => {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
                       <p className="text-sm text-muted-foreground">{nextPixDate}</p>
-                      {isMockData ? (
+                      {!hasNextPix ? (
                         <>
                           <p className="text-2xl font-bold text-muted-foreground">—</p>
-                          <p className="text-xs text-muted-foreground">Disponível após primeiro ciclo completo</p>
+                          <p className="text-xs text-muted-foreground">Sem pagamentos apurados neste mês — aguardando primeiro ciclo</p>
                         </>
                       ) : (
                         <p className="text-2xl font-bold text-primary">
-                          {nextPixTier ? nextPixTier.pix : 'R$ 0,00'}
+                          {nextPixTier!.pix}
                         </p>
                       )}
                     </div>
@@ -252,44 +286,49 @@ const PartnersBonificacoes = () => {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Histórico de Pagamentos</CardTitle>
-                  <p className="text-xs text-amber-600">⚠️ Valores demonstrativos</p>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Mês</TableHead>
-                        <TableHead>Total Pago</TableHead>
-                        <TableHead>Atend.</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        { mes: 'Junho/2026', total: 'R$ 280,00', n: 3 },
-                        { mes: 'Maio/2026', total: 'R$ 195,00', n: 2 },
-                        { mes: 'Abril/2026', total: 'R$ 120,00', n: 2 },
-                      ].map(r => (
-                        <TableRow key={r.mes}>
-                          <TableCell>{r.mes}</TableCell>
-                          <TableCell>{r.total}</TableCell>
-                          <TableCell>{r.n}</TableCell>
-                          <TableCell><Badge className="bg-green-100 text-green-700 hover:bg-green-100">Pago ✅</Badge></TableCell>
+                  {paymentHistory.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
+                      <Inbox className="h-8 w-8 opacity-30" />
+                      Sem pagamentos registrados — aguardando primeiro ciclo
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Mês</TableHead>
+                          <TableHead>Total Pago</TableHead>
+                          <TableHead>Itens</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {paymentHistory.map(r => (
+                          <TableRow key={r.mes}>
+                            <TableCell>{r.mes}</TableCell>
+                            <TableCell>R$ {r.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                            <TableCell>{r.count}</TableCell>
+                            <TableCell><Badge className="bg-green-100 text-green-700 hover:bg-green-100">Pago ✅</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="pix-atendente" className="space-y-4">
-            <PixPorAtendenteTab />
+            <PixPorAtendenteTab
+              items={pixIncentives}
+              getClinicDisplay={getClinicDisplay}
+            />
           </TabsContent>
 
           <TabsContent value="mimo-ativo" className="space-y-4">
-            <MimoAtivoTab />
+            <MimoAtivoTab items={mimoIncentives} getClinicDisplay={getClinicDisplay} />
           </TabsContent>
         </Tabs>
 
