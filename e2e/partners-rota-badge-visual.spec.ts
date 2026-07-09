@@ -38,18 +38,40 @@ async function login(page: Page) {
  * ficam nomeados como `badge-<source>-<viewport>.png`, isolando regressões
  * de layout responsivo (por exemplo, badge quebrando linha em mobile).
  */
+/**
+ * Matriz responsiva + DPR. `mobile` e `desktop` também são executados em
+ * high-DPI (`deviceScaleFactor: 2`) para pegar regressões de renderização
+ * em telas Retina/HiDPI (fontes com anti-aliasing diferente, ícones
+ * borrados, sombras em pixels fracionários).
+ */
 const VIEWPORTS = [
-  { name: 'mobile', width: 390, height: 844 },
-  { name: 'tablet', width: 768, height: 1024 },
-  { name: 'desktop', width: 1280, height: 800 },
+  { name: 'mobile', width: 390, height: 844, dpr: 1 },
+  { name: 'mobile@2x', width: 390, height: 844, dpr: 2 },
+  { name: 'tablet', width: 768, height: 1024, dpr: 1 },
+  { name: 'desktop', width: 1280, height: 800, dpr: 1 },
+  { name: 'desktop@2x', width: 1280, height: 800, dpr: 2 },
 ] as const;
+
+// Congelar o relógio evita que carimbos "há X min", `Date.now()` em UUIDs
+// e animações baseadas em `performance.now()` mudem entre execuções.
+const FIXED_TIME = new Date('2025-01-15T12:00:00Z');
 
 for (const vp of VIEWPORTS) {
   test.describe(`PartnersRota — regressão visual do badge/tooltip (${vp.name})`, () => {
     test.skip(!email || !pass, 'ADMIN_EMAIL/ADMIN_PASS não definidos');
-    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test.use({
+      viewport: { width: vp.width, height: vp.height },
+      deviceScaleFactor: vp.dpr,
+      // reducedMotion já é 'reduce' no config global, reafirmado aqui para
+      // isolamento por describe caso alguém rode o arquivo diretamente.
+      reducedMotion: 'reduce',
+    });
 
     test(`badge/tooltip consistentes por source em ${vp.name}`, async ({ page }) => {
+    // Relógio determinístico ANTES de qualquer navegação — captura módulos
+    // que leem `Date.now()` na inicialização.
+    await page.clock.install({ time: FIXED_TIME });
+
     const sequence = ['tavily', 'tavily_cache', 'suggested'] as const;
     let callCount = 0;
     await page.route('**/functions/v1/generate-ai-route', async (route) => {
@@ -78,10 +100,25 @@ for (const vp of VIEWPORTS) {
     await login(page);
     await page.goto('/dashboard/partners/rota');
 
-    // Estabiliza a UI (desliga animações que geram diff falso positivo).
+    // Reforça a desativação de animações mesmo em libs (framer-motion,
+    // Radix) que ignoram `prefers-reduced-motion`. Também mata o caret
+    // pulsante de inputs, uma fonte comum de diff intermitente.
     await page.addStyleTag({
-      content: `*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }`,
+      content: `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+          caret-color: transparent !important;
+          scroll-behavior: auto !important;
+        }
+      `,
     });
+
+    // Após injetar o CSS, avança o relógio para drenar timers pendentes
+    // (framer-motion agenda frames com setTimeout) sem esperar tempo real.
+    await page.clock.runFor(500);
 
     const gerar = page.getByRole('button', { name: /gerar roteiro/i });
     if (await gerar.isVisible().catch(() => false)) {
