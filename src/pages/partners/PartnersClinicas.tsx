@@ -1,19 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/partner-rules';
 import {
   Building2, Search, MapPin, AlertTriangle, TrendingUp, Users, Calendar,
-  ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, Activity, Sparkles,
+  ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, Activity, Sparkles, Inbox,
 } from 'lucide-react';
 
 export type Trend = 'up' | 'upright' | 'right' | 'downright' | 'down';
 export type ClinicStatus = 'green' | 'yellow' | 'red';
 
-export interface MockClinic {
+export interface ClinicCard {
   id: string;
   name: string;
   specialty: string;
@@ -28,7 +33,7 @@ export interface MockClinic {
   expected: number;
   trend: Trend;
   activeReceptionists: number;
-  activeDays: number; // days since activation
+  activeDays: number;
   daysSinceLastSim: number;
   phone: string;
   responsible: string;
@@ -36,17 +41,8 @@ export interface MockClinic {
   registeredAt: string;
   activatedAt: string;
 }
-
-export const MOCK_CLINICS: MockClinic[] = [
-  { id: 'cl1', name: 'Clínica Dental Plus', specialty: 'Odontologia', neighborhood: 'Centro', city: 'Belo Horizonte', status: 'green', active: true, alert: false, simulationsToday: 62, expected: 50, trend: 'up', activeReceptionists: 3, activeDays: 120, daysSinceLastSim: 0, phone: '(31) 99876-1100', responsible: 'Dra. Marina Souza', address: 'Av. Afonso Pena 1230 · Centro · Belo Horizonte/MG', registeredAt: '01/03/2026', activatedAt: '05/03/2026' },
-  { id: 'cl2', name: 'Clínica BH Sorriso', specialty: 'Odontologia', neighborhood: 'Savassi', city: 'Belo Horizonte', status: 'yellow', active: true, alert: false, simulationsToday: 18, expected: 25, trend: 'right', activeReceptionists: 2, activeDays: 45, daysSinceLastSim: 0, phone: '(31) 98765-4321', responsible: 'Dr. Felipe Lima', address: 'R. Pernambuco 450 · Savassi · Belo Horizonte/MG', registeredAt: '15/05/2026', activatedAt: '20/05/2026' },
-  { id: 'cl3', name: 'Centro Odonto Minas', specialty: 'Odontologia', neighborhood: 'Lourdes', city: 'Belo Horizonte', status: 'red', active: true, alert: true, simulationsToday: 0, expected: 20, trend: 'down', activeReceptionists: 0, activeDays: 80, daysSinceLastSim: 3, phone: '(31) 97654-3210', responsible: 'Carla Souza', address: 'R. da Bahia 88 · Lourdes · Belo Horizonte/MG', registeredAt: '10/04/2026', activatedAt: '12/04/2026' },
-  { id: 'cl4', name: 'Clínica Saúde Total', specialty: 'Clínica Geral', neighborhood: 'Buritis', city: 'Belo Horizonte', status: 'red', active: true, alert: true, simulationsToday: 5, expected: 30, trend: 'downright', activeReceptionists: 1, activeDays: 30, daysSinceLastSim: 0, phone: '(31) 96543-2109', responsible: 'Patrícia Lima', address: 'Av. do Contorno 500 · Buritis · Belo Horizonte/MG', registeredAt: '28/05/2026', activatedAt: '30/05/2026' },
-  { id: 'cl5', name: 'Clínica Dental BH', specialty: 'Odontologia', neighborhood: 'Centro', city: 'Belo Horizonte', status: 'yellow', active: true, alert: false, simulationsToday: 12, expected: 20, trend: 'downright', activeReceptionists: 1, activeDays: 60, daysSinceLastSim: 0, phone: '(31) 95432-1098', responsible: 'Dr. Eduardo Castro', address: 'R. Espírito Santo 200 · Centro · Belo Horizonte/MG', registeredAt: '20/04/2026', activatedAt: '25/04/2026' },
-  { id: 'cl6', name: 'OdontoVida Premium', specialty: 'Implantodontia', neighborhood: 'Savassi', city: 'Belo Horizonte', status: 'green', active: true, alert: false, simulationsToday: 35, expected: 30, trend: 'up', activeReceptionists: 2, activeDays: 90, daysSinceLastSim: 0, phone: '(31) 94321-0987', responsible: 'Dra. Júlia Mendes', address: 'Av. Raja Gabaglia 1000 · Savassi · Belo Horizonte/MG', registeredAt: '20/03/2026', activatedAt: '01/04/2026' },
-  { id: 'cl7', name: 'Clínica Sorriso Mineiro', specialty: 'Odontologia', neighborhood: 'Lourdes', city: 'Belo Horizonte', status: 'green', active: true, alert: false, simulationsToday: 28, expected: 25, trend: 'right', activeReceptionists: 2, activeDays: 75, daysSinceLastSim: 0, phone: '(31) 93210-9876', responsible: 'Ana Beatriz', address: 'R. dos Inconfidentes 300 · Lourdes · Belo Horizonte/MG', registeredAt: '10/04/2026', activatedAt: '15/04/2026' },
-  { id: 'cl8', name: 'Dental Plus Centro', specialty: 'Odontologia', neighborhood: 'Centro', city: 'Belo Horizonte', status: 'yellow', active: true, alert: true, isNew: true, awaitingFirstSim: true, simulationsToday: 10, expected: 20, trend: 'right', activeReceptionists: 1, activeDays: 4, daysSinceLastSim: 4, phone: '(31) 92109-8765', responsible: 'Roberta Lopes', address: 'Av. Amazonas 770 · Centro · Belo Horizonte/MG', registeredAt: '26/06/2026', activatedAt: '—' },
-];
+// Backward-compat alias for older imports.
+export type MockClinic = ClinicCard;
 
 const STATUS_DOT: Record<ClinicStatus, string> = {
   green: 'bg-green-500',
@@ -62,16 +58,81 @@ const TREND_ICON: Record<Trend, JSX.Element> = {
   down: <ArrowDown className="h-4 w-4 text-red-600" />,
 };
 
-const NEIGHBORHOODS = ['Centro', 'Savassi', 'Lourdes', 'Buritis'];
-
 export default function PartnersClinicas() {
   const navigate = useNavigate();
+  const { user, role } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('all');
+  const [clinics, setClinics] = useState<ClinicCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+      if (!user) { setLoading(false); return; }
+
+      let query = supabase.from('portfolio_clinics').select('*').order('created_at', { ascending: false });
+      if (!isAdminRole(role as any)) {
+        const { data: partner, error: partnerErr } = await supabase
+          .from('partners').select('id').eq('user_id', user.id).maybeSingle();
+        if (partnerErr) { if (!cancelled) { setLoadError(partnerErr.message); setLoading(false); } return; }
+        if (!partner) { if (!cancelled) { setClinics([]); setLoading(false); } return; }
+        query = query.eq('partner_id', partner.id);
+      }
+      const { data, error } = await query;
+      if (cancelled) return;
+      if (error) { setLoadError(error.message); setLoading(false); return; }
+      const now = Date.now();
+      const mapped: ClinicCard[] = (data || []).map(c => {
+        const activeDays = Math.floor((now - new Date(c.created_at).getTime()) / 86400000);
+        const statusRaw = (c.status || '').toUpperCase();
+        const active = statusRaw !== 'INATIVA';
+        const alert = statusRaw === 'ALERTA';
+        const status: ClinicStatus = statusRaw === 'ATIVA' ? 'green' : statusRaw === 'ALERTA' ? 'red' : 'yellow';
+        const daysSinceLastSim = c.ultima_visita
+          ? Math.floor((now - new Date(c.ultima_visita).getTime()) / 86400000)
+          : activeDays;
+        return {
+          id: c.id,
+          name: c.nome,
+          specialty: c.tipo || '—',
+          neighborhood: c.bairro || '—',
+          city: c.cidade || '—',
+          status, active, alert,
+          isNew: activeDays <= 7,
+          awaitingFirstSim: !c.ultima_visita && activeDays <= 30,
+          simulationsToday: 0,
+          expected: 0,
+          trend: 'right',
+          activeReceptionists: 0,
+          activeDays,
+          daysSinceLastSim,
+          phone: c.telefone || '',
+          responsible: c.responsavel || '',
+          address: `${c.bairro || ''} · ${c.cidade || ''}`,
+          registeredAt: new Date(c.created_at).toLocaleDateString('pt-BR'),
+          activatedAt: c.ultima_visita ? new Date(c.ultima_visita).toLocaleDateString('pt-BR') : '—',
+        };
+      });
+      setClinics(mapped);
+      setLoading(false);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [user, role, reloadKey]);
+
+  const neighborhoods = useMemo(
+    () => [...new Set(clinics.map(c => c.neighborhood).filter(n => n && n !== '—'))],
+    [clinics],
+  );
 
   const filtered = useMemo(() => {
-    return MOCK_CLINICS.filter(c => {
+    return clinics.filter(c => {
       const m1 = c.name.toLowerCase().includes(search.toLowerCase());
       const m2 = statusFilter === 'all'
         || (statusFilter === 'ativas' && c.active)
@@ -80,13 +141,13 @@ export default function PartnersClinicas() {
       const m3 = neighborhoodFilter === 'all' || c.neighborhood === neighborhoodFilter;
       return m1 && m2 && m3;
     });
-  }, [search, statusFilter, neighborhoodFilter]);
+  }, [clinics, search, statusFilter, neighborhoodFilter]);
 
-  const total = 12;
-  const ativas = 10;
-  const simHoje = 127;
-  const emAlerta = 3;
-  const novasSemana = 2;
+  const total = clinics.length;
+  const ativas = clinics.filter(c => c.active).length;
+  const simHoje = 0;
+  const emAlerta = clinics.filter(c => c.alert).length;
+  const novasSemana = clinics.filter(c => c.activeDays <= 7).length;
 
   return (
     <DashboardLayout>
@@ -97,6 +158,13 @@ export default function PartnersClinicas() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Monitoramento em tempo real de simulações e ativações</p>
         </div>
+
+        {loadError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>Erro ao carregar clínicas: {loadError}</span>
+            <Button size="sm" variant="outline" onClick={() => setReloadKey(k => k + 1)}>Tentar novamente</Button>
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -169,12 +237,22 @@ export default function PartnersClinicas() {
             <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os bairros</SelectItem>
-              {NEIGHBORHOODS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+              {neighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
         {/* Lista */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {[0, 1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}
+          </div>
+        ) : clinics.length === 0 ? (
+          <div className="text-center py-16 text-sm text-muted-foreground flex flex-col items-center gap-2">
+            <Inbox className="h-10 w-10 opacity-30" />
+            Sem dados ainda — nenhuma clínica cadastrada para este partner
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {filtered.map(c => (
             <button
@@ -229,6 +307,7 @@ export default function PartnersClinicas() {
             </div>
           )}
         </div>
+        )}
       </div>
     </DashboardLayout>
   );
