@@ -1,12 +1,190 @@
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Gift } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DollarSign, Gift, Upload, Loader2, ImagePlus, Check, X } from 'lucide-react';
 import { PARTNER_RULES, MIMO_TIERS } from '@/lib/partner-rules';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+const BUCKET = 'mimo-tiers';
 
 const formatRange = (min: number, max: number) =>
   Number.isFinite(max) ? `${min}–${max} simulações` : `${min}+ simulações`;
 
-const BonificacaoTiersInfo = () => (
+type Customization = {
+  level: number;
+  name: string;
+  image_url: string | null;
+};
+
+const useSignedUrl = (path: string | null) => {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!path) { setUrl(null); return; }
+    // Support both raw storage path and full URL (legacy)
+    if (/^https?:\/\//i.test(path)) { setUrl(path); return; }
+    supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60).then(({ data }) => {
+      if (!cancelled) setUrl(data?.signedUrl ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [path]);
+  return url;
+};
+
+const TierEditor = ({
+  tier,
+  data,
+  onSaved,
+}: {
+  tier: (typeof MIMO_TIERS)[number];
+  data: Customization | undefined;
+  onSaved: (row: Customization) => void;
+}) => {
+  const [name, setName] = useState(data?.name ?? tier.label);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imageUrl = useSignedUrl(data?.image_url ?? null);
+
+  useEffect(() => { setName(data?.name ?? tier.label); setDirty(false); }, [data?.name, tier.label]);
+
+  const upsert = async (patch: Partial<Customization>) => {
+    const payload = {
+      level: tier.level,
+      name: patch.name ?? name,
+      image_url: patch.image_url !== undefined ? patch.image_url : data?.image_url ?? null,
+    };
+    const { data: row, error } = await supabase
+      .from('mimo_tiers_customization')
+      .upsert(payload, { onConflict: 'level' })
+      .select()
+      .single();
+    if (error) throw error;
+    onSaved(row as Customization);
+  };
+
+  const handleSaveName = async () => {
+    setSaving(true);
+    try {
+      await upsert({ name: name.trim() || tier.label });
+      setDirty(false);
+      toast.success('Nome do mimo atualizado');
+    } catch (e: any) {
+      toast.error('Falha ao salvar: ' + (e.message ?? 'erro desconhecido'));
+    } finally { setSaving(false); }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem'); return; }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `tier-${tier.level}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      await upsert({ image_url: path });
+      toast.success('Imagem do mimo atualizada');
+    } catch (e: any) {
+      toast.error('Falha no upload: ' + (e.message ?? 'erro desconhecido'));
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    setSaving(true);
+    try {
+      await upsert({ image_url: null });
+      toast.success('Imagem removida');
+    } catch (e: any) {
+      toast.error('Falha ao remover: ' + (e.message ?? 'erro desconhecido'));
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex gap-3 p-2.5 rounded bg-muted/50 items-start">
+      <div className="shrink-0">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="relative h-16 w-16 rounded-md border border-dashed bg-background overflow-hidden flex items-center justify-center hover:border-primary/60 transition"
+          title="Trocar imagem"
+        >
+          {uploading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : imageUrl ? (
+            <img src={imageUrl} alt={name} className="h-full w-full object-cover" />
+          ) : (
+            <ImagePlus className="h-5 w-5 text-muted-foreground" />
+          )}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </div>
+
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="text-xs text-muted-foreground">{formatRange(tier.min, tier.max)}</div>
+        <div className="flex gap-1.5 items-center">
+          <Input
+            value={name}
+            onChange={(e) => { setName(e.target.value); setDirty(true); }}
+            placeholder={tier.label}
+            className="h-8 text-sm"
+          />
+          {dirty && (
+            <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={handleSaveName} disabled={saving}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            </Button>
+          )}
+          {data?.image_url && !uploading && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-muted-foreground" onClick={handleRemoveImage} title="Remover imagem">
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <Upload className="h-3 w-3" /> Clique na imagem para {data?.image_url ? 'trocar' : 'anexar'}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BonificacaoTiersInfo = () => {
+  const [rows, setRows] = useState<Customization[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('mimo_tiers_customization')
+      .select('level, name, image_url')
+      .order('level', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) toast.error('Falha ao carregar mimos: ' + error.message);
+        setRows((data as Customization[]) ?? []);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const upsertLocal = (row: Customization) => {
+    setRows((prev) => {
+      const next = prev.filter((r) => r.level !== row.level);
+      next.push(row);
+      return next.sort((a, b) => a.level - b.level);
+    });
+  };
+
+  return (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <Card>
       <CardHeader className="pb-3">
@@ -18,14 +196,20 @@ const BonificacaoTiersInfo = () => (
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {MIMO_TIERS.map((tier, i) => (
-            <div key={i} className="flex justify-between items-center p-2.5 rounded bg-muted/50 text-sm">
-              <span>{formatRange(tier.min, tier.max)}</span>
-              <Badge variant="outline" className="font-medium">{tier.label}</Badge>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <div className="space-y-2">
+            {MIMO_TIERS.map((tier) => (
+              <TierEditor
+                key={tier.level}
+                tier={tier}
+                data={rows.find((r) => r.level === tier.level)}
+                onSaved={upsertLocal}
+              />
+            ))}
+          </div>
+        )}
         <p className="text-xs text-muted-foreground mt-3 p-2 bg-amber-50 rounded border border-amber-200">
           ⚠️ Mimos não são valores em dinheiro. São premiações (brindes, vouchers, etc.) definidas pelo partner responsável.
         </p>
@@ -55,6 +239,7 @@ const BonificacaoTiersInfo = () => (
       </CardContent>
     </Card>
   </div>
-);
+  );
+};
 
 export default BonificacaoTiersInfo;
