@@ -53,10 +53,10 @@ export const TYPE_COLORS: Record<string, string> = {
 
 /** Unified Mimo tiers — single source of truth (weekly, paid by partner). */
 export const MIMO_TIERS = [
-  { min: 25, max: 60,        label: 'Bronze',   level: 1 },
-  { min: 61, max: 100,       label: 'Prata',    level: 2 },
-  { min: 101, max: 200,      label: 'Ouro',     level: 3 },
-  { min: 201, max: Infinity, label: 'Diamante', level: 4 },
+  { min: 75,  max: 125,      label: 'Bronze',   level: 1 },
+  { min: 126, max: 199,      label: 'Prata',    level: 2 },
+  { min: 200, max: 299,      label: 'Ouro',     level: 3 },
+  { min: 300, max: Infinity, label: 'Diamante', level: 4 },
 ] as const;
 
 /** Descrição do brinde entregue em cada nível de Mimo. */
