@@ -315,6 +315,30 @@ export type Database = {
           },
         ]
       }
+      mimo_tiers_customization: {
+        Row: {
+          image_url: string | null
+          level: number
+          name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          image_url?: string | null
+          level: number
+          name: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          image_url?: string | null
+          level?: number
+          name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       partner_alerts: {
         Row: {
           action_taken: string | null
