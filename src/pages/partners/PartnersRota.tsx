@@ -1101,6 +1101,14 @@ export default function PartnersRota() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Cidade</label>
+                    <Input
+                      placeholder="Ex: Salvador, Belo Horizonte, São Paulo..."
+                      value={aiCidade}
+                      onChange={e => setAiCidade(e.target.value)}
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="ai-bairros">Bairros de foco</Label>
                     <Input
