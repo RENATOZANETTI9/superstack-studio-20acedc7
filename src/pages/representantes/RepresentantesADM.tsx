@@ -9,88 +9,8 @@ import {
   Search, MapPin, Target, AlertTriangle, Camera, Calendar, BarChart3,
   ClipboardCheck, Star
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-interface Representante {
-  id: string;
-  name: string;
-  email: string;
-  region: string;
-  type: 'MASTER' | 'PARTNER';
-  clinicasTotal: number;
-  clinicasAtivas: number;
-  clinicasAcimaMetaPct: number; // %
-  visitasSemana: number;
-  visitasRealizadas: number;
-  cadastrosMes: number;
-  metaCadastros: number;
-  ativacoesMes: number;
-  metaAtivacoes: number;
-  mimosEntregues: number;
-  mimosPendentes: number;
-  seh: number;
-  trend: 'up' | 'stable' | 'down';
-}
-
-const MOCK_REPRESENTANTES: Representante[] = [
-  {
-    id: 'r1', name: 'Roberto Ribeiro', email: 'roberto@helpude.com', region: 'BH / MG', type: 'MASTER',
-    clinicasTotal: 12, clinicasAtivas: 10, clinicasAcimaMetaPct: 60,
-    visitasSemana: 8, visitasRealizadas: 6,
-    cadastrosMes: 3, metaCadastros: 5,
-    ativacoesMes: 2, metaAtivacoes: 5,
-    mimosEntregues: 8, mimosPendentes: 3,
-    seh: 70.8, trend: 'up',
-  },
-  {
-    id: 'r2', name: 'Ana Paula Ferreira', email: 'ana@helpude.com', region: 'SP Capital', type: 'PARTNER',
-    clinicasTotal: 8, clinicasAtivas: 7, clinicasAcimaMetaPct: 85,
-    visitasSemana: 6, visitasRealizadas: 6,
-    cadastrosMes: 4, metaCadastros: 5,
-    ativacoesMes: 4, metaAtivacoes: 5,
-    mimosEntregues: 12, mimosPendentes: 1,
-    seh: 88.2, trend: 'up',
-  },
-  {
-    id: 'r3', name: 'Carlos Henrique Lima', email: 'carlos@helpude.com', region: 'RJ / Niterói', type: 'PARTNER',
-    clinicasTotal: 5, clinicasAtivas: 3, clinicasAcimaMetaPct: 40,
-    visitasSemana: 5, visitasRealizadas: 2,
-    cadastrosMes: 1, metaCadastros: 5,
-    ativacoesMes: 0, metaAtivacoes: 5,
-    mimosEntregues: 2, mimosPendentes: 5,
-    seh: 42.0, trend: 'down',
-  },
-  {
-    id: 'r4', name: 'Fernanda Costa', email: 'fernanda@helpude.com', region: 'Campinas / SP', type: 'PARTNER',
-    clinicasTotal: 9, clinicasAtivas: 8, clinicasAcimaMetaPct: 72,
-    visitasSemana: 7, visitasRealizadas: 5,
-    cadastrosMes: 3, metaCadastros: 5,
-    ativacoesMes: 3, metaAtivacoes: 5,
-    mimosEntregues: 10, mimosPendentes: 2,
-    seh: 75.5, trend: 'stable',
-  },
-];
-
-interface MimoAudit {
-  id: string;
-  representante: string;
-  clinic: string;
-  semana: string;
-  faixa: string;
-  status: 'PENDENTE' | 'ENTREGUE_COM_FOTO' | 'ENTREGUE_SEM_FOTO';
-}
-
-const MOCK_MIMOS_AUDIT: MimoAudit[] = [
-  { id: 'm1', representante: 'Roberto Ribeiro', clinic: 'Clínica Dental Plus', semana: 'Sem 4 / Jun', faixa: 'Ouro', status: 'PENDENTE' },
-  { id: 'm2', representante: 'Roberto Ribeiro', clinic: 'OdontoVida Premium', semana: 'Sem 4 / Jun', faixa: 'Prata', status: 'PENDENTE' },
-  { id: 'm3', representante: 'Carlos H. Lima', clinic: 'Clínica Carioca', semana: 'Sem 3 / Jun', faixa: 'Bronze', status: 'PENDENTE' },
-  { id: 'm4', representante: 'Ana Paula Ferreira', clinic: 'Clínica Paulista', semana: 'Sem 4 / Jun', faixa: 'Prata', status: 'ENTREGUE_COM_FOTO' },
-  { id: 'm5', representante: 'Fernanda Costa', clinic: 'OdontoCampinas', semana: 'Sem 4 / Jun', faixa: 'Ouro', status: 'ENTREGUE_SEM_FOTO' },
-  { id: 'm6', representante: 'Carlos H. Lima', clinic: 'Dental Rio', semana: 'Sem 4 / Jun', faixa: 'Bronze', status: 'PENDENTE' },
-  { id: 'm7', representante: 'Roberto Ribeiro', clinic: 'Clínica BH Sorriso', semana: 'Sem 3 / Jun', faixa: 'Prata', status: 'PENDENTE' },
-];
+import { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -114,22 +34,119 @@ export default function RepresentantesADM() {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
 
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [representantes, setRepresentantes] = useState<any[]>([]);
+  // TODO: conectar tabela attendant_incentives para auditoria de mimos.
+  const mimosAudit: any[] = [];
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      setLoadError(null);
+
+      // 1. IDs de usuários com role 'representante'
+      const { data: roleRows, error: rErr } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'representante' as any)
+        .limit(500);
+      if (rErr) { if (!cancelled) { setLoadError(rErr.message); setLoading(false); } return; }
+
+      const userIds = (roleRows || []).map((r: any) => r.user_id);
+      if (userIds.length === 0) {
+        if (!cancelled) { setRepresentantes([]); setLoading(false); }
+        return;
+      }
+
+      // 2. Partners desses usuários
+      const { data: partnerRows, error: pErr } = await supabase
+        .from('partners')
+        .select('id, user_id, legal_name, email, region_state, region_city, type, seh_score')
+        .in('user_id', userIds)
+        .limit(500);
+      if (pErr) { if (!cancelled) { setLoadError(pErr.message); setLoading(false); } return; }
+
+      const partnerIds = (partnerRows || []).map((p: any) => p.id);
+      const safeIds = partnerIds.length > 0 ? partnerIds : ['no-match'];
+
+      // 3. Clínicas e comissões em paralelo, com filtro de período
+      const [clinicRes, commRes] = await Promise.all([
+        supabase
+          .from('partner_clinic_relations')
+          .select('partner_id, clinic_name, is_active, created_at')
+          .in('partner_id', safeIds)
+          .limit(5000),
+        supabase
+          .from('partner_commissions')
+          .select('beneficiary_partner_id, commission_amount, status, created_at')
+          .in('beneficiary_partner_id', safeIds)
+          .gte('created_at', dateFrom ? dateFrom + 'T00:00:00Z' : '2020-01-01T00:00:00Z')
+          .lte('created_at', dateTo ? dateTo + 'T23:59:59Z' : new Date().toISOString())
+          .limit(10000),
+      ]);
+      if (cancelled) return;
+
+      const clinicsByPartner: Record<string, { total: number; active: number }> = {};
+      for (const c of (clinicRes.data || []) as any[]) {
+        const bucket = clinicsByPartner[c.partner_id] || { total: 0, active: 0 };
+        bucket.total += 1;
+        if (c.is_active) bucket.active += 1;
+        clinicsByPartner[c.partner_id] = bucket;
+      }
+
+      const commByPartner: Record<string, { total: number; paid: number; pending: number; approved: number }> = {};
+      for (const c of (commRes.data || []) as any[]) {
+        const pid = c.beneficiary_partner_id;
+        if (!commByPartner[pid]) commByPartner[pid] = { total: 0, paid: 0, pending: 0, approved: 0 };
+        const amt = Number(c.commission_amount || 0);
+        commByPartner[pid].total += amt;
+        if (c.status === 'PAID') commByPartner[pid].paid += amt;
+        else if (c.status === 'APPROVED') commByPartner[pid].approved += amt;
+        else commByPartner[pid].pending += amt;
+      }
+
+      const reps = (partnerRows || []).map((p: any) => ({
+        id: p.id,
+        name: p.legal_name || p.email || 'Sem nome',
+        email: p.email || '',
+        region: [p.region_city, p.region_state].filter(Boolean).join(' / ') || '—',
+        type: (p.type || 'PARTNER') as 'MASTER' | 'PARTNER',
+        seh: Number(p.seh_score || 0),
+        clinicasTotal: clinicsByPartner[p.id]?.total || 0,
+        clinicasAtivas: clinicsByPartner[p.id]?.active || 0,
+        comissaoTotal: commByPartner[p.id]?.total || 0,
+        comissaoPaga: commByPartner[p.id]?.paid || 0,
+        comissaoPendente: commByPartner[p.id]?.pending || 0,
+        comissaoAprovada: commByPartner[p.id]?.approved || 0,
+      }));
+
+      setRepresentantes(reps);
+      setLoading(false);
+    };
+    fetchData();
+    return () => { cancelled = true; };
+  }, [dateFrom, dateTo]);
+
   const filteredReps = useMemo(() =>
-    MOCK_REPRESENTANTES.filter(r =>
+    representantes.filter(r =>
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.region.toLowerCase().includes(search.toLowerCase())
-    ), [search]);
+    ), [representantes, search]);
 
   const filteredMimos = useMemo(() =>
-    MOCK_MIMOS_AUDIT.filter(m => mimoFilter === 'all' || m.status === mimoFilter),
+    mimosAudit.filter((m: any) => mimoFilter === 'all' || m.status === mimoFilter),
     [mimoFilter]);
 
   // Summary KPIs
-  const totalReps = MOCK_REPRESENTANTES.length;
-  const totalClinicas = MOCK_REPRESENTANTES.reduce((s, r) => s + r.clinicasTotal, 0);
-  const totalMimosPendentes = MOCK_MIMOS_AUDIT.filter(m => m.status === 'PENDENTE').length;
-  const totalMimosEntregues = MOCK_MIMOS_AUDIT.filter(m => m.status === 'ENTREGUE_COM_FOTO').length;
-  const avgSEH = (MOCK_REPRESENTANTES.reduce((s, r) => s + r.seh, 0) / totalReps).toFixed(1);
+  const totalReps = representantes.length;
+  const totalClinicas = representantes.reduce((s, r) => s + r.clinicasTotal, 0);
+  const totalMimosPendentes = 0;
+  const totalMimosEntregues = 0;
+  const avgSEH = totalReps > 0
+    ? (representantes.reduce((s, r) => s + (r.seh || 0), 0) / totalReps).toFixed(1)
+    : '0.0';
 
   return (
     <DashboardLayout>
