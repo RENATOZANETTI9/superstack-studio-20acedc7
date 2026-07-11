@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DollarSign, Gift, Upload, Loader2, ImagePlus, Check, X } from 'lucide-react';
+import { DollarSign, Gift, Upload, Loader2, ImagePlus, Check, X, RefreshCw } from 'lucide-react';
 import { PARTNER_RULES, MIMO_TIERS } from '@/lib/partner-rules';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,6 +11,34 @@ import { toast } from 'sonner';
 const BUCKET = 'mimo-tiers';
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024; // 3 MB
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const ACCEPTED_LABEL = 'PNG, JPG, WEBP ou GIF';
+
+const humanSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
+async function logMimoChange(params: {
+  level: number;
+  field: 'name' | 'image_url';
+  oldValue: string | null;
+  newValue: string | null;
+}) {
+  try {
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes?.user?.id ?? null;
+    await supabase.from('mimo_tiers_customization_log').insert({
+      level: params.level,
+      field: params.field,
+      old_value: params.oldValue,
+      new_value: params.newValue,
+      changed_by: uid,
+    });
+  } catch (e) {
+    console.warn('[audit] falha ao registrar mimo_tiers_customization_log', e);
+  }
+}
 
 const formatRange = (min: number, max: number) =>
   Number.isFinite(max) ? `${min}–${max} simulações` : `${min}+ simulações`;
@@ -49,12 +77,16 @@ const TierEditor = ({
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lastFailedFile, setLastFailedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageUrl = useSignedUrl(data?.image_url ?? null);
 
   useEffect(() => { setName(data?.name ?? tier.label); setDirty(false); }, [data?.name, tier.label]);
 
   const upsert = async (patch: Partial<Customization>) => {
+    const oldName = data?.name ?? null;
+    const oldImage = data?.image_url ?? null;
     const payload = {
       level: tier.level,
       name: patch.name ?? name,
@@ -67,6 +99,14 @@ const TierEditor = ({
       .single();
     if (error) throw error;
     onSaved(row as Customization);
+
+    // Audit — só registra o que mudou
+    if (patch.name !== undefined && payload.name !== oldName) {
+      void logMimoChange({ level: tier.level, field: 'name', oldValue: oldName, newValue: payload.name });
+    }
+    if (patch.image_url !== undefined && payload.image_url !== oldImage) {
+      void logMimoChange({ level: tier.level, field: 'image_url', oldValue: oldImage, newValue: payload.image_url });
+    }
   };
 
   const handleSaveName = async () => {
@@ -80,39 +120,68 @@ const TierEditor = ({
     } finally { setSaving(false); }
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadFile = async (file: File) => {
+    // Validação: tipo
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error('Formato inválido. Use PNG, JPG, WEBP ou GIF.');
-      if (fileRef.current) fileRef.current.value = '';
+      const msg = `Tipo inválido (${file.type || 'desconhecido'}). Aceitos: ${ACCEPTED_LABEL}.`;
+      setUploadError(msg);
+      setLastFailedFile(null);
+      toast.error(msg);
       return;
     }
+    // Validação: tamanho
     if (file.size > MAX_IMAGE_BYTES) {
-      toast.error(`Imagem muito grande. Máx. ${(MAX_IMAGE_BYTES / 1024 / 1024).toFixed(0)} MB.`);
-      if (fileRef.current) fileRef.current.value = '';
+      const msg = `Arquivo muito grande (${humanSize(file.size)}). Limite: ${humanSize(MAX_IMAGE_BYTES)}.`;
+      setUploadError(msg);
+      setLastFailedFile(file);
+      toast.error(msg);
       return;
     }
+
     setUploading(true);
+    setUploadError(null);
     try {
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `tier-${tier.level}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) throw upErr;
-      await upsert({ image_url: path });
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw new Error(`Falha ao enviar para o storage: ${upErr.message}`);
+      try {
+        await upsert({ image_url: path });
+      } catch (dbErr: any) {
+        throw new Error(`Upload concluído, mas falha ao salvar no banco: ${dbErr.message ?? 'erro desconhecido'}`);
+      }
+      setLastFailedFile(null);
       toast.success('Imagem do mimo atualizada');
     } catch (e: any) {
-      toast.error('Falha no upload: ' + (e.message ?? 'erro desconhecido'));
+      const msg = e?.message ?? 'Erro desconhecido no upload';
+      setUploadError(msg);
+      setLastFailedFile(file);
+      toast.error(msg);
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
     }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    await uploadFile(file);
+  };
+
+  const handleRetry = async () => {
+    if (!lastFailedFile) return;
+    await uploadFile(lastFailedFile);
   };
 
   const handleRemoveImage = async () => {
     setSaving(true);
     try {
       await upsert({ image_url: null });
+      setUploadError(null);
+      setLastFailedFile(null);
       toast.success('Imagem removida');
     } catch (e: any) {
       toast.error('Falha ao remover: ' + (e.message ?? 'erro desconhecido'));
@@ -186,8 +255,24 @@ const TierEditor = ({
             ? 'Enviando imagem…'
             : saving
             ? 'Salvando…'
-            : `Clique na imagem para ${data?.image_url ? 'trocar' : 'anexar'} (PNG/JPG/WEBP/GIF, máx. 3 MB)`}
+            : `Clique na imagem para ${data?.image_url ? 'trocar' : 'anexar'} (${ACCEPTED_LABEL}, máx. ${humanSize(MAX_IMAGE_BYTES)})`}
         </div>
+        {uploadError && !uploading && (
+          <div className="flex items-start gap-1.5 text-[11px] p-1.5 rounded border border-destructive/40 bg-destructive/5 text-destructive">
+            <span className="flex-1 leading-snug">{uploadError}</span>
+            {lastFailedFile && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 px-2 text-[11px] shrink-0"
+                onClick={handleRetry}
+                disabled={saving}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" /> Tentar de novo
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
