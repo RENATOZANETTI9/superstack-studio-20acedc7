@@ -384,6 +384,7 @@ export default function PartnersRota() {
         body: {
           clinicas: portfolio,
           semana: weekLabel,
+          cidade: aiCidade || 'Salvador',
           bairros: aiBairros || undefined,
           especialidade: aiEspecialidade || undefined,
           tipoLocal: aiTipoLocal !== 'todos' ? aiTipoLocal : undefined,
