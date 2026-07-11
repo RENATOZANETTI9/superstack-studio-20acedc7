@@ -1223,7 +1223,7 @@ export default function PartnersRota() {
                 className="gap-2 bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl"
               >
                 {aiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                {aiLoading ? 'Gerando...' : '✨ Gerar Roteiro com Inteligência Artificial'}
+                {aiLoading ? 'Gerando...' : aiPreviewOnly ? '👁️ Pré-visualizar Roteiro (não salva)' : '✨ Gerar Roteiro com Inteligência Artificial'}
               </Button>
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -1235,6 +1235,47 @@ export default function PartnersRota() {
                   Manter marcações de "Conversamos / Não conversamos" ao regenerar
                 </Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ai-preview-only"
+                  checked={aiPreviewOnly}
+                  onCheckedChange={(c) => setAiPreviewOnly(!!c)}
+                />
+                <Label htmlFor="ai-preview-only" className="text-xs font-normal cursor-pointer text-muted-foreground">
+                  Apenas pré-visualizar (não salvar nem compartilhar)
+                </Label>
+              </div>
+              {aiPreviewOnly && aiRoute && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (!user?.id || !aiRoute) return;
+                    await supabase.from('ai_route_generations').upsert(
+                      { user_id: user.id, roteiro: aiRoute, params: {
+                          bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
+                          faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia, cidade: aiCidade,
+                        } },
+                      { onConflict: 'user_id' },
+                    );
+                    toast.success('Pré-visualização salva.');
+                  }}
+                  className="gap-2"
+                >
+                  <Save className="w-4 h-4" /> Salvar esta pré-visualização
+                </Button>
+              )}
+              {aiLastMeta && (
+                <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 justify-center max-w-xl">
+                  <span>📍 {aiLastMeta.cidade || '—'}</span>
+                  <span>🤖 {aiLastMeta.model || '—'}</span>
+                  <span>⏱ {aiLastMeta.duration_ms ?? '—'}ms</span>
+                  <span>🔎 tavily: {aiLastMeta.tavily_hits ?? 0} hits, {aiLastMeta.cache_hits ?? 0} cache, {aiLastMeta.tavily_errors ?? 0} erros</span>
+                  {aiLastMeta.tavily_configured && !aiLastMeta.tavily_key_valid_shape && (
+                    <span className="text-amber-600">⚠️ TAVILY_API_KEY inválida (esperado prefixo "tvly-")</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {aiRoute && (() => {
