@@ -111,6 +111,8 @@ const MIMO_STATUS_CONFIG = {
 export default function RepresentantesADM() {
   const [search, setSearch] = useState('');
   const [mimoFilter, setMimoFilter] = useState<'all' | 'PENDENTE' | 'ENTREGUE_COM_FOTO' | 'ENTREGUE_SEM_FOTO'>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
 
   const filteredReps = useMemo(() =>
     MOCK_REPRESENTANTES.filter(r =>
@@ -219,6 +221,43 @@ export default function RepresentantesADM() {
 
           {/* Tab: Representantes */}
           <TabsContent value="reps" className="space-y-4 mt-4">
+            <Card className="mb-4">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Data início</label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={e => setDateFrom(e.target.value)}
+                      className="h-8 w-40 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Data fim</label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={e => setDateTo(e.target.value)}
+                      className="h-8 w-40 text-sm"
+                    />
+                  </div>
+                  {(dateFrom || dateTo) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setDateFrom(''); setDateTo(''); }}
+                      className="h-8 text-xs"
+                    >
+                      Limpar filtros
+                    </Button>
+                  )}
+                  <p className="text-xs text-muted-foreground ml-auto">
+                    {dateFrom || dateTo ? `Período: ${dateFrom || '—'} → ${dateTo || 'hoje'}` : 'Exibindo todos os dados'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
