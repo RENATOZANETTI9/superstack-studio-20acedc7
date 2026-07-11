@@ -180,7 +180,7 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
     // ── 4. LLM ───────────────────────────────────────────────────────────────
     const apiUrl = LOVABLE_KEY ? 'https://ai.gateway.lovable.dev/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
     const apiKey = LOVABLE_KEY || OPENAI_KEY;
-    const model = LOVABLE_KEY ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+    const model = LOVABLE_KEY ? 'google/gemini-2.5-flash' : 'gpt-4o-mini';
 
     const gptRes = await fetchFn(apiUrl, {
       method: 'POST',
