@@ -17,6 +17,7 @@ export interface HandlerDeps {
   env: (k: string) => string | undefined;
   fetch: typeof fetch;
   admin: any | null;
+  sleep?: (ms: number) => Promise<void>;
 }
 
 function defaultDeps(): HandlerDeps {
@@ -33,6 +34,7 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
   const base = defaultDeps();
   const deps: HandlerDeps = { ...base, ...depsOverride };
   const { env, fetch: fetchFn, admin } = deps;
+  const sleep = deps.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
 
   const reqId = (globalThis.crypto?.randomUUID?.() || String(Date.now())).slice(0, 8);
   const t0 = Date.now();
@@ -83,6 +85,8 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
     let cacheHits = 0;
     let tavilyErrors = 0;
     const tavilyErrorDetails: Array<{ bairro: string; status?: number; message: string }> = [];
+    // Fontes Tavily efetivamente usadas (cache + live)
+    const tavilySources: Array<{ bairro: string; title: string; url?: string; from: 'cache' | 'live' }> = [];
 
     const bairrosList = String(bairros || '').split(',').map((b: string) => b.trim()).filter(Boolean).slice(0, 3);
     const tipo = tipoLocal && tipoLocal !== 'todos' ? tipoLocal : 'clínica';
@@ -110,46 +114,73 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
         }
 
         if (cached) {
-          cached.forEach((r: any) => tavilyResults.push(`- ${r.title}: ${(r.content || '').slice(0, 300)}`));
+          cached.forEach((r: any) => {
+            tavilyResults.push(`- ${r.title}: ${(r.content || '').slice(0, 300)}`);
+            tavilySources.push({ bairro, title: String(r.title || ''), url: r.url, from: 'cache' });
+          });
           continue;
         }
 
-        // Busca Tavily
+        // Busca Tavily com retry + backoff (2 tentativas)
         if (!TAVILY_KEY) continue;
-        try {
-          const tavilyRes = await fetchFn('https://api.tavily.com/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              api_key: TAVILY_KEY,
-              query: `${tipo} ${esp} ${bairro} ${cidade} telefone responsável`,
-              search_depth: 'basic', max_results: 5, include_answer: false,
-            }),
-          });
-          if (!tavilyRes.ok) {
-            tavilyErrors++;
-            const bodyText = await tavilyRes.text().catch(() => '');
-            const detail = { bairro, status: tavilyRes.status, message: bodyText.slice(0, 200) };
-            tavilyErrorDetails.push(detail);
-            log('tavily_error', detail);
-            continue;
-          }
-          const tavilyData = await tavilyRes.json();
-          const results = (tavilyData.results || []).slice(0, 3);
-          tavilyHits += results.length;
-          results.forEach((r: any) => tavilyResults.push(`- ${r.title}: ${(r.content || '').slice(0, 300)}`));
+        const MAX_ATTEMPTS = 2;
+        let attemptFailure: { status?: number; message: string } | null = null;
+        let succeeded = false;
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          try {
+            const tavilyRes = await fetchFn('https://api.tavily.com/search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                api_key: TAVILY_KEY,
+                query: `${tipo} ${esp} ${bairro} ${cidade} telefone responsável`,
+                search_depth: 'basic', max_results: 5, include_answer: false,
+              }),
+            });
+            if (!tavilyRes.ok) {
+              const bodyText = await tavilyRes.text().catch(() => '');
+              attemptFailure = { status: tavilyRes.status, message: bodyText.slice(0, 200) };
+              // 4xx (exceto 429) não são retriáveis
+              const retriable = tavilyRes.status === 429 || tavilyRes.status >= 500;
+              log('tavily_attempt_failed', { bairro, attempt, status: tavilyRes.status, retriable });
+              if (retriable && attempt < MAX_ATTEMPTS) {
+                await sleep(300 * attempt); // backoff: 300ms, 600ms
+                continue;
+              }
+              break;
+            }
+            const tavilyData = await tavilyRes.json();
+            const results = (tavilyData.results || []).slice(0, 3);
+            tavilyHits += results.length;
+            results.forEach((r: any) => {
+              tavilyResults.push(`- ${r.title}: ${(r.content || '').slice(0, 300)}`);
+              tavilySources.push({ bairro, title: String(r.title || ''), url: r.url, from: 'live' });
+            });
 
-          if (admin && results.length > 0) {
-            await admin.from('tavily_cache').upsert({
-              cache_key: cacheKey, bairro, especialidade: esp, tipo,
-              results, expires_at: computeCacheExpiresAt(),
-            }, { onConflict: 'cache_key' });
+            if (admin && results.length > 0) {
+              await admin.from('tavily_cache').upsert({
+                cache_key: cacheKey, bairro, especialidade: esp, tipo,
+                results, expires_at: computeCacheExpiresAt(),
+              }, { onConflict: 'cache_key' });
+            }
+            succeeded = true;
+            attemptFailure = null;
+            break;
+          } catch (err) {
+            attemptFailure = { message: String((err as any)?.message || err).slice(0, 200) };
+            log('tavily_attempt_exception', { bairro, attempt, ...attemptFailure });
+            if (attempt < MAX_ATTEMPTS) {
+              await sleep(300 * attempt);
+              continue;
+            }
           }
-        } catch (err) {
+        }
+        if (!succeeded && attemptFailure) {
           tavilyErrors++;
-          const detail = { bairro, message: String((err as any)?.message || err).slice(0, 200) };
+          const detail = { bairro, ...attemptFailure };
           tavilyErrorDetails.push(detail);
-          log('tavily_exception', detail);
+          log('tavily_error_final', detail);
+          // Fallback: seguimos para o próximo bairro / geração via LLM
         }
       }
 
@@ -157,6 +188,20 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
         clinicasInternetStr = `\n\nDados de clínicas encontradas na internet (use para extrair nome, telefone, responsável):\n${tavilyResults.join('\n')}`;
         source = cacheHits > 0 && tavilyHits === 0 ? 'tavily_cache' : 'tavily';
       }
+
+      // Se a chave é aparentemente válida e nenhuma fonte foi obtida,
+      // sinaliza no meta que a expectativa (usar Tavily) não foi cumprida.
+    }
+
+    // Validação: quando a chave está no formato correto, esperamos ter fontes.
+    // Isso não faz o request falhar (LLM ainda gera fallback utilizável), mas
+    // é reportado em meta para o cliente decidir como exibir.
+    const tavilyExpectedButMissing =
+      tavilyKeyLooksValid && bairrosList.length > 0 && tavilySources.length === 0;
+    if (tavilyExpectedButMissing) {
+      log('tavily_expected_but_missing', {
+        cidade, bairros: bairrosList, tavily_errors: tavilyErrors,
+      });
     }
 
     // ── 2. Portfólio ─────────────────────────────────────────────────────────
@@ -251,6 +296,7 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
         roteiro,
         structured,
         source,
+        tavily_sources: tavilySources,
         meta: {
           request_id: reqId,
           cidade,
@@ -262,6 +308,11 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
           cache_hits: cacheHits,
           tavily_errors: tavilyErrors,
           tavily_error_details: tavilyErrorDetails,
+          tavily_sources_count: tavilySources.length,
+          tavily_sources_summary: tavilySources.slice(0, 10).map(s => ({
+            bairro: s.bairro, title: s.title, from: s.from,
+          })),
+          tavily_expected_but_missing: tavilyExpectedButMissing,
           bairros_queried: bairrosList.length,
           format_valid: format.valid,
           format_issues: format.issues,

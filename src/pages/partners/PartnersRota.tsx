@@ -189,6 +189,10 @@ export default function PartnersRota() {
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   const [aiPreviewOnly, setAiPreviewOnly] = useState(false);
   const [aiLastMeta, setAiLastMeta] = useState<any | null>(null);
+  const [aiTavilySources, setAiTavilySources] = useState<Array<{ bairro: string; title: string; url?: string; from: string }>>([]);
+  // Draft preview list (per city + optional bairro)
+  const [aiDrafts, setAiDrafts] = useState<Array<{ id: string; cidade: string; bairro: string; updated_at: string }>>([]);
+  const [aiDraftsLoading, setAiDraftsLoading] = useState(false);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
   const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
   // Fuzzy fallback: normalized-text -> status (survives small wording changes on regeneration)
@@ -410,6 +414,7 @@ export default function PartnersRota() {
       setAiFormatIssues(issues);
       setAiFormatValid(valid);
       setAiLastMeta(data?.meta || null);
+      setAiTavilySources(Array.isArray(data?.tavily_sources) ? data.tavily_sources : []);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
       const baseExact = aiKeepMarks ? aiStatusByKey : {};
@@ -471,6 +476,83 @@ export default function PartnersRota() {
     } finally {
       setAiLoading(false);
     }
+  };
+
+  // ── Preview drafts (per cidade + bairro opcional) ─────────────────────────
+  const loadDrafts = async () => {
+    if (!user?.id) return;
+    setAiDraftsLoading(true);
+    try {
+      const { data } = await supabase
+        .from('ai_route_preview_drafts')
+        .select('id, cidade, bairro, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      setAiDrafts((data as any) || []);
+    } finally {
+      setAiDraftsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadDrafts(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  const savePreviewDraft = async () => {
+    if (!user?.id || !aiRoute) {
+      toast.error('Nada para salvar como rascunho.');
+      return;
+    }
+    const cidade = (aiCidade || aiLastMeta?.cidade || '').trim();
+    if (!cidade) {
+      toast.error('Informe a cidade antes de salvar o rascunho.');
+      return;
+    }
+    const bairro = (aiBairros || '').trim();
+    const { error } = await supabase.from('ai_route_preview_drafts').upsert({
+      user_id: user.id,
+      cidade,
+      bairro,
+      roteiro: aiRoute,
+      meta: aiLastMeta,
+      params: {
+        cidade, bairros: aiBairros, especialidade: aiEspecialidade,
+        tipoLocal: aiTipoLocal, faturamentoMedio: aiFaturamentoMedio,
+        clinicasPorDia: aiClinicasPorDia,
+      },
+    }, { onConflict: 'user_id,cidade,bairro' });
+    if (error) { toast.error('Erro ao salvar rascunho.'); return; }
+    toast.success(`Rascunho salvo para ${cidade}${bairro ? ' / ' + bairro : ''}`);
+    loadDrafts();
+  };
+
+  const loadDraft = async (id: string) => {
+    if (!user?.id) return;
+    const { data, error } = await supabase
+      .from('ai_route_preview_drafts')
+      .select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
+    if (error || !data) { toast.error('Rascunho não encontrado.'); return; }
+    const d: any = data;
+    setAiRoute(d.roteiro);
+    setAiLastMeta(d.meta || null);
+    setAiCidade(d.cidade || '');
+    setAiBairros(d.bairro || '');
+    const p = d.params || {};
+    if (p.especialidade) setAiEspecialidade(p.especialidade);
+    if (p.tipoLocal) setAiTipoLocal(p.tipoLocal);
+    if (p.faturamentoMedio) setAiFaturamentoMedio(p.faturamentoMedio);
+    if (p.clinicasPorDia) setAiClinicasPorDia(p.clinicasPorDia);
+    setAiPreviewOnly(true);
+    setAiFormatValid(true);
+    setAiFormatIssues([]);
+    toast.success(`Rascunho carregado: ${d.cidade}${d.bairro ? ' / ' + d.bairro : ''}`);
+  };
+
+  const deleteDraft = async (id: string) => {
+    if (!user?.id) return;
+    const { error } = await supabase.from('ai_route_preview_drafts')
+      .delete().eq('id', id).eq('user_id', user.id);
+    if (error) { toast.error('Erro ao remover rascunho.'); return; }
+    toast.success('Rascunho removido.');
+    loadDrafts();
   };
 
   const startRecording = async () => {
@@ -1246,24 +1328,29 @@ export default function PartnersRota() {
                 </Label>
               </div>
               {aiPreviewOnly && aiRoute && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    if (!user?.id || !aiRoute) return;
-                    await supabase.from('ai_route_generations').upsert(
-                      { user_id: user.id, roteiro: aiRoute, params: {
-                          bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
-                          faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia, cidade: aiCidade,
-                        } },
-                      { onConflict: 'user_id' },
-                    );
-                    toast.success('Pré-visualização salva.');
-                  }}
-                  className="gap-2"
-                >
-                  <Save className="w-4 h-4" /> Salvar esta pré-visualização
-                </Button>
+                <div className="flex flex-wrap items-center gap-2 justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      if (!user?.id || !aiRoute) return;
+                      await supabase.from('ai_route_generations').upsert(
+                        { user_id: user.id, roteiro: aiRoute, params: {
+                            bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
+                            faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia, cidade: aiCidade,
+                          } },
+                        { onConflict: 'user_id' },
+                      );
+                      toast.success('Pré-visualização salva no roteiro atual.');
+                    }}
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" /> Promover a roteiro atual
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={savePreviewDraft} className="gap-2">
+                    <ClipboardCheck className="w-4 h-4" /> Salvar rascunho por cidade
+                  </Button>
+                </div>
               )}
               {aiLastMeta && (
                 <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 justify-center max-w-xl">
@@ -1274,8 +1361,62 @@ export default function PartnersRota() {
                   {aiLastMeta.tavily_configured && !aiLastMeta.tavily_key_valid_shape && (
                     <span className="text-amber-600">⚠️ TAVILY_API_KEY inválida (esperado prefixo "tvly-")</span>
                   )}
+                  {aiLastMeta.tavily_expected_but_missing && (
+                    <span className="text-amber-600">⚠️ Tavily configurado mas nenhuma fonte retornada</span>
+                  )}
                 </div>
               )}
+              {aiTavilySources.length > 0 && (
+                <div className="w-full max-w-xl mt-2 rounded-md border bg-muted/20 p-2 text-[11px]">
+                  <div className="font-semibold text-muted-foreground mb-1">🌐 Fontes Tavily usadas ({aiTavilySources.length})</div>
+                  <ul className="space-y-0.5 max-h-32 overflow-auto">
+                    {aiTavilySources.slice(0, 10).map((s, i) => (
+                      <li key={i} className="truncate">
+                        <span className="text-muted-foreground">[{s.from}]</span>{' '}
+                        <span className="text-muted-foreground">{s.bairro} —</span>{' '}
+                        {s.url ? (
+                          <a href={s.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{s.title}</a>
+                        ) : s.title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {/* Drafts panel */}
+              <div className="w-full max-w-xl mt-2 rounded-md border bg-card p-3 text-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-foreground">📂 Rascunhos de pré-visualização</div>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={loadDrafts} disabled={aiDraftsLoading}>
+                    {aiDraftsLoading ? 'Carregando…' : 'Atualizar'}
+                  </Button>
+                </div>
+                {aiDrafts.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">Nenhum rascunho salvo ainda. Marque "Apenas pré-visualizar", gere um roteiro e clique em "Salvar rascunho por cidade".</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {aiDrafts.map(d => (
+                      <li key={d.id} className="flex items-center justify-between gap-2 rounded border px-2 py-1">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            📍 {d.cidade}{d.bairro ? ` / ${d.bairro}` : ''}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            atualizado {new Date(d.updated_at).toLocaleString('pt-BR')}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => loadDraft(d.id)}>
+                            Carregar
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteDraft(d.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             {aiRoute && (() => {
