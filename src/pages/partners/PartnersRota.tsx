@@ -414,6 +414,7 @@ export default function PartnersRota() {
       setAiFormatIssues(issues);
       setAiFormatValid(valid);
       setAiLastMeta(data?.meta || null);
+      setAiTavilySources(Array.isArray(data?.tavily_sources) ? data.tavily_sources : []);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
       const baseExact = aiKeepMarks ? aiStatusByKey : {};
