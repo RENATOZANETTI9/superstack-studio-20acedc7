@@ -197,6 +197,7 @@ export default function PartnersRota() {
   // AI form fields
   const [aiBairros, setAiBairros] = useState('');
   const [aiEspecialidade, setAiEspecialidade] = useState('');
+  const [aiCidade, setAiCidade] = useState('');
   const [aiTipoLocal, setAiTipoLocal] = useState<string>('todos');
   const [aiFaturamentoMedio, setAiFaturamentoMedio] = useState('');
   const [aiClinicasPorDia, setAiClinicasPorDia] = useState<string>('4');
