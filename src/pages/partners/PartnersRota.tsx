@@ -189,6 +189,10 @@ export default function PartnersRota() {
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
   const [aiPreviewOnly, setAiPreviewOnly] = useState(false);
   const [aiLastMeta, setAiLastMeta] = useState<any | null>(null);
+  const [aiTavilySources, setAiTavilySources] = useState<Array<{ bairro: string; title: string; url?: string; from: string }>>([]);
+  // Draft preview list (per city + optional bairro)
+  const [aiDrafts, setAiDrafts] = useState<Array<{ id: string; cidade: string; bairro: string; updated_at: string }>>([]);
+  const [aiDraftsLoading, setAiDraftsLoading] = useState(false);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
   const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
   // Fuzzy fallback: normalized-text -> status (survives small wording changes on regeneration)
