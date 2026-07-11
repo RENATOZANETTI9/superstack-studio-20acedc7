@@ -332,8 +332,7 @@ const PartnersSimulator = () => {
             </Card>
 
             {/* SEH Score */}
-            <Card>
-              {isAdmin && (
+            {isAdmin && (
                 <Card className="border-amber-200 bg-amber-50/50">
                   <CardContent className="pt-3 pb-3">
                     <p className="text-xs text-amber-800">
@@ -342,7 +341,8 @@ const PartnersSimulator = () => {
                     </p>
                   </CardContent>
                 </Card>
-              )}
+            )}
+            <Card>
               <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
