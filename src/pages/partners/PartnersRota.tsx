@@ -1328,24 +1328,29 @@ export default function PartnersRota() {
                 </Label>
               </div>
               {aiPreviewOnly && aiRoute && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    if (!user?.id || !aiRoute) return;
-                    await supabase.from('ai_route_generations').upsert(
-                      { user_id: user.id, roteiro: aiRoute, params: {
-                          bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
-                          faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia, cidade: aiCidade,
-                        } },
-                      { onConflict: 'user_id' },
-                    );
-                    toast.success('Pré-visualização salva.');
-                  }}
-                  className="gap-2"
-                >
-                  <Save className="w-4 h-4" /> Salvar esta pré-visualização
-                </Button>
+                <div className="flex flex-wrap items-center gap-2 justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      if (!user?.id || !aiRoute) return;
+                      await supabase.from('ai_route_generations').upsert(
+                        { user_id: user.id, roteiro: aiRoute, params: {
+                            bairros: aiBairros, especialidade: aiEspecialidade, tipoLocal: aiTipoLocal,
+                            faturamentoMedio: aiFaturamentoMedio, clinicasPorDia: aiClinicasPorDia, cidade: aiCidade,
+                          } },
+                        { onConflict: 'user_id' },
+                      );
+                      toast.success('Pré-visualização salva no roteiro atual.');
+                    }}
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" /> Promover a roteiro atual
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={savePreviewDraft} className="gap-2">
+                    <ClipboardCheck className="w-4 h-4" /> Salvar rascunho por cidade
+                  </Button>
+                </div>
               )}
               {aiLastMeta && (
                 <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 justify-center max-w-xl">
@@ -1356,8 +1361,62 @@ export default function PartnersRota() {
                   {aiLastMeta.tavily_configured && !aiLastMeta.tavily_key_valid_shape && (
                     <span className="text-amber-600">⚠️ TAVILY_API_KEY inválida (esperado prefixo "tvly-")</span>
                   )}
+                  {aiLastMeta.tavily_expected_but_missing && (
+                    <span className="text-amber-600">⚠️ Tavily configurado mas nenhuma fonte retornada</span>
+                  )}
                 </div>
               )}
+              {aiTavilySources.length > 0 && (
+                <div className="w-full max-w-xl mt-2 rounded-md border bg-muted/20 p-2 text-[11px]">
+                  <div className="font-semibold text-muted-foreground mb-1">🌐 Fontes Tavily usadas ({aiTavilySources.length})</div>
+                  <ul className="space-y-0.5 max-h-32 overflow-auto">
+                    {aiTavilySources.slice(0, 10).map((s, i) => (
+                      <li key={i} className="truncate">
+                        <span className="text-muted-foreground">[{s.from}]</span>{' '}
+                        <span className="text-muted-foreground">{s.bairro} —</span>{' '}
+                        {s.url ? (
+                          <a href={s.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{s.title}</a>
+                        ) : s.title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {/* Drafts panel */}
+              <div className="w-full max-w-xl mt-2 rounded-md border bg-card p-3 text-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-foreground">📂 Rascunhos de pré-visualização</div>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={loadDrafts} disabled={aiDraftsLoading}>
+                    {aiDraftsLoading ? 'Carregando…' : 'Atualizar'}
+                  </Button>
+                </div>
+                {aiDrafts.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">Nenhum rascunho salvo ainda. Marque "Apenas pré-visualizar", gere um roteiro e clique em "Salvar rascunho por cidade".</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {aiDrafts.map(d => (
+                      <li key={d.id} className="flex items-center justify-between gap-2 rounded border px-2 py-1">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            📍 {d.cidade}{d.bairro ? ` / ${d.bairro}` : ''}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            atualizado {new Date(d.updated_at).toLocaleString('pt-BR')}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => loadDraft(d.id)}>
+                            Carregar
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteDraft(d.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             {aiRoute && (() => {
