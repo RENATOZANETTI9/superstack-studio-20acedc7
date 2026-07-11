@@ -34,6 +34,14 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
   const deps: HandlerDeps = { ...base, ...depsOverride };
   const { env, fetch: fetchFn, admin } = deps;
 
+  const reqId = (globalThis.crypto?.randomUUID?.() || String(Date.now())).slice(0, 8);
+  const t0 = Date.now();
+  const log = (event: string, extra: Record<string, unknown> = {}) => {
+    try {
+      console.log(JSON.stringify({ fn: 'generate-ai-route', reqId, event, ...extra }));
+    } catch { /* ignore */ }
+  };
+
   try {
     const {
       clinicas = [], semana = '', bairros = '', especialidade = '',
@@ -45,7 +53,23 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
     const LOVABLE_KEY = env('LOVABLE_API_KEY');
     const OPENAI_KEY = env('OPENAI_API_KEY');
 
+    // Validate Tavily key shape — real keys are `tvly-...`. A misconfigured secret
+    // (e.g. a URL) causes silent 401s on every call.
+    const tavilyKeyLooksValid = !!TAVILY_KEY && /^tvly-/i.test(TAVILY_KEY.trim());
+    if (TAVILY_KEY && !tavilyKeyLooksValid) {
+      log('tavily_key_invalid_shape', { hint: 'TAVILY_API_KEY does not start with "tvly-"' });
+    }
+
+    log('request', {
+      cidade, bairros, especialidade, tipoLocal, clinicasPorDia,
+      portfolio_size: Array.isArray(clinicas) ? clinicas.length : 0,
+      tavily_configured: !!TAVILY_KEY,
+      tavily_key_valid_shape: tavilyKeyLooksValid,
+      llm_provider: LOVABLE_KEY ? 'lovable' : (OPENAI_KEY ? 'openai' : 'none'),
+    });
+
     if (!LOVABLE_KEY && !OPENAI_KEY) {
+      log('error', { where: 'ai_key', message: 'no AI key configured' });
       return new Response(
         JSON.stringify({ error: 'AI key não configurada' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,6 +82,7 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
     let tavilyHits = 0;
     let cacheHits = 0;
     let tavilyErrors = 0;
+    const tavilyErrorDetails: Array<{ bairro: string; status?: number; message: string }> = [];
 
     const bairrosList = String(bairros || '').split(',').map((b: string) => b.trim()).filter(Boolean).slice(0, 3);
     const tipo = tipoLocal && tipoLocal !== 'todos' ? tipoLocal : 'clínica';
@@ -101,7 +126,14 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
               search_depth: 'basic', max_results: 5, include_answer: false,
             }),
           });
-          if (!tavilyRes.ok) { tavilyErrors++; continue; }
+          if (!tavilyRes.ok) {
+            tavilyErrors++;
+            const bodyText = await tavilyRes.text().catch(() => '');
+            const detail = { bairro, status: tavilyRes.status, message: bodyText.slice(0, 200) };
+            tavilyErrorDetails.push(detail);
+            log('tavily_error', detail);
+            continue;
+          }
           const tavilyData = await tavilyRes.json();
           const results = (tavilyData.results || []).slice(0, 3);
           tavilyHits += results.length;
@@ -114,8 +146,10 @@ export async function handleRequest(req: Request, depsOverride?: Partial<Handler
             }, { onConflict: 'cache_key' });
           }
         } catch (err) {
-          console.warn('Tavily search failed for', bairro, err);
           tavilyErrors++;
+          const detail = { bairro, message: String((err as any)?.message || err).slice(0, 200) };
+          tavilyErrorDetails.push(detail);
+          log('tavily_exception', detail);
         }
       }
 
@@ -182,6 +216,8 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
     const apiKey = LOVABLE_KEY || OPENAI_KEY;
     const model = LOVABLE_KEY ? 'google/gemini-2.5-flash' : 'gpt-4o-mini';
 
+    log('llm_request', { model, provider: LOVABLE_KEY ? 'lovable' : 'openai', prompt_chars: prompt.length });
+
     const gptRes = await fetchFn(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -190,7 +226,7 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
 
     if (!gptRes.ok) {
       const errText = await gptRes.text();
-      console.error('LLM error:', errText);
+      log('llm_error', { status: gptRes.status, model, message: errText.slice(0, 400) });
       if (gptRes.status === 429) return new Response(JSON.stringify({ error: 'Limite de requisições atingido.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       if (gptRes.status === 402) return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       throw new Error(`LLM API error: ${gptRes.status}`);
@@ -203,26 +239,40 @@ Liste clínicas do portfólio que bateram meta. Se não houver, escreva "Verific
     const format = validateFormat(roteiro);
     const structured = enrichStructured(parseRoteiro(roteiro), cidade, faturamentoMedio);
 
+    log('response', {
+      cidade, model, source,
+      tavily_hits: tavilyHits, cache_hits: cacheHits, tavily_errors: tavilyErrors,
+      format_valid: format.valid, format_issues: format.issues,
+      duration_ms: Date.now() - t0,
+    });
+
     return new Response(
       JSON.stringify({
         roteiro,
         structured,
         source,
         meta: {
+          request_id: reqId,
+          cidade,
+          model,
+          llm_provider: LOVABLE_KEY ? 'lovable' : 'openai',
           tavily_configured: !!TAVILY_KEY,
+          tavily_key_valid_shape: tavilyKeyLooksValid,
           tavily_hits: tavilyHits,
           cache_hits: cacheHits,
           tavily_errors: tavilyErrors,
+          tavily_error_details: tavilyErrorDetails,
           bairros_queried: bairrosList.length,
           format_valid: format.valid,
           format_issues: format.issues,
+          duration_ms: Date.now() - t0,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (err: any) {
-    console.error('generate-ai-route error:', err);
+    log('unhandled_error', { message: String(err?.message || err).slice(0, 400) });
     return new Response(
       JSON.stringify({ error: err?.message || 'Internal error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
