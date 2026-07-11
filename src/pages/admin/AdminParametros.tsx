@@ -384,16 +384,6 @@ export default function AdminParametros() {
           title="Comissão do Representante"
           description="Percentual pago ao representante sobre produção paga das clínicas do portfólio."
         />
-        <RateCard
-          configKey="taxa_bonificacao_direta"
-          title="Bonificação Direta (Partner)"
-          description="Percentual pago ao partner sobre o valor líquido de contratos pagos das clínicas diretas."
-        />
-        <RateCard
-          configKey="taxa_bonificacao_rede"
-          title="Bonificação de Rede (Override)"
-          description="Percentual override pago ao Master Partner sobre a produção da rede indicada."
-        />
         <CardMimoRepresentante />
         <CardMimoAtendente />
       </div>
