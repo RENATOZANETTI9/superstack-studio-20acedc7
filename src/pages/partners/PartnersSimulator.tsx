@@ -27,6 +27,7 @@ const PartnersSimulator = () => {
   const { role } = useAuth();
   const isAdmin = isAdminRole(role as any);
   const isPartner = isPartnerRole(role as any);
+  const hideRate = role === 'representante' || role === 'attendant';
 
   const ref = PARTNER_RULES.SEH_REFERENCE;
   const [clinics, setClinics] = useState(5);
@@ -92,6 +93,15 @@ const PartnersSimulator = () => {
   // (chave: taxa_comissao_representante). Fallback: PARTNER_RULES.SIMULATOR_COMMISSION_RATE_FALLBACK.
   const directCommission = totalPaidValue * rates.representante;
   const yearlyProjection = directCommission * 12;
+
+  const nextMonthsProjection = [0, 1, 2].map(i => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1 + i);
+    return {
+      label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+      value: directCommission,
+    };
+  });
 
   // Funnel data
   const funnelSteps = [
@@ -285,6 +295,7 @@ const PartnersSimulator = () => {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">Projeção Financeira</p>
+                    {!hideRate && (
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
                       Taxa: {(rates.representante * 100).toFixed(2)}%
                       <TooltipProvider>
@@ -298,6 +309,7 @@ const PartnersSimulator = () => {
                         </Tooltip>
                       </TooltipProvider>
                     </p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2 sm:space-y-3">
@@ -305,15 +317,31 @@ const PartnersSimulator = () => {
                     <span className="text-xs sm:text-sm font-medium">Bonificação/Mês</span>
                     <span className="font-bold text-green-600 text-sm sm:text-base">R$ {formatCurrency(directCommission)}</span>
                   </div>
-                  <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <span className="text-xs sm:text-sm font-medium">Projeção Anual</span>
-                    <span className="font-bold text-green-600 text-base sm:text-lg">R$ {formatCurrency(yearlyProjection)}</span>
+                  <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <span className="text-xs sm:text-sm font-medium">Projeção próximos 90 dias</span>
+                    <span className="text-xs text-muted-foreground">mês a mês</span>
                   </div>
+                  {nextMonthsProjection.map(m => (
+                    <div key={m.label} className="flex justify-between items-center px-3 py-1.5 rounded-lg hover:bg-muted/30">
+                      <span className="text-xs sm:text-sm text-muted-foreground capitalize">{m.label}</span>
+                      <span className="font-bold text-green-600 text-sm sm:text-base">R$ {formatCurrency(m.value)}</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
 
             {/* SEH Score */}
+            {isAdmin && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardContent className="pt-3 pb-3">
+                    <p className="text-xs text-amber-800">
+                      <strong>⚙️ Auditoria de cálculo:</strong> Meta de referência = {ref.SIMULATIONS_PER_DAY} sim/clínica/dia × {ref.WORKING_DAYS} dias úteis = <strong>{ref.SIMULATIONS_PER_DAY * ref.WORKING_DAYS} simulações/clínica/mês</strong>.
+                      Parâmetro fixo durante os primeiros 60 dias de operação real. Após isso, o sistema calculará automaticamente com base nos dados reais de cada clínica.
+                    </p>
+                  </CardContent>
+                </Card>
+            )}
             <Card>
               <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center justify-between mb-3">
