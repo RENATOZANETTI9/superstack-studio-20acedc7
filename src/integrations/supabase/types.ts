@@ -339,6 +339,36 @@ export type Database = {
         }
         Relationships: []
       }
+      mimo_tiers_customization_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          field: string
+          id: string
+          level: number
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          field: string
+          id?: string
+          level: number
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          field?: string
+          id?: string
+          level?: number
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: []
+      }
       partner_alerts: {
         Row: {
           action_taken: string | null
