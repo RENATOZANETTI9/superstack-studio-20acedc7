@@ -187,6 +187,8 @@ export default function PartnersRota() {
   }, [aiFormatValid, aiFormatIssues]);
   const [aiRouteFilter, setAiRouteFilter] = useState<'todos' | 'pendente' | 'conversamos' | 'nao'>('todos');
   const [aiKeepMarks, setAiKeepMarks] = useState(true);
+  const [aiPreviewOnly, setAiPreviewOnly] = useState(false);
+  const [aiLastMeta, setAiLastMeta] = useState<any | null>(null);
   // Persistence: statuses stored in DB by item_key (trimmed line text).
   const [aiStatusByKey, setAiStatusByKey] = useState<Record<string, 'conversamos' | 'nao' | 'pendente'>>({});
   // Fuzzy fallback: normalized-text -> status (survives small wording changes on regeneration)
@@ -374,8 +376,9 @@ export default function PartnersRota() {
     toast.success(`${targets.length} item(ns) marcados`);
   };
 
-  const handleGenerateAI = async (opts?: { isRetry?: boolean }) => {
+  const handleGenerateAI = async (opts?: { isRetry?: boolean; previewOnly?: boolean }) => {
     const isRetry = !!opts?.isRetry;
+    const previewOnly = opts?.previewOnly ?? aiPreviewOnly;
     setAiLoading(true);
     if (!aiKeepMarks && !isRetry) setAiRoute(null);
     const previousSource = aiSource;
@@ -406,6 +409,7 @@ export default function PartnersRota() {
       const valid = data?.meta?.format_valid !== false;
       setAiFormatIssues(issues);
       setAiFormatValid(valid);
+      setAiLastMeta(data?.meta || null);
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
       const baseExact = aiKeepMarks ? aiStatusByKey : {};
@@ -421,7 +425,7 @@ export default function PartnersRota() {
       setSelectedItems(new Set());
       setAiClinicFilter('all');
 
-      if (user?.id) {
+      if (user?.id && !previewOnly) {
         // Persist the generation
         supabase.from('ai_route_generations').upsert(
           { user_id: user.id, roteiro, params: {
@@ -438,13 +442,16 @@ export default function PartnersRota() {
           setAiNormStatusByKey({});
         }
       }
+      if (previewOnly) {
+        toast.message('Pré-visualização gerada (não salva).');
+      }
 
       // Auto-fallback: se falhou validação e ainda não é retry, tenta novamente
       // reforçando o formato. Mantém `source` consistente com o retorno anterior.
       if (!valid && !isRetry) {
         toast.message('Formato inválido detectado, tentando novamente…');
         setAiLoading(false);
-        return handleGenerateAI({ isRetry: true });
+        return handleGenerateAI({ isRetry: true, previewOnly });
       }
     } catch (err: any) {
       const msg = String(err?.message || err || '');
