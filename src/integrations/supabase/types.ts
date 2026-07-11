@@ -65,6 +65,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_route_preview_drafts: {
+        Row: {
+          bairro: string
+          cidade: string
+          created_at: string
+          id: string
+          meta: Json | null
+          params: Json | null
+          roteiro: string
+          structured: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bairro?: string
+          cidade: string
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          params?: Json | null
+          roteiro: string
+          structured?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bairro?: string
+          cidade?: string
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          params?: Json | null
+          roteiro?: string
+          structured?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       attendant_incentives: {
         Row: {
           audit_hash: string | null
