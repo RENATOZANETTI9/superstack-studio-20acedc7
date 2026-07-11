@@ -478,6 +478,83 @@ export default function PartnersRota() {
     }
   };
 
+  // ── Preview drafts (per cidade + bairro opcional) ─────────────────────────
+  const loadDrafts = async () => {
+    if (!user?.id) return;
+    setAiDraftsLoading(true);
+    try {
+      const { data } = await supabase
+        .from('ai_route_preview_drafts')
+        .select('id, cidade, bairro, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      setAiDrafts((data as any) || []);
+    } finally {
+      setAiDraftsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadDrafts(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  const savePreviewDraft = async () => {
+    if (!user?.id || !aiRoute) {
+      toast.error('Nada para salvar como rascunho.');
+      return;
+    }
+    const cidade = (aiCidade || aiLastMeta?.cidade || '').trim();
+    if (!cidade) {
+      toast.error('Informe a cidade antes de salvar o rascunho.');
+      return;
+    }
+    const bairro = (aiBairros || '').trim();
+    const { error } = await supabase.from('ai_route_preview_drafts').upsert({
+      user_id: user.id,
+      cidade,
+      bairro,
+      roteiro: aiRoute,
+      meta: aiLastMeta,
+      params: {
+        cidade, bairros: aiBairros, especialidade: aiEspecialidade,
+        tipoLocal: aiTipoLocal, faturamentoMedio: aiFaturamentoMedio,
+        clinicasPorDia: aiClinicasPorDia,
+      },
+    }, { onConflict: 'user_id,cidade,bairro' });
+    if (error) { toast.error('Erro ao salvar rascunho.'); return; }
+    toast.success(`Rascunho salvo para ${cidade}${bairro ? ' / ' + bairro : ''}`);
+    loadDrafts();
+  };
+
+  const loadDraft = async (id: string) => {
+    if (!user?.id) return;
+    const { data, error } = await supabase
+      .from('ai_route_preview_drafts')
+      .select('*').eq('id', id).eq('user_id', user.id).maybeSingle();
+    if (error || !data) { toast.error('Rascunho não encontrado.'); return; }
+    const d: any = data;
+    setAiRoute(d.roteiro);
+    setAiLastMeta(d.meta || null);
+    setAiCidade(d.cidade || '');
+    setAiBairros(d.bairro || '');
+    const p = d.params || {};
+    if (p.especialidade) setAiEspecialidade(p.especialidade);
+    if (p.tipoLocal) setAiTipoLocal(p.tipoLocal);
+    if (p.faturamentoMedio) setAiFaturamentoMedio(p.faturamentoMedio);
+    if (p.clinicasPorDia) setAiClinicasPorDia(p.clinicasPorDia);
+    setAiPreviewOnly(true);
+    setAiFormatValid(true);
+    setAiFormatIssues([]);
+    toast.success(`Rascunho carregado: ${d.cidade}${d.bairro ? ' / ' + d.bairro : ''}`);
+  };
+
+  const deleteDraft = async (id: string) => {
+    if (!user?.id) return;
+    const { error } = await supabase.from('ai_route_preview_drafts')
+      .delete().eq('id', id).eq('user_id', user.id);
+    if (error) { toast.error('Erro ao remover rascunho.'); return; }
+    toast.success('Rascunho removido.');
+    loadDrafts();
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
