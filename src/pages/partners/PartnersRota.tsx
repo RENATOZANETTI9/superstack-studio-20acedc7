@@ -197,6 +197,7 @@ export default function PartnersRota() {
   // AI form fields
   const [aiBairros, setAiBairros] = useState('');
   const [aiEspecialidade, setAiEspecialidade] = useState('');
+  const [aiCidade, setAiCidade] = useState('');
   const [aiTipoLocal, setAiTipoLocal] = useState<string>('todos');
   const [aiFaturamentoMedio, setAiFaturamentoMedio] = useState('');
   const [aiClinicasPorDia, setAiClinicasPorDia] = useState<string>('4');
@@ -383,6 +384,7 @@ export default function PartnersRota() {
         body: {
           clinicas: portfolio,
           semana: weekLabel,
+          cidade: aiCidade || 'Salvador',
           bairros: aiBairros || undefined,
           especialidade: aiEspecialidade || undefined,
           tipoLocal: aiTipoLocal !== 'todos' ? aiTipoLocal : undefined,
@@ -1099,6 +1101,14 @@ export default function PartnersRota() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Cidade</label>
+                    <Input
+                      placeholder="Ex: Salvador, Belo Horizonte, São Paulo..."
+                      value={aiCidade}
+                      onChange={e => setAiCidade(e.target.value)}
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="ai-bairros">Bairros de foco</Label>
                     <Input
