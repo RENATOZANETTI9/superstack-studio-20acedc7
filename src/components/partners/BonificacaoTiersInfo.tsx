@@ -3,7 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DollarSign, Gift, Upload, Loader2, ImagePlus, Check, X, RefreshCw } from 'lucide-react';
+import { DollarSign, Gift, Upload, Loader2, ImagePlus, Check, X, RefreshCw, History } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { PARTNER_RULES, MIMO_TIERS } from '@/lib/partner-rules';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -64,6 +81,122 @@ const useSignedUrl = (path: string | null) => {
   return url;
 };
 
+type LogRow = {
+  id: string;
+  level: number;
+  field: 'name' | 'image_url';
+  old_value: string | null;
+  new_value: string | null;
+  changed_by: string | null;
+  changed_at: string;
+};
+
+const TierHistoryDialog = ({
+  level,
+  tierLabel,
+  open,
+  onOpenChange,
+}: {
+  level: number;
+  tierLabel: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) => {
+  const [rows, setRows] = useState<LogRow[]>([]);
+  const [emails, setEmails] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from('mimo_tiers_customization_log')
+        .select('id, level, field, old_value, new_value, changed_by, changed_at')
+        .eq('level', level)
+        .order('changed_at', { ascending: false })
+        .limit(100);
+      if (cancelled) return;
+      if (error) {
+        toast.error('Falha ao carregar histórico: ' + error.message);
+        setRows([]);
+        setLoading(false);
+        return;
+      }
+      const list = (data as LogRow[]) ?? [];
+      setRows(list);
+      const ids = Array.from(new Set(list.map((r) => r.changed_by).filter(Boolean))) as string[];
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .in('user_id', ids);
+        if (!cancelled && profs) {
+          const map: Record<string, string> = {};
+          for (const p of profs as Array<{ user_id: string; email: string | null }>) {
+            if (p.email) map[p.user_id] = p.email;
+          }
+          setEmails(map);
+        }
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open, level]);
+
+  const renderValue = (field: LogRow['field'], value: string | null) => {
+    if (!value) return <span className="italic text-muted-foreground">vazio</span>;
+    if (field === 'image_url') {
+      const short = value.length > 40 ? value.slice(0, 20) + '…' + value.slice(-15) : value;
+      return <span className="font-mono text-[11px]">{short}</span>;
+    }
+    return <span>{value}</span>;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Histórico — {tierLabel}</DialogTitle>
+          <DialogDescription className="text-xs">
+            Últimas 100 alterações de nome e imagem para esta faixa.
+          </DialogDescription>
+        </DialogHeader>
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : rows.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">Sem dados ainda</div>
+        ) : (
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {rows.map((r) => (
+              <div key={r.id} className="text-xs border rounded p-2.5 bg-muted/30 space-y-1">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="font-medium">
+                    {r.field === 'name' ? 'Nome' : 'Imagem'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {new Date(r.changed_at).toLocaleString('pt-BR')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="text-muted-foreground">de</span>
+                  {renderValue(r.field, r.old_value)}
+                  <span className="text-muted-foreground">→ para</span>
+                  {renderValue(r.field, r.new_value)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  Por: {r.changed_by ? (emails[r.changed_by] ?? r.changed_by) : 'sistema'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const TierEditor = ({
   tier,
   data,
@@ -79,6 +212,8 @@ const TierEditor = ({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lastFailedFile, setLastFailedFile] = useState<File | null>(null);
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageUrl = useSignedUrl(data?.image_url ?? null);
 
@@ -140,6 +275,7 @@ const TierEditor = ({
 
     setUploading(true);
     setUploadError(null);
+    const previousPath = data?.image_url ?? null;
     try {
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `tier-${tier.level}/${Date.now()}.${ext}`;
@@ -151,6 +287,12 @@ const TierEditor = ({
         await upsert({ image_url: path });
       } catch (dbErr: any) {
         throw new Error(`Upload concluído, mas falha ao salvar no banco: ${dbErr.message ?? 'erro desconhecido'}`);
+      }
+      // Remove arquivo antigo do storage (se for path e diferente do novo)
+      if (previousPath && !/^https?:\/\//i.test(previousPath) && previousPath !== path) {
+        supabase.storage.from(BUCKET).remove([previousPath]).then(({ error: rmErr }) => {
+          if (rmErr) console.warn('[storage] falha ao remover arquivo antigo', previousPath, rmErr);
+        });
       }
       setLastFailedFile(null);
       toast.success('Imagem do mimo atualizada');
@@ -178,14 +320,20 @@ const TierEditor = ({
 
   const handleRemoveImage = async () => {
     setSaving(true);
+    const previousPath = data?.image_url ?? null;
     try {
       await upsert({ image_url: null });
+      if (previousPath && !/^https?:\/\//i.test(previousPath)) {
+        supabase.storage.from(BUCKET).remove([previousPath]).then(({ error: rmErr }) => {
+          if (rmErr) console.warn('[storage] falha ao remover arquivo', previousPath, rmErr);
+        });
+      }
       setUploadError(null);
       setLastFailedFile(null);
       toast.success('Imagem removida');
     } catch (e: any) {
       toast.error('Falha ao remover: ' + (e.message ?? 'erro desconhecido'));
-    } finally { setSaving(false); }
+    } finally { setSaving(false); setConfirmRemoveOpen(false); }
   };
 
   return (
@@ -223,11 +371,22 @@ const TierEditor = ({
       <div className="flex-1 min-w-0 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <div className="text-xs text-muted-foreground">{formatRange(tier.min, tier.max)}</div>
-          {(!data?.name || !data?.image_url) && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
-              Sem dados ainda
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {(!data?.name || !data?.image_url) && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+                Sem dados ainda
+              </span>
+            )}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-muted-foreground"
+              title="Ver histórico de alterações"
+              onClick={() => setHistoryOpen(true)}
+            >
+              <History className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
         <div className="flex gap-1.5 items-center">
           <Input
@@ -244,7 +403,7 @@ const TierEditor = ({
             </Button>
           )}
           {data?.image_url && !uploading && (
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-muted-foreground" onClick={handleRemoveImage} disabled={saving} title="Remover imagem">
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-muted-foreground" onClick={() => setConfirmRemoveOpen(true)} disabled={saving} title="Remover imagem">
               <X className="h-3.5 w-3.5" />
             </Button>
           )}
@@ -274,6 +433,29 @@ const TierEditor = ({
           </div>
         )}
       </div>
+      <AlertDialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover imagem do mimo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A imagem da faixa <strong>{name || tier.label}</strong> será removida e o arquivo apagado do armazenamento. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveImage} disabled={saving}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <TierHistoryDialog
+        level={tier.level}
+        tierLabel={data?.name || tier.label}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      />
     </div>
   );
 };
