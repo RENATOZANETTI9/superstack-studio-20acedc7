@@ -286,11 +286,21 @@ export default function RepresentantesADM() {
             </div>
 
             <div className="space-y-3">
+              {loadError && (
+                <div className="text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4">
+                  Erro: {loadError}
+                </div>
+              )}
+              {loading && (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  Carregando...
+                </div>
+              )}
               {filteredReps.map(r => {
-                const TrendIcon = TREND_CONFIG[r.trend].icon;
-                const cadastrosPct = Math.min(100, (r.cadastrosMes / r.metaCadastros) * 100);
-                const ativacoesPct = Math.min(100, (r.ativacoesMes / r.metaAtivacoes) * 100);
-                const visitasPct = Math.min(100, (r.visitasRealizadas / r.visitasSemana) * 100);
+                const activePct = r.clinicasTotal > 0
+                  ? Math.min(100, (r.clinicasAtivas / r.clinicasTotal) * 100)
+                  : 0;
+                const fmt = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 return (
                   <Card key={r.id} className="shadow-sm">
                     <CardContent className="pt-4">
@@ -309,59 +319,41 @@ export default function RepresentantesADM() {
                               <Badge variant="outline" className="text-[10px] h-4">
                                 {r.type === 'MASTER' ? 'Master' : 'Partner'}
                               </Badge>
-                              <Badge className={`text-[10px] h-4 ${TREND_CONFIG[r.trend].color} bg-transparent border`}>
-                                <TrendIcon className="w-2.5 h-2.5 mr-0.5" />
-                                {TREND_CONFIG[r.trend].label}
-                              </Badge>
                             </div>
                           </div>
                         </div>
 
                         {/* Metas e KPIs */}
                         <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {/* Cadastros */}
                           <div className="p-2.5 rounded-lg bg-muted/40">
-                            <p className="text-[10px] text-muted-foreground mb-1">Cadastros</p>
-                            <p className="font-bold text-sm">{r.cadastrosMes}<span className="text-[10px] text-muted-foreground font-normal"> / {r.metaCadastros}</span></p>
+                            <p className="text-[10px] text-muted-foreground mb-1">Clínicas ativas</p>
+                            <p className="font-bold text-sm">{r.clinicasAtivas}<span className="text-[10px] text-muted-foreground font-normal"> / {r.clinicasTotal}</span></p>
                             <div className="h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
-                              <div className={`h-full rounded-full ${cadastrosPct >= 80 ? 'bg-green-500' : cadastrosPct >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${cadastrosPct}%` }} />
+                              <div className="h-full rounded-full bg-green-500" style={{ width: `${activePct}%` }} />
                             </div>
                           </div>
-                          {/* Ativações */}
                           <div className="p-2.5 rounded-lg bg-muted/40">
-                            <p className="text-[10px] text-muted-foreground mb-1">Ativações</p>
-                            <p className="font-bold text-sm">{r.ativacoesMes}<span className="text-[10px] text-muted-foreground font-normal"> / {r.metaAtivacoes}</span></p>
-                            <div className="h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
-                              <div className={`h-full rounded-full ${ativacoesPct >= 80 ? 'bg-green-500' : ativacoesPct >= 50 ? 'bg-blue-500' : 'bg-red-500'}`} style={{ width: `${ativacoesPct}%` }} />
-                            </div>
+                            <p className="text-[10px] text-muted-foreground mb-1">Comissão paga</p>
+                            <p className="font-bold text-sm text-green-600">{fmt(r.comissaoPaga)}</p>
                           </div>
-                          {/* Visitas da Semana */}
                           <div className="p-2.5 rounded-lg bg-muted/40">
-                            <p className="text-[10px] text-muted-foreground mb-1">Visitas (sem.)</p>
-                            <p className="font-bold text-sm">{r.visitasRealizadas}<span className="text-[10px] text-muted-foreground font-normal"> / {r.visitasSemana}</span></p>
-                            <div className="h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
-                              <div className="h-full rounded-full bg-primary" style={{ width: `${visitasPct}%` }} />
-                            </div>
+                            <p className="text-[10px] text-muted-foreground mb-1">Comissão pendente</p>
+                            <p className="font-bold text-sm text-yellow-600">{fmt(r.comissaoPendente)}</p>
                           </div>
-                          {/* SEH */}
                           <div className="p-2.5 rounded-lg bg-muted/40">
-                            <p className="text-[10px] text-muted-foreground mb-1">SEH · Acima meta</p>
-                            <p className="font-bold text-sm">{r.seh}<span className="text-[10px] text-muted-foreground font-normal"> / {r.clinicasAcimaMetaPct}%</span></p>
+                            <p className="text-[10px] text-muted-foreground mb-1">SEH</p>
+                            <p className="font-bold text-sm">{Number(r.seh).toFixed(1)}</p>
                             <div className="h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
-                              <div className="h-full rounded-full bg-purple-500" style={{ width: `${r.clinicasAcimaMetaPct}%` }} />
+                              <div className="h-full rounded-full bg-purple-500" style={{ width: `${Math.min(100, Number(r.seh) || 0)}%` }} />
                             </div>
                           </div>
                         </div>
 
-                        {/* Mimos */}
+                        {/* Comissão total */}
                         <div className="lg:w-32 shrink-0 flex lg:flex-col gap-2 items-center lg:items-end">
-                          <div className="text-center p-2 rounded-lg bg-yellow-50 w-full">
-                            <p className="text-[10px] text-yellow-700 font-medium">Mimos pendentes</p>
-                            <p className="text-xl font-bold text-yellow-600">{r.mimosPendentes}</p>
-                          </div>
-                          <div className="text-center p-2 rounded-lg bg-green-50 w-full">
-                            <p className="text-[10px] text-green-700 font-medium">Entregues</p>
-                            <p className="text-xl font-bold text-green-600">{r.mimosEntregues}</p>
+                          <div className="text-center p-2 rounded-lg bg-primary/10 w-full">
+                            <p className="text-[10px] text-primary font-medium">Comissão total</p>
+                            <p className="text-sm font-bold text-primary">{fmt(r.comissaoTotal)}</p>
                           </div>
                         </div>
                       </div>
@@ -369,7 +361,7 @@ export default function RepresentantesADM() {
                   </Card>
                 );
               })}
-              {filteredReps.length === 0 && (
+              {!loading && filteredReps.length === 0 && (
                 <div className="text-center py-12 text-sm text-muted-foreground">
                   Nenhum representante encontrado.
                 </div>
@@ -388,10 +380,10 @@ export default function RepresentantesADM() {
                   onClick={() => setMimoFilter(f)}
                   className="gap-1.5"
                 >
-                  {f === 'all' && <><Gift className="w-3.5 h-3.5" /> Todos ({MOCK_MIMOS_AUDIT.length})</>}
-                  {f === 'PENDENTE' && <><AlertTriangle className="w-3.5 h-3.5" /> Pendentes ({MOCK_MIMOS_AUDIT.filter(m => m.status === 'PENDENTE').length})</>}
-                  {f === 'ENTREGUE_COM_FOTO' && <><Camera className="w-3.5 h-3.5" /> Com foto ({MOCK_MIMOS_AUDIT.filter(m => m.status === 'ENTREGUE_COM_FOTO').length})</>}
-                  {f === 'ENTREGUE_SEM_FOTO' && <><AlertTriangle className="w-3.5 h-3.5" /> Sem foto ({MOCK_MIMOS_AUDIT.filter(m => m.status === 'ENTREGUE_SEM_FOTO').length})</>}
+                  {f === 'all' && <><Gift className="w-3.5 h-3.5" /> Todos ({mimosAudit.length})</>}
+                  {f === 'PENDENTE' && <><AlertTriangle className="w-3.5 h-3.5" /> Pendentes ({mimosAudit.filter((m: any) => m.status === 'PENDENTE').length})</>}
+                  {f === 'ENTREGUE_COM_FOTO' && <><Camera className="w-3.5 h-3.5" /> Com foto ({mimosAudit.filter((m: any) => m.status === 'ENTREGUE_COM_FOTO').length})</>}
+                  {f === 'ENTREGUE_SEM_FOTO' && <><AlertTriangle className="w-3.5 h-3.5" /> Sem foto ({mimosAudit.filter((m: any) => m.status === 'ENTREGUE_SEM_FOTO').length})</>}
                 </Button>
               ))}
             </div>
