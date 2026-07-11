@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const BUCKET = 'mimo-tiers';
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024; // 3 MB
+const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
 const formatRange = (min: number, max: number) =>
   Number.isFinite(max) ? `${min}–${max} simulações` : `${min}+ simulações`;
@@ -81,7 +83,16 @@ const TierEditor = ({
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem'); return; }
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error('Formato inválido. Use PNG, JPG, WEBP ou GIF.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error(`Imagem muito grande. Máx. ${(MAX_IMAGE_BYTES / 1024 / 1024).toFixed(0)} MB.`);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     setUploading(true);
     try {
       const ext = file.name.split('.').pop() || 'jpg';
@@ -114,29 +125,49 @@ const TierEditor = ({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          className="relative h-16 w-16 rounded-md border border-dashed bg-background overflow-hidden flex items-center justify-center hover:border-primary/60 transition"
-          title="Trocar imagem"
+          disabled={uploading || saving}
+          className="relative h-16 w-16 rounded-md border border-dashed bg-background overflow-hidden flex items-center justify-center hover:border-primary/60 transition disabled:opacity-60"
+          title={data?.image_url ? 'Trocar imagem' : 'Anexar imagem'}
         >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          {uploading || saving ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
           ) : imageUrl ? (
             <img src={imageUrl} alt={name} className="h-full w-full object-cover" />
           ) : (
-            <ImagePlus className="h-5 w-5 text-muted-foreground" />
+            <div className="flex flex-col items-center gap-0.5 text-muted-foreground">
+              <ImagePlus className="h-4 w-4" />
+              <span className="text-[9px] leading-none">sem imagem</span>
+            </div>
           )}
         </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept={ACCEPTED_TYPES.join(',')}
+          className="hidden"
+          onChange={handleFile}
+        />
       </div>
 
       <div className="flex-1 min-w-0 space-y-1.5">
-        <div className="text-xs text-muted-foreground">{formatRange(tier.min, tier.max)}</div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-xs text-muted-foreground">{formatRange(tier.min, tier.max)}</div>
+          {(!data?.name || !data?.image_url) && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+              Sem dados ainda
+            </span>
+          )}
+        </div>
         <div className="flex gap-1.5 items-center">
           <Input
             value={name}
             onChange={(e) => { setName(e.target.value); setDirty(true); }}
             placeholder={tier.label}
             className="h-8 text-sm"
+            disabled={saving || uploading}
+            maxLength={80}
           />
           {dirty && (
             <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={handleSaveName} disabled={saving}>
@@ -144,13 +175,18 @@ const TierEditor = ({
             </Button>
           )}
           {data?.image_url && !uploading && (
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-muted-foreground" onClick={handleRemoveImage} title="Remover imagem">
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-muted-foreground" onClick={handleRemoveImage} disabled={saving} title="Remover imagem">
               <X className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <Upload className="h-3 w-3" /> Clique na imagem para {data?.image_url ? 'trocar' : 'anexar'}
+          <Upload className="h-3 w-3" />
+          {uploading
+            ? 'Enviando imagem…'
+            : saving
+            ? 'Salvando…'
+            : `Clique na imagem para ${data?.image_url ? 'trocar' : 'anexar'} (PNG/JPG/WEBP/GIF, máx. 3 MB)`}
         </div>
       </div>
     </div>
