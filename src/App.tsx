@@ -24,6 +24,7 @@ import PartnersMarketing from "./pages/partners/PartnersMarketing";
 import PartnersClinicSimulations from "./pages/partners/PartnersClinicSimulations";
 import PartnersProfile from "./pages/partners/PartnersProfile";
 import PartnersRota from "./pages/partners/PartnersRota";
+import PartnersDiagnosticoIA from "./pages/partners/PartnersDiagnosticoIA";
 import PartnersClinicas from "./pages/partners/PartnersClinicas";
 import PartnersClinicProfile from "./pages/partners/PartnersClinicProfile";
 import PartnersComissoesAdmin from "./pages/partners/PartnersComissoesAdmin";
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="/dashboard/partners/simulacoes-clinicas" element={<PartnersClinicSimulations />} />
               <Route path="/dashboard/partners/perfil" element={<PartnersProfile />} />
               <Route path="/dashboard/partners/rota" element={<PartnersRota />} />
+              <Route path="/dashboard/partners/diagnostico-ia" element={<PartnersDiagnosticoIA />} />
               <Route path="/dashboard/partners/clinicas" element={<PartnersClinicas />} />
               <Route path="/dashboard/partners/clinicas/:id" element={<PartnersClinicProfile />} />
               <Route path="/dashboard/representantes" element={<RepresentantesDashboard />} />

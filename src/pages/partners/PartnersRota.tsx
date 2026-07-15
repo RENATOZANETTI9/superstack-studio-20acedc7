@@ -28,6 +28,8 @@ import {
 import { toast } from 'sonner';
 import { AI_ROUTE_TITLE_ID, AI_FORMAT_ALERT_ID } from './ai-route-alert-ids';
 import { normalizeAiSource, type AiSource } from './ai-route-source';
+import { pushAiRouteHistory } from './PartnersDiagnosticoIA';
+import { Link } from 'react-router-dom';
 
 type VisitStatus =
   | 'Pendente'
@@ -190,6 +192,17 @@ export default function PartnersRota() {
   const [aiPreviewOnly, setAiPreviewOnly] = useState(false);
   const [aiLastMeta, setAiLastMeta] = useState<any | null>(null);
   const [aiTavilySources, setAiTavilySources] = useState<Array<{ bairro: string; title: string; url?: string; from: string }>>([]);
+  // Live re-check of Tavily key / connectivity (independent of generation).
+  const [tavilyRecheck, setTavilyRecheck] = useState<null | {
+    tavily_configured: boolean;
+    tavily_key_valid_shape: boolean;
+    live_test_ok: boolean;
+    live_test_status: number | null;
+    sample_results_count: number;
+    error_message: string | null;
+    checked_at: string;
+  }>(null);
+  const [tavilyRechecking, setTavilyRechecking] = useState(false);
   // Draft preview list (per city + optional bairro)
   const [aiDrafts, setAiDrafts] = useState<Array<{ id: string; cidade: string; bairro: string; updated_at: string }>>([]);
   const [aiDraftsLoading, setAiDraftsLoading] = useState(false);
@@ -415,6 +428,14 @@ export default function PartnersRota() {
       setAiFormatValid(valid);
       setAiLastMeta(data?.meta || null);
       setAiTavilySources(Array.isArray(data?.tavily_sources) ? data.tavily_sources : []);
+
+      // Log to local diagnostic history (visible in /dashboard/partners/diagnostico-ia).
+      pushAiRouteHistory({
+        at: new Date().toISOString(),
+        cidade: aiCidade || data?.meta?.cidade,
+        bairros: aiBairros,
+        meta: data?.meta || {},
+      });
 
       // Rebuild per-line status map. If keeping marks, reuse aiStatusByKey; otherwise clear.
       const baseExact = aiKeepMarks ? aiStatusByKey : {};
@@ -1363,6 +1384,69 @@ export default function PartnersRota() {
                   )}
                   {aiLastMeta.tavily_expected_but_missing && (
                     <span className="text-amber-600">⚠️ Tavily configurado mas nenhuma fonte retornada</span>
+                  )}
+                </div>
+              )}
+              {/* Reverificar Tavily — revalida a chave/conectividade sem gerar roteiro */}
+              <div className="flex flex-wrap items-center gap-2 justify-center mt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={tavilyRechecking}
+                  onClick={async () => {
+                    setTavilyRechecking(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('tavily-health', { body: {} });
+                      if (error) throw error;
+                      setTavilyRecheck(data as any);
+                      // Reflete o resultado no meta local para atualizar avisos existentes.
+                      setAiLastMeta((prev: any) => prev ? {
+                        ...prev,
+                        tavily_configured: (data as any).tavily_configured,
+                        tavily_key_valid_shape: (data as any).tavily_key_valid_shape,
+                        tavily_expected_but_missing: (data as any).tavily_key_valid_shape && !(data as any).live_test_ok,
+                      } : prev);
+                      if ((data as any).live_test_ok) toast.success('Tavily OK: chave válida e busca respondendo.');
+                      else if ((data as any).tavily_key_valid_shape) toast.warning('Chave "tvly-…" válida, mas busca falhou.');
+                      else toast.error('Chave Tavily inválida ou ausente.');
+                    } catch (err: any) {
+                      toast.error('Falha ao verificar Tavily: ' + (err?.message || 'desconhecido'));
+                    } finally {
+                      setTavilyRechecking(false);
+                    }
+                  }}
+                  className="gap-2 text-xs"
+                >
+                  <Loader2 className={`w-3 h-3 ${tavilyRechecking ? 'animate-spin' : 'hidden'}`} />
+                  🔄 Reverificar Tavily
+                </Button>
+                <Button asChild size="sm" variant="ghost" className="text-xs">
+                  <Link to="/dashboard/partners/diagnostico-ia">📊 Abrir diagnóstico</Link>
+                </Button>
+              </div>
+              {tavilyRecheck && (
+                <div className="w-full max-w-xl mt-1 rounded-md border bg-muted/20 p-2 text-[11px] space-y-1">
+                  <div className="font-semibold text-muted-foreground">Última reverificação — {new Date(tavilyRecheck.checked_at).toLocaleTimeString('pt-BR')}</div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    <span className={tavilyRecheck.tavily_configured ? 'text-green-700' : 'text-red-600'}>
+                      secret: {String(tavilyRecheck.tavily_configured)}
+                    </span>
+                    <span className={tavilyRecheck.tavily_key_valid_shape ? 'text-green-700' : 'text-red-600'}>
+                      formato tvly-: {String(tavilyRecheck.tavily_key_valid_shape)}
+                    </span>
+                    <span className={tavilyRecheck.live_test_ok ? 'text-green-700' : 'text-red-600'}>
+                      busca ao vivo: {String(tavilyRecheck.live_test_ok)} ({tavilyRecheck.sample_results_count} resultados)
+                    </span>
+                    {tavilyRecheck.live_test_status != null && <span>HTTP: {tavilyRecheck.live_test_status}</span>}
+                  </div>
+                  {tavilyRecheck.error_message && (
+                    <div className="text-red-600 break-all">⚠ {tavilyRecheck.error_message}</div>
+                  )}
+                  {!tavilyRecheck.live_test_ok && (
+                    <div className="text-muted-foreground">
+                      Precisa trocar a chave? Veja o guia em{' '}
+                      <Link to="/dashboard/partners/diagnostico-ia" className="text-primary hover:underline">Diagnóstico do Roteiro IA</Link>.
+                    </div>
                   )}
                 </div>
               )}
