@@ -181,3 +181,49 @@ Deno.test("tavily mock: comparação sucesso vs falha muda source e metadata", a
   assertEquals(ok.meta.tavily_expected_but_missing, false);
   assertEquals(bad.meta.tavily_expected_but_missing, true);
 });
+
+// ── Invariante ────────────────────────────────────────────────────────────
+// Contrato explícito: quando `tavily_errors === 0` e o Tavily foi consultado
+// (bairros informados + chave válida), o response DEVE conter `tavily_sources`
+// não-vazio e com pelo menos uma entrada `from === 'live'` (a chamada real
+// aconteceu, não veio só do cache).
+Deno.test("invariante: tavily_errors=0 ⇒ tavily_sources não-vazio com ao menos um from='live'", async () => {
+  const scenarios: Array<{ name: string; results: any[] }> = [
+    { name: "1 resultado", results: [{ title: "A", content: "x", url: "https://a" }] },
+    { name: "3 resultados", results: [
+      { title: "A", content: "x", url: "https://a" },
+      { title: "B", content: "y", url: "https://b" },
+      { title: "C", content: "z" },
+    ] },
+    { name: "resultados sem url", results: [{ title: "SemURL", content: "x" }] },
+  ];
+
+  for (const sc of scenarios) {
+    const { admin } = fakeAdmin();
+    const fetchStub = (async (url: string | URL) => {
+      if (String(url).includes("tavily.com")) {
+        return new Response(JSON.stringify({ results: sc.results }),
+          { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return llmResp();
+    }) as unknown as typeof fetch;
+
+    const res = await handleRequest(makeReq(), { env, fetch: fetchStub, admin, sleep: async () => {} });
+    const json = await res.json();
+
+    assertEquals(json.meta.tavily_errors, 0, `[${sc.name}] tavily_errors deve ser 0`);
+    assert(Array.isArray(json.tavily_sources), `[${sc.name}] tavily_sources deve ser array`);
+    assert(json.tavily_sources.length > 0, `[${sc.name}] tavily_sources não pode ser vazio`);
+    const liveOnes = json.tavily_sources.filter((s: any) => s.from === "live");
+    assert(liveOnes.length > 0, `[${sc.name}] deve ter ao menos uma fonte from='live'`);
+    for (const s of liveOnes) {
+      assert(typeof s.title === "string" && s.title.length > 0, `[${sc.name}] title deve ser não-vazio`);
+      assert(typeof s.bairro === "string" && s.bairro.length > 0, `[${sc.name}] bairro deve ser não-vazio`);
+    }
+    // Meta summary deve refletir as fontes.
+    assertEquals(json.meta.tavily_sources_count, json.tavily_sources.length,
+      `[${sc.name}] tavily_sources_count deve bater com tavily_sources.length`);
+    assertEquals(json.meta.tavily_expected_but_missing, false,
+      `[${sc.name}] com fontes presentes, tavily_expected_but_missing deve ser false`);
+  }
+});
