@@ -777,6 +777,32 @@ const Lista = () => {
                   )}
                 </div>
               )}
+
+              {!editingUser && (
+                <div className="space-y-2 border-t border-border/50 pt-4">
+                  <Label>Senha inicial</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Mín. 6 caracteres"
+                      value={createPassword}
+                      onChange={(e) => setCreatePassword(e.target.value)}
+                      className="bg-background/50 flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreatePassword(generateRandomPassword() ?? '')}
+                      className="gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" /> Gerar
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    O usuário será criado no banco de autenticação e deverá trocar a senha no primeiro acesso.
+                  </p>
+                </div>
+              )}
             </div>
 
             <DialogFooter className={cn(isMobile && 'flex-col gap-2')}>
@@ -793,9 +819,14 @@ const Lista = () => {
                   'bg-gradient-to-r from-primary to-secondary hover:opacity-90',
                   isMobile && 'w-full order-1'
                 )}
-                disabled={!formData.name.trim() || !formData.email.trim()}
+                disabled={
+                  !formData.name.trim() ||
+                  !formData.email.trim() ||
+                  savingUser ||
+                  (!editingUser && createPassword.length < 6)
+                }
               >
-                {editingUser ? 'Salvar' : 'Criar'}
+                {savingUser ? 'Criando...' : editingUser ? 'Salvar' : 'Criar'}
               </Button>
             </DialogFooter>
           </DialogContent>
