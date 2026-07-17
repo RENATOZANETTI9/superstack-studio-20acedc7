@@ -17,13 +17,23 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const admin = createClient(supabaseUrl, serviceKey);
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Não autorizado' }, 401);
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user: requester }, error: uErr } = await admin.auth.getUser(token);
-    if (uErr || !requester) return json({ error: 'Não autorizado' }, 401);
+    // Validate via a user-context client (anon key) — matches the request's JWT
+    // and avoids session_not_found errors seen when using the admin client.
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: uErr } = await userClient.auth.getUser();
+    const requester = userData?.user;
+    if (uErr || !requester) {
+      console.error('auth.getUser failed', uErr);
+      return json({ error: 'Não autorizado' }, 401);
+    }
 
     const { data: roleRow } = await admin
       .from('user_roles').select('role').eq('user_id', requester.id).single();
