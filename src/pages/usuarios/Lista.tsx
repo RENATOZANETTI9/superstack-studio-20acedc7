@@ -414,8 +414,11 @@ const Lista = () => {
               Usuários
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Gerencie os usuários do sistema ({users.length} registros)
+              Gerencie os usuários do sistema ({loading ? '…' : users.length} registros)
             </p>
+            {loadError && (
+              <p className="text-xs text-destructive mt-1">Erro ao carregar usuários: {loadError}</p>
+            )}
           </div>
           <Button
             onClick={handleAdd}
