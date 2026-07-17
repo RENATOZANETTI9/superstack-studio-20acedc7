@@ -706,6 +706,43 @@ const Lista = () => {
                   <Button type="button" variant="ghost" size="sm" onClick={handleSendResetEmail} className="gap-2">
                     <Mail className="h-4 w-4" /> Enviar link de recuperação por e-mail
                   </Button>
+                  {loginCheck.status !== 'idle' && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className={cn(
+                        'flex items-start gap-2 rounded-lg border px-3 py-2 text-xs',
+                        loginCheck.status === 'checking' &&
+                          'border-border/60 bg-muted/30 text-muted-foreground',
+                        loginCheck.status === 'ok' &&
+                          'border-success/30 bg-success/10 text-success',
+                        loginCheck.status === 'fail' &&
+                          'border-destructive/30 bg-destructive/10 text-destructive'
+                      )}
+                    >
+                      {loginCheck.status === 'checking' && (
+                        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                      )}
+                      {loginCheck.status === 'ok' && (
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      )}
+                      {loginCheck.status === 'fail' && (
+                        <XCircle className="h-4 w-4 shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        {loginCheck.status === 'checking' &&
+                          'Validando login em segundo plano com a nova senha…'}
+                        {loginCheck.status === 'ok' &&
+                          (loginCheck.message ?? 'Login validado com sucesso.')}
+                        {loginCheck.status === 'fail' && (
+                          <>
+                            Não foi possível autenticar com a nova senha:{' '}
+                            <span className="font-medium">{loginCheck.message}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
