@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Building2, Mail, Calendar, KeyRound, User as UserIcon, Shield, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -40,7 +40,20 @@ interface User {
   createdAt: string;
 }
 
-const mockUsers: User[] = [
+const ROLE_TO_HIERARCHY: Record<string, string> = {
+  master: 'Master do Sistema',
+  admin: 'Master do Sistema',
+  master_partner: 'Master da Clínica',
+  partner: 'Representante',
+  representante: 'Representante',
+  cs_geral: 'CS',
+  cs_exclusiva: 'CS',
+  clinic_owner: 'Master da Clínica',
+  attendant: 'Atendente',
+  user: '',
+};
+
+const _unusedMockUsers: User[] = [
   {
     id: '1',
     name: 'INSTITUTO LETICIA KIYO LTDA',
@@ -159,7 +172,9 @@ const Lista = () => {
   const isMobile = useIsMobile();
   const { role } = useAuth();
   const canAdmin = isAdminRole(role as AppRole | null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
@@ -173,6 +188,46 @@ const Lista = () => {
     status: 'ATIVO' as User['status'],
     hierarchy: '',
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(null);
+      const { data: profiles, error: pErr } = await supabase
+        .from('profiles')
+        .select('user_id, email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (pErr) {
+        if (!cancelled) { setLoadError(pErr.message); setLoading(false); }
+        return;
+      }
+      const ids = (profiles ?? []).map((p) => p.user_id);
+      const { data: roles } = ids.length
+        ? await supabase.from('user_roles').select('user_id, role').in('user_id', ids)
+        : { data: [] as Array<{ user_id: string; role: string }> };
+      const roleMap = new Map<string, string>();
+      (roles ?? []).forEach((r) => roleMap.set(r.user_id, r.role));
+      const mapped: User[] = (profiles ?? []).map((p) => {
+        const roleKey = roleMap.get(p.user_id) ?? 'user';
+        const email = p.email ?? '';
+        return {
+          id: p.user_id,
+          name: email.split('@')[0] || email,
+          email,
+          client: '',
+          status: 'ATIVO',
+          hierarchy: ROLE_TO_HIERARCHY[roleKey] ?? roleKey,
+          createdAt: p.created_at
+            ? new Date(p.created_at).toLocaleString('pt-BR')
+            : '',
+        };
+      });
+      if (!cancelled) { setUsers(mapped); setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const columns: Column<User>[] = [
     {
