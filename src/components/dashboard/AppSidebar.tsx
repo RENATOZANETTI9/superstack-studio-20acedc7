@@ -313,7 +313,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
         )}
       </nav>
 
-      <div className="border-t border-sidebar-border p-2">
+      <div className="shrink-0 border-t border-sidebar-border p-2">
         <Button variant="ghost" onClick={handleLogout}
           className={cn('w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive', collapsed && 'justify-center px-2')}>
           <LogOut className="h-5 w-5 shrink-0" />{!collapsed && <span>Sair</span>}
