@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Building2, Mail, Calendar, KeyRound, User as UserIcon, Shield, RefreshCw } from 'lucide-react';
+import { Plus, Building2, Mail, Calendar, KeyRound, User as UserIcon, Shield, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DataTable, Column } from '@/components/usuarios/DataTable';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { isAdminRole, type AppRole } from '@/lib/partner-rules';
 import {
@@ -181,6 +182,10 @@ const Lista = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [regenLoading, setRegenLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [loginCheck, setLoginCheck] = useState<{
+    status: 'idle' | 'checking' | 'ok' | 'fail';
+    message?: string;
+  }>({ status: 'idle' });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -320,6 +325,7 @@ const Lista = () => {
       hierarchy: user.hierarchy || '',
     });
     setNewPassword('');
+    setLoginCheck({ status: 'idle' });
     setIsModalOpen(true);
   };
 
@@ -335,13 +341,59 @@ const Lista = () => {
     setNewPassword(pw);
   };
 
+  const verifyLoginInBackground = async (email: string, password: string) => {
+    setLoginCheck({ status: 'checking' });
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL as string;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      // Ephemeral client so we do NOT overwrite the admin's active session
+      const memStorage = {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      };
+      const probe = createClient(url, key, {
+        auth: {
+          storage: memStorage as any,
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      });
+      const { data, error } = await probe.auth.signInWithPassword({ email, password });
+      if (error || !data?.session) {
+        setLoginCheck({
+          status: 'fail',
+          message: error?.message ?? 'Login não autorizado com a nova senha.',
+        });
+        return;
+      }
+      // Clean up the ephemeral session
+      await probe.auth.signOut();
+      setLoginCheck({ status: 'ok', message: 'Login validado com sucesso.' });
+    } catch (e) {
+      setLoginCheck({
+        status: 'fail',
+        message: (e as Error).message ?? 'Erro ao validar login.',
+      });
+    }
+  };
+
   const handleRegeneratePassword = async () => {
     if (!editingUser) return;
     if (!newPassword || newPassword.length < 6) {
       toast.error('A nova senha precisa ter pelo menos 6 caracteres.');
       return;
     }
+    // Guardrail: ensure the target email actually exists in our loaded list
+    const exists = users.some(
+      (u) => u.email.trim().toLowerCase() === editingUser.email.trim().toLowerCase()
+    );
+    if (!exists) {
+      toast.error('E-mail não encontrado na base. Use a busca para selecionar um usuário válido.');
+      return;
+    }
     setRegenLoading(true);
+    setLoginCheck({ status: 'idle' });
     const { data, error } = await supabase.functions.invoke('admin-user-actions', {
       body: { action: 'reset_password', email: editingUser.email, newPassword },
     });
@@ -351,7 +403,11 @@ const Lista = () => {
       return;
     }
     toast.success(`Nova senha definida para ${editingUser.email}`);
+    // Fire-and-forget background login validation
+    const emailForCheck = editingUser.email;
+    const passwordForCheck = newPassword;
     setNewPassword('');
+    verifyLoginInBackground(emailForCheck, passwordForCheck);
   };
 
   const handleSendResetEmail = async () => {
