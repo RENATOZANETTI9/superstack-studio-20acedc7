@@ -497,12 +497,16 @@ const Lista = () => {
           <DataTable
             data={users}
             columns={columns}
-            searchPlaceholder="Pesquisar por nome, email ou cliente..."
+            searchPlaceholder="Buscar por nome ou e-mail (correspondência parcial)…"
             searchKeys={['name', 'email', 'client']}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+            Sempre selecione o usuário pela lista abaixo antes de redefinir a senha — a busca aceita partes do nome ou do e-mail.
+          </p>
         </motion.div>
 
         {/* View Modal */}
