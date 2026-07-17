@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Building2, Mail, Calendar } from 'lucide-react';
+import { Plus, Building2, Mail, Calendar, KeyRound, User as UserIcon, Shield, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DataTable, Column } from '@/components/usuarios/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { isAdminRole, type AppRole } from '@/lib/partner-rules';
 import {
   Dialog,
   DialogContent,
@@ -153,9 +157,15 @@ const hierarchyOptions = [
 
 const Lista = () => {
   const isMobile = useIsMobile();
+  const { role } = useAuth();
+  const canAdmin = isAdminRole(role as AppRole | null);
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -254,7 +264,55 @@ const Lista = () => {
       status: user.status,
       hierarchy: user.hierarchy || '',
     });
+    setNewPassword('');
     setIsModalOpen(true);
+  };
+
+  const handleView = (user: User) => {
+    setViewingUser(user);
+    setIsViewOpen(true);
+  };
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+    let pw = '';
+    for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+    setNewPassword(pw);
+  };
+
+  const handleRegeneratePassword = async () => {
+    if (!editingUser) return;
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('A nova senha precisa ter pelo menos 6 caracteres.');
+      return;
+    }
+    setRegenLoading(true);
+    const { data, error } = await supabase.functions.invoke('admin-user-actions', {
+      body: { action: 'reset_password', email: editingUser.email, newPassword },
+    });
+    setRegenLoading(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? 'Falha ao regenerar senha');
+      return;
+    }
+    toast.success(`Nova senha definida para ${editingUser.email}`);
+    setNewPassword('');
+  };
+
+  const handleSendResetEmail = async () => {
+    if (!editingUser) return;
+    const { data, error } = await supabase.functions.invoke('admin-user-actions', {
+      body: {
+        action: 'send_reset_email',
+        email: editingUser.email,
+        redirectTo: `${window.location.origin}/reset-password`,
+      },
+    });
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? 'Falha ao enviar e-mail');
+      return;
+    }
+    toast.success('E-mail de recuperação enviado');
   };
 
   const handleDelete = (user: User) => {
@@ -270,7 +328,7 @@ const Lista = () => {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editingUser.id
-            ? { ...u, ...formData }
+            ? { ...u, name: u.name, email: u.email, client: u.client, status: formData.status, hierarchy: formData.hierarchy }
             : u
         )
       );
@@ -327,11 +385,66 @@ const Lista = () => {
             columns={columns}
             searchPlaceholder="Pesquisar por nome, email ou cliente..."
             searchKeys={['name', 'email', 'client']}
-            onView={(item) => console.log('View', item)}
+            onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
         </motion.div>
+
+        {/* View Modal */}
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent className={cn('glass-card border-border/50', isMobile && 'w-[calc(100%-2rem)] max-w-lg mx-auto')}>
+            <DialogHeader>
+              <DialogTitle className="text-foreground flex items-center gap-2">
+                <UserIcon className="h-5 w-5 text-primary" />
+                Detalhes do Usuário
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Informações completas do registro.
+              </DialogDescription>
+            </DialogHeader>
+            {viewingUser && (
+              <div className="space-y-4 py-2">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-semibold">
+                      {getInitials(viewingUser.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">{viewingUser.name}</p>
+                    <p className="text-sm text-muted-foreground">{viewingUser.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Cliente / Clínica</p>
+                    <p className="font-medium">{viewingUser.client || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Hierarquia</p>
+                    <p className="font-medium">{viewingUser.hierarchy || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Status</p>
+                    <Badge className={cn(viewingUser.status === 'ATIVO'
+                      ? 'bg-success/20 text-success border-success/30'
+                      : 'bg-destructive/20 text-destructive border-destructive/30')}>
+                      {viewingUser.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Criado em</p>
+                    <p className="font-medium">{viewingUser.createdAt}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewOpen(false)}>Fechar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Modal */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -362,8 +475,13 @@ const Lista = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    className="bg-background/50"
+                    disabled={!!editingUser}
+                    readOnly={!!editingUser}
+                    className="bg-background/50 disabled:opacity-70 disabled:cursor-not-allowed"
                   />
+                  {editingUser && (
+                    <p className="text-[11px] text-muted-foreground">O nome não pode ser editado.</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -375,8 +493,13 @@ const Lista = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, email: e.target.value }))
                     }
-                    className="bg-background/50"
+                    disabled={!!editingUser}
+                    readOnly={!!editingUser}
+                    className="bg-background/50 disabled:opacity-70 disabled:cursor-not-allowed"
                   />
+                  {editingUser && (
+                    <p className="text-[11px] text-muted-foreground">O e-mail não pode ser alterado.</p>
+                  )}
                 </div>
               </div>
 
@@ -388,8 +511,13 @@ const Lista = () => {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, client: e.target.value }))
                   }
-                  className="bg-background/50"
+                  disabled={!!editingUser}
+                  readOnly={!!editingUser}
+                  className="bg-background/50 disabled:opacity-70 disabled:cursor-not-allowed"
                 />
+                {editingUser && (
+                  <p className="text-[11px] text-muted-foreground">Cliente/Clínica não pode ser editado.</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -433,6 +561,39 @@ const Lista = () => {
                   </Select>
                 </div>
               </div>
+
+              {editingUser && canAdmin && (
+                <div className="space-y-3 border-t border-border/50 pt-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-semibold">Regenerar senha</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Nova senha (mín. 6 caracteres)"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="bg-background/50 flex-1"
+                    />
+                    <Button type="button" variant="outline" onClick={generateRandomPassword} className="gap-2">
+                      <RefreshCw className="h-4 w-4" /> Gerar
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleRegeneratePassword}
+                      disabled={regenLoading || newPassword.length < 6}
+                      className="gap-2"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                      {regenLoading ? 'Salvando...' : 'Aplicar'}
+                    </Button>
+                  </div>
+                  <Button type="button" variant="ghost" size="sm" onClick={handleSendResetEmail} className="gap-2">
+                    <Mail className="h-4 w-4" /> Enviar link de recuperação por e-mail
+                  </Button>
+                </div>
+              )}
             </div>
 
             <DialogFooter className={cn(isMobile && 'flex-col gap-2')}>
@@ -441,7 +602,7 @@ const Lista = () => {
                 onClick={() => setIsModalOpen(false)}
                 className={cn(isMobile && 'w-full order-2')}
               >
-                Cancelar
+                {editingUser ? 'Fechar' : 'Cancelar'}
               </Button>
               <Button
                 onClick={handleSave}

@@ -211,15 +211,15 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   // Desktop Sidebar
   return (
-    <aside className={cn('fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300', collapsed ? 'w-16' : 'w-64')}>
-      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
+    <aside className={cn('fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 flex flex-col', collapsed ? 'w-16' : 'w-64')}>
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
         {!collapsed && <h1 className="text-xl font-bold text-sidebar-foreground">Help Ude</h1>}
         <Button variant="ghost" size="icon" onClick={onToggle} className="text-sidebar-foreground hover:bg-sidebar-accent">
           <Menu className="h-5 w-5" />
         </Button>
       </div>
 
-      <div className={cn('border-b border-sidebar-border p-4', collapsed && 'flex justify-center')}>
+      <div className={cn('shrink-0 border-b border-sidebar-border p-4', collapsed && 'flex justify-center')}>
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary">
             {isAdmin ? <Shield className="h-5 w-5 text-white" /> : <User className="h-5 w-5 text-white" />}
@@ -233,7 +233,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 p-2 scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
         {menuItems.map((item) => (
           <Button key={item.path} variant="ghost" onClick={() => navigate(item.path)}
             className={cn('w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
@@ -313,7 +313,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
         )}
       </nav>
 
-      <div className="border-t border-sidebar-border p-2">
+      <div className="shrink-0 border-t border-sidebar-border p-2">
         <Button variant="ghost" onClick={handleLogout}
           className={cn('w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive', collapsed && 'justify-center px-2')}>
           <LogOut className="h-5 w-5 shrink-0" />{!collapsed && <span>Sair</span>}
