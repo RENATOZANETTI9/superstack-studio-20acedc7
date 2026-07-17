@@ -341,6 +341,7 @@ const Lista = () => {
     let pw = '';
     for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
     setNewPassword(pw);
+    return pw;
   };
 
   const verifyLoginInBackground = async (email: string, password: string) => {
