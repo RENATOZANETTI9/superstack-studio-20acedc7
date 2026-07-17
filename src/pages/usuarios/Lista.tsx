@@ -193,6 +193,8 @@ const Lista = () => {
     status: 'ATIVO' as User['status'],
     hierarchy: '',
   });
+  const [createPassword, setCreatePassword] = useState('');
+  const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,28 +434,54 @@ const Lista = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim() || !formData.email.trim()) return;
 
     if (editingUser) {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editingUser.id
-            ? { ...u, name: u.name, email: u.email, client: u.client, status: formData.status, hierarchy: formData.hierarchy }
+            ? { ...u, status: formData.status, hierarchy: formData.hierarchy }
             : u
         )
       );
-    } else {
-      const newUser: User = {
-        id: (users.length + 1).toString(),
-        ...formData,
-        createdAt: new Date().toLocaleString('pt-BR'),
-      };
-      setUsers((prev) => [...prev, newUser]);
+      setIsModalOpen(false);
+      setFormData({ name: '', email: '', client: '', status: 'ATIVO', hierarchy: '' });
+      return;
     }
+
+    if (createPassword.length < 6) {
+      toast.error('Defina uma senha inicial de pelo menos 6 caracteres.');
+      return;
+    }
+
+    setSavingUser(true);
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: { email: formData.email.trim().toLowerCase(), password: createPassword },
+    });
+    setSavingUser(false);
+
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? 'Falha ao criar usuário');
+      return;
+    }
+
+    const created = (data as any)?.user;
+    const newUser: User = {
+      id: created?.id ?? crypto.randomUUID(),
+      name: formData.name,
+      email: created?.email ?? formData.email,
+      client: formData.client,
+      status: formData.status,
+      hierarchy: formData.hierarchy,
+      createdAt: new Date().toLocaleString('pt-BR'),
+    };
+    setUsers((prev) => [newUser, ...prev]);
+    toast.success('Usuário criado com sucesso.');
 
     setIsModalOpen(false);
     setFormData({ name: '', email: '', client: '', status: 'ATIVO', hierarchy: '' });
+    setCreatePassword('');
   };
 
   return (
