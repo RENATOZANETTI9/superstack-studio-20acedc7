@@ -193,6 +193,8 @@ const Lista = () => {
     status: 'ATIVO' as User['status'],
     hierarchy: '',
   });
+  const [createPassword, setCreatePassword] = useState('');
+  const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -339,6 +341,7 @@ const Lista = () => {
     let pw = '';
     for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
     setNewPassword(pw);
+    return pw;
   };
 
   const verifyLoginInBackground = async (email: string, password: string) => {
@@ -432,28 +435,54 @@ const Lista = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim() || !formData.email.trim()) return;
 
     if (editingUser) {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editingUser.id
-            ? { ...u, name: u.name, email: u.email, client: u.client, status: formData.status, hierarchy: formData.hierarchy }
+            ? { ...u, status: formData.status, hierarchy: formData.hierarchy }
             : u
         )
       );
-    } else {
-      const newUser: User = {
-        id: (users.length + 1).toString(),
-        ...formData,
-        createdAt: new Date().toLocaleString('pt-BR'),
-      };
-      setUsers((prev) => [...prev, newUser]);
+      setIsModalOpen(false);
+      setFormData({ name: '', email: '', client: '', status: 'ATIVO', hierarchy: '' });
+      return;
     }
+
+    if (createPassword.length < 6) {
+      toast.error('Defina uma senha inicial de pelo menos 6 caracteres.');
+      return;
+    }
+
+    setSavingUser(true);
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: { email: formData.email.trim().toLowerCase(), password: createPassword },
+    });
+    setSavingUser(false);
+
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? 'Falha ao criar usuário');
+      return;
+    }
+
+    const created = (data as any)?.user;
+    const newUser: User = {
+      id: created?.id ?? crypto.randomUUID(),
+      name: formData.name,
+      email: created?.email ?? formData.email,
+      client: formData.client,
+      status: formData.status,
+      hierarchy: formData.hierarchy,
+      createdAt: new Date().toLocaleString('pt-BR'),
+    };
+    setUsers((prev) => [newUser, ...prev]);
+    toast.success('Usuário criado com sucesso.');
 
     setIsModalOpen(false);
     setFormData({ name: '', email: '', client: '', status: 'ATIVO', hierarchy: '' });
+    setCreatePassword('');
   };
 
   return (
@@ -749,6 +778,32 @@ const Lista = () => {
                   )}
                 </div>
               )}
+
+              {!editingUser && (
+                <div className="space-y-2 border-t border-border/50 pt-4">
+                  <Label>Senha inicial</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Mín. 6 caracteres"
+                      value={createPassword}
+                      onChange={(e) => setCreatePassword(e.target.value)}
+                      className="bg-background/50 flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreatePassword(generateRandomPassword() ?? '')}
+                      className="gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" /> Gerar
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    O usuário será criado no banco de autenticação e deverá trocar a senha no primeiro acesso.
+                  </p>
+                </div>
+              )}
             </div>
 
             <DialogFooter className={cn(isMobile && 'flex-col gap-2')}>
@@ -765,9 +820,14 @@ const Lista = () => {
                   'bg-gradient-to-r from-primary to-secondary hover:opacity-90',
                   isMobile && 'w-full order-1'
                 )}
-                disabled={!formData.name.trim() || !formData.email.trim()}
+                disabled={
+                  !formData.name.trim() ||
+                  !formData.email.trim() ||
+                  savingUser ||
+                  (!editingUser && createPassword.length < 6)
+                }
               >
-                {editingUser ? 'Salvar' : 'Criar'}
+                {savingUser ? 'Criando...' : editingUser ? 'Salvar' : 'Criar'}
               </Button>
             </DialogFooter>
           </DialogContent>
