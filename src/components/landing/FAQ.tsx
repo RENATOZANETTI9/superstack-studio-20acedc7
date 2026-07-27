@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
+import AnimatedPhone from './AnimatedPhone';
 
 const faqs = [
   {
@@ -62,14 +63,17 @@ const FAQ = () => {
           </p>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto"
-        >
-          <Accordion type="single" collapsible className="space-y-3">
+        <div className="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-10 lg:gap-14 items-center max-w-6xl mx-auto">
+          <AnimatedPhone />
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="w-full"
+          >
+            <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((item, i) => (
               <AccordionItem
                 key={i}
@@ -84,21 +88,22 @@ const FAQ = () => {
                 </AccordionContent>
               </AccordionItem>
             ))}
-          </Accordion>
+            </Accordion>
 
-          <div className="flex justify-center mt-10">
-            <a
-              href="https://wa.me/551151921464"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="hero" size="lg" className="rounded-full gap-2">
-                <MessageCircle className="w-5 h-5" />
-                Saiba Mais
-              </Button>
-            </a>
-          </div>
-        </motion.div>
+            <div className="flex justify-center mt-10">
+              <a
+                href="https://wa.me/551151921464"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="hero" size="lg" className="rounded-full gap-2">
+                  <MessageCircle className="w-5 h-5" />
+                  Saiba Mais
+                </Button>
+              </a>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
