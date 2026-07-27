@@ -1,8 +1,9 @@
 import Header from '@/components/landing/Header';
 import Hero from '@/components/landing/Hero';
 import Features from '@/components/landing/Features';
-import Pricing from '@/components/landing/Pricing';
+import FAQ from '@/components/landing/FAQ';
 import Footer from '@/components/landing/Footer';
+import FloatingCTA from '@/components/landing/FloatingCTA';
 
 const Index = () => {
   return (
@@ -16,10 +17,11 @@ const Index = () => {
           <Features />
         </section>
         <section id="pricing">
-          <Pricing />
+          <FAQ />
         </section>
       </main>
       <Footer />
+      <FloatingCTA />
     </div>
   );
 };
