@@ -33,20 +33,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Product */}
-          <div>
-            <h4 className="font-display font-semibold text-white mb-6">Níveis</h4>
-            <ul className="space-y-3">
-              {['Nível Básico', 'Nível Profissional', 'Nível Enterprise'].map((item) => (
-                <li key={item}>
-                  <a href="#pricing" className="text-sidebar-foreground/70 hover:text-white text-sm transition-colors">
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* Company */}
           <div>
             <h4 className="font-display font-semibold text-white mb-6">Empresa</h4>
@@ -59,6 +45,11 @@ const Footer = () => {
               <li>
                 <a href="#features" className="text-sidebar-foreground/70 hover:text-white text-sm transition-colors">
                   Recursos
+                </a>
+              </li>
+              <li>
+                <a href="#pricing" className="text-sidebar-foreground/70 hover:text-white text-sm transition-colors">
+                  FAQ
                 </a>
               </li>
             </ul>
@@ -84,6 +75,12 @@ const Footer = () => {
                 <MapPin className="w-5 h-5 text-helpude-teal flex-shrink-0 mt-0.5" />
                 <span className="text-sidebar-foreground/70 text-sm">
                   Av. Paulista 1106, 16º andar - Bela Vista, São Paulo - SP
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-helpude-teal flex-shrink-0 mt-0.5" />
+                <span className="text-sidebar-foreground/70 text-sm">
+                  Alameda Salvador, Edifício Salvador Shopping Business, Torre Europa, Sala 1818, Caminho das Árvores, Salvador – Bahia
                 </span>
               </li>
             </ul>
