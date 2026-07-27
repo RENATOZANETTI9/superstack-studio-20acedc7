@@ -39,8 +39,8 @@ const AnimatedPhone = () => {
           aria-hidden="true"
           className="absolute font-display font-light text-white/95 tracking-tight leading-none"
           style={{
-            left: '30%',
-            top: '24%',
+            left: '35%',
+            top: '26%',
             fontSize: 'clamp(1.8rem, 7vw, 3.2rem)',
             transform: 'translate(-50%, -50%) rotate(-13deg) skewY(3deg)',
             textShadow: '0 2px 12px rgba(0,0,0,0.25)',
