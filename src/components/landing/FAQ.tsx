@@ -63,7 +63,7 @@ const FAQ = () => {
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-10 lg:gap-14 items-center max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)] gap-8 lg:gap-12 items-center max-w-5xl mx-auto justify-items-center">
           <AnimatedPhone />
 
           <motion.div
@@ -71,7 +71,7 @@ const FAQ = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="w-full"
+            className="w-full max-w-3xl mx-auto"
           >
             <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((item, i) => (

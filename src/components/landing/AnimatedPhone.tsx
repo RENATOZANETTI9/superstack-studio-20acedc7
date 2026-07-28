@@ -22,7 +22,7 @@ const AnimatedPhone = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
-      className="relative w-full max-w-sm mx-auto"
+      className="relative w-full max-w-[210px] mx-auto"
     >
       <motion.div
         animate={{ y: [0, -14, 0] }}
