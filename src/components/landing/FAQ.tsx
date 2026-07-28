@@ -7,7 +7,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import AnimatedPhone from './AnimatedPhone';
 
 const faqs = [
   {
@@ -63,9 +62,7 @@ const FAQ = () => {
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)] gap-8 lg:gap-12 items-center max-w-5xl mx-auto justify-items-center">
-          <AnimatedPhone />
-
+        <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
